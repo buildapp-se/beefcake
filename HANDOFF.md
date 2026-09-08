@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Logga pass öppnas tomt utan automatiskt program, månadskalendern visar veckonummer, datum och program alltid synliga som en slimmad rad, kg-fält skriver med komma och settyp visas som fulla ord. Allt pushat 2026-09-04 kväll
-nextAction: Lägg till https://beefcake.buildapp.se/__/auth/handler i OAuth-klientens Authorized redirect URIs och beefcake.buildapp.se i Firebase authorized domains, båda kräver Patrik i webbläsaren. Därefter byter agenten authDomain i src/config.ts. Se Recent work 2026-09-08
+nextAction: Logga in med Google skarpt på buildapp.se/beefcake och bekräfta att rutan säger "Fortsätt till buildapp.se" och att passen finns kvar. Kontrollera sedan att "Enable create (sign-up)" är avstängt i Firebase, därefter Resend (BACKLOG P0)
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
   - Resend: beefcake.buildapp.se ska verifieras och RESEND_API_KEY sättas som secret (regel 1, Patrik)
@@ -11,18 +11,21 @@ reviewedAt: 2026-09-08
 
 ## Recent work
 
-**2026-09-08, egen authDomain `beefcake.buildapp.se`: infrastrukturen klar, bytet inte gjort.** Googles inloggningsruta visar `beefcake-4865a.firebaseapp.com` eftersom Google visar authDomain tills appens branding är verifierad, och authDomain är `<projekt-id>.firebaseapp.com`. Projekt-id går inte att ändra efter skapandet. Källor och de tre vägarna: `Firebase Consent Screen` i vaulten. Vald väg är egen domän, samma som grammat gjorde med `auth.buildapp.se`.
+**2026-09-08, egen authDomain `beefcake.buildapp.se`: klart, live.** Googles inloggningsruta sa `beefcake-4865a.firebaseapp.com`, eftersom Google visar authDomain tills appens branding är verifierad och authDomain är `<projekt-id>.firebaseapp.com`. Projekt-id går inte att ändra efter skapandet. Källor och alternativen: `Firebase Consent Screen` i vaulten. Vald väg var egen domän, samma som grammat med `auth.buildapp.se`. **Rutan säger nu "Fortsätt till buildapp.se"** (Google kortar till registrerbar toppdomän).
 
 Gjort och verifierat:
 - `authhost/` (Firebase Hosting-site `beefcake-4865a`, placeholder-sida) deployad, `beefcake-4865a.web.app/__/auth/handler` svarar 200.
 - Custom domain `beefcake.buildapp.se` skapad via Hosting-API:t (`firebase-tools` saknar kommando för custom domains; scriptet använde CLI:ns egen inloggning). `hostState: HOST_ACTIVE`, `ownershipState: OWNERSHIP_ACTIVE`.
 - Cloudflare, zonen `buildapp.se`: `CNAME beefcake -> beefcake-4865a.web.app` **DNS only** (proxad post gör att Firebase aldrig kan minta certifikatet), plus TXT `_acme-challenge.beefcake` för certvalideringen. Certifikatet gick till `CERT_PROPAGATING` kl. 15:10.
 
-**Kvar innan bytet kan göras, i den här ordningen:**
-1. Certifikatet klart: `https://beefcake.buildapp.se/__/auth/handler` ska svara 200. Grammat tog ett dygn.
-2. **Patrik:** Cloud Console → APIs & Services → Credentials → webbklienten för `beefcake-4865a` → Authorized redirect URIs → lägg till `https://beefcake.buildapp.se/__/auth/handler`. Det här steget fällde grammats första försök med `400 redirect_uri_mismatch`. Ingen publik API finns för OAuth-klienter, så det måste klickas.
-3. **Patrik:** Firebase → Authentication → Settings → Authorized domains → lägg till `beefcake.buildapp.se`. Annan lista än den ovan, båda krävs. (Agenten blev blockerad av auto-lägets klassificerare på Identity Toolkit-API:t, annars hade den satt den själv.)
-4. Byt `authDomain` till `'beefcake.buildapp.se'` i `src/config.ts` och deploya. Testa en riktig Google-inloggning direkt. Fallerar den: sätt tillbaka `'beefcake-4865a.firebaseapp.com'` och deploya, ca 30 s via Pages.
+- Certifikatet klart efter 10 minuter, `https://beefcake.buildapp.se/__/auth/handler` svarar 200.
+- **De två allowlists som krävs, båda satta av Patrik 2026-09-08:** `https://beefcake.buildapp.se/__/auth/handler` under Authorized redirect URIs på OAuth-klienten `138081999329-0btvi4n7okqs5eaidkfcirupbd322b6e` i Cloud Console, och `beefcake.buildapp.se` under Firebase → Authentication → Settings → Authorized domains (verifierad via publika `getProjectConfig`). Olika listor, båda krävs. Den första fällde grammats första försök med `400 redirect_uri_mismatch`.
+- `authDomain` bytt i `src/config.ts` (`bfdc71a`). Lint, 82 tester och build gröna.
+- **Skarpt verifierat före deploy:** lokal preview av den nya bundeln, klick på Google-knappen gav Googles inloggningssida med `redirect_uri=https://beefcake.buildapp.se/__/auth/handler` och texten "Fortsätt till buildapp.se". Inget mismatch-fel.
+
+**Fälla som kostade en felsökning:** första försöket gav `redirect_uri_mismatch` med den *gamla* domänen i felet. Orsaken var appens egen service worker, som serverade en cachad äldre bundle på samma preview-port. Rensa alltid SW och cache (`getRegistrations().unregister()` plus `caches.delete`) och ladda om utan cache innan en auth-ändring bedöms lokalt, annars mäter du gammal kod.
+
+**Revert om något ändå fallerar:** sätt tillbaka `authDomain: 'beefcake-4865a.firebaseapp.com'` i `src/config.ts` och pusha, ute via Pages på någon minut.
 
 2026-09-08, Google-knappen: "Logga in med Google" i `LoginGate` följer nu Googles branding-riktlinjer (vit, 1 px `#747775`, färgad G-logga som inline-SVG, medium 14/20, Roboto bara om den finns lokalt eftersom appen självhostar Geist). Patrik tyckte den generiska knappen såg oseriös ut, samma ändring gjord i Grammat och Sipdeck. Lint, 82 tester och build gröna, verifierad i Chromium via `vite preview` på 400 px utan konsolfel. OAuth-brandingen (appnamn i consentskärmen) för `beefcake-4865a` kvarstår, bara Patrik kan göra den i Cloud Console.
 
