@@ -5,6 +5,12 @@
  */
 export const FIREBASE = {
   apiKey: 'AIzaSyAWsBgwy3f6V4ZRPHEhAZ2Rpp57J-EiGUg',
-  authDomain: 'beefcake-4865a.firebaseapp.com',
+  // Egen authdomän så Googles inloggningsruta slipper visa projekt-id:t med siffror
+  // (Google visar authDomain tills brandingen är verifierad). Kräver att
+  // https://beefcake.buildapp.se/__/auth/handler ligger i OAuth-klientens Authorized
+  // redirect URIs i Cloud Console OCH att beefcake.buildapp.se ligger i Firebase
+  // authorized domains. Saknas någon: 400 redirect_uri_mismatch, ingen kan logga in.
+  // Revert: 'beefcake-4865a.firebaseapp.com', ute via Pages på ca 30 s.
+  authDomain: 'beefcake.buildapp.se',
   projectId: 'beefcake-4865a'
 }
