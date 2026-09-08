@@ -32,3 +32,6 @@ server/worker-configuration.d.ts
 
 # Skärmbilder från webbläsarverifiering hamnar i repotroten, de ska aldrig committas.
 /*.png
+
+# Firebase Hosting deploy-cache i authhost, regenereras vid deploy.
+authhost/.firebase/

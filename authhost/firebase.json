@@ -1,0 +1,7 @@
+{
+  "hosting": {
+    "site": "beefcake-4865a",
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*"]
+  }
+}
