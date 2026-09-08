@@ -859,6 +859,20 @@ canvas { display: block; max-width: 100%; }
   font-size: var(--text-3xl);
 }
 
+/* Google-knappen följer developers.google.com/identity/branding-guidelines (ljust tema):
+   vit, 1 px #747775, färgad G-logga på vitt, 12 px före loggan, 10 px efter, medium 14/20.
+   Roboto bara om den finns lokalt, typsnittet laddas inte (självhostad Geist, ingen Google Fonts). */
+.gsi {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 40px; padding: 0 12px;
+  background: #fff; color: #1f1f1f; border: 1px solid #747775; border-radius: 20px;
+  font-family: Roboto, var(--font-sans); font-weight: 500; font-size: 14px; line-height: 20px; letter-spacing: 0.25px;
+  cursor: pointer;
+}
+.gsi:hover { background: #f6f6f6; }
+.gsi:disabled { opacity: 0.6; cursor: default; }
+.gsi-logo { width: 20px; height: 20px; flex: none; }
+
 .login-subtitle {
   color: var(--text-muted);
   margin-top: 0;

@@ -6,10 +6,12 @@ nextAction: Julia laddar om appen så D1-revision 2 hämtas. Kontrollera sedan a
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
   - Resend: beefcake.buildapp.se ska verifieras och RESEND_API_KEY sättas som secret (regel 1, Patrik)
-reviewedAt: 2026-09-04
+reviewedAt: 2026-09-08
 ---
 
 ## Recent work
+
+2026-09-08, Google-knappen: "Logga in med Google" i `LoginGate` följer nu Googles branding-riktlinjer (vit, 1 px `#747775`, färgad G-logga som inline-SVG, medium 14/20, Roboto bara om den finns lokalt eftersom appen självhostar Geist). Patrik tyckte den generiska knappen såg oseriös ut, samma ändring gjord i Grammat och Sipdeck. Lint, 82 tester och build gröna, verifierad i Chromium via `vite preview` på 400 px utan konsolfel. OAuth-brandingen (appnamn i consentskärmen) för `beefcake-4865a` kvarstår, bara Patrik kan göra den i Cloud Console.
 
 2026-09-04 kväll, kg och settyp: rotorsaken till "kan bara ändra ett kg i taget" och "komma eller punkt ger inga decimaler" var `<input type="number">` (webbläsarlokal för decimaltecken, kontrollerat fält nollar ett nyss skrivet kommatecken). Kg i Logga pass och Templates är nu text med delad `parseDecimal()`-parser och en per-fält draft, settypsbokstäverna är nu en picker med fulla ord. Detaljer i BACKLOG under Byggt. Lint, 82 tester och build gröna, verifierat i Chromium: kommatecken bevaras, sparat 82,5 kg återöppnas som 82,5.
 
