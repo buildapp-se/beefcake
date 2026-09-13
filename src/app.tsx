@@ -14,6 +14,7 @@ import { Settings } from './pages/Settings'
 import { History } from './pages/History'
 import { SessionDetail } from './pages/SessionDetail'
 import { ExerciseDetail } from './pages/ExerciseDetail'
+import { ExerciseDatabase } from './pages/ExerciseDatabase'
 import { icon } from './icons'
 import type { BeefcakeStreak } from './lib/streak'
 import './app.css'
@@ -27,10 +28,14 @@ const navItems = [
   { href: '/', label: 'Hem', icon: 'home-icon' },
   { href: '/log', label: 'Logga pass', icon: 'log-icon' },
   { href: '/templates', label: 'Program', icon: 'template-icon' },
+  { href: '/ovningar', label: 'Övningar', icon: 'barbell-icon' },
   { href: '/history', label: 'Historik', icon: 'history-icon' },
   { href: '/stats', label: 'Statistik', icon: 'stats-icon' },
   { href: '/settings', label: 'Inställningar', icon: 'settings-icon' },
 ]
+// Sidebar och rail visar allt utom Inställningar, som ligger i sidfoten
+const MAIN_NAV = navItems.slice(0, -1)
+const SETTINGS_NAV = navItems[navItems.length - 1]
 
 function NavLink({ href, label, icon: iconId, showLabel = true }: { href: string; label: string; icon: string; showLabel?: boolean }) {
   const [location] = useLocation()
@@ -53,12 +58,12 @@ function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
         <span class="sidebar-wordmark">Beefcake</span>
       </div>
       <nav class="sidebar-nav">
-        {navItems.slice(0, 5).map(item => (
+        {MAIN_NAV.map(item => (
           <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} showLabel />
         ))}
       </nav>
       <div class="sidebar-footer">
-        <NavLink href={navItems[5].href} label={navItems[5].label} icon={navItems[5].icon} showLabel />
+        <NavLink href={SETTINGS_NAV.href} label={SETTINGS_NAV.label} icon={SETTINGS_NAV.icon} showLabel />
       </div>
     </aside>
   )
@@ -75,19 +80,20 @@ function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
         )}
       </div>
       <nav class="rail-nav">
-        {navItems.slice(0, 5).map(item => (
+        {MAIN_NAV.map(item => (
           <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} showLabel={false} />
         ))}
       </nav>
       <div class="rail-footer">
-        <NavLink href={navItems[5].href} label={navItems[5].label} icon={navItems[5].icon} showLabel={false} />
+        <NavLink href={SETTINGS_NAV.href} label={SETTINGS_NAV.label} icon={SETTINGS_NAV.icon} showLabel={false} />
       </div>
     </aside>
   )
 }
 
 function BottomNav() {
-  const mobileNavItems = [navItems[0], navItems[1], navItems[3], navItems[4]]
+  // Hem, Logga pass, Historik, Statistik: Program, Övningar och Inställningar nås via headern
+  const mobileNavItems = [navItems[0], navItems[1], navItems[4], navItems[5]]
   return (
     <nav class="bottom-nav">
       {mobileNavItems.map(item => (
@@ -100,6 +106,11 @@ function BottomNav() {
 function HeaderNav() {
   return (
     <div class="header-nav-right flex gap-sm">
+      <Link href="/ovningar" class="header-settings" aria-label="Övningar">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <use href={icon('barbell-icon')} />
+        </svg>
+      </Link>
       <Link href="/templates" class="header-settings" aria-label="Program">
         <svg width="24" height="24" viewBox="0 0 24 24">
           <use href={icon('template-icon')} />
@@ -142,6 +153,8 @@ function Shell() {
             <Route path="/history" component={History} />
             <Route path="/history/:id" component={SessionDetail} />
             <Route path="/exercises/:id" component={ExerciseDetail} />
+            <Route path="/ovningar" component={ExerciseDatabase} />
+            <Route path="/ovningar/:id" component={ExerciseDatabase} />
             <Route path="/stats" component={() => (
               <Suspense fallback={<Card class="skeleton skeleton-card"></Card>}>
                 <Stats />

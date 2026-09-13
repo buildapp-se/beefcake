@@ -42,11 +42,18 @@ export default defineConfig({
           urlPattern: /^https:\/\/www\.gstatic\.com\/firebasejs\//,
           handler: 'CacheFirst',
           options: { cacheName: 'firebase-sdk', expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 90 } }
+        }, {
+          // Övningsdatabasens bilder (jsDelivr, låst commit): sedda bilder finns kvar offline
+          urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/gh\/yuhonas\/free-exercise-db@/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'exercise-images', expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 180 }, cacheableResponse: { statuses: [0, 200] } }
         }]
       }
     })
   ],
   build: {
+    // Övningsdatabasen är en egen chunk på 770 kB (150 kB gzip) som bara laddas på /ovningar
+    chunkSizeWarningLimit: 800,
     target: 'es2020',
     minify: 'esbuild'
   }

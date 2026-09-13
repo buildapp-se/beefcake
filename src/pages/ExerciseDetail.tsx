@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
-import { useLocation, useRoute } from 'wouter'
+import { Link, useLocation, useRoute } from 'wouter'
 import {
   getExercise,
   getExerciseHistory,
@@ -14,6 +14,8 @@ import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { Stat } from '../components/Stat'
 import { EmptyState } from '../components/EmptyState'
+import { ExerciseAnimation } from '../components/ExerciseAnimation'
+import { dbIdForName } from '../lib/exerciseDb'
 import type { Exercise, ExerciseHistory, Session } from '../models'
 import type { Chart } from 'chart.js'
 
@@ -204,6 +206,7 @@ export function ExerciseDetail() {
   )
   const records = repRecords(history)
   const sessionIdForDate = (date: string) => history.find(h => h.date === date)?.sessionId ?? ''
+  const dbId = dbIdForName(exercise.name)
 
   return (
     <div>
@@ -250,6 +253,21 @@ export function ExerciseDetail() {
           />
         </Card>
       </div>
+
+      {/* Teknik ur övningsdatabasen när namnet har en koppling, annars en sökning på namnet */}
+      <Card title="Teknik" class="mb">
+        <div class="exdb-detail-row">
+          {dbId && <ExerciseAnimation id={dbId} name={exercise.name} class="exdb-anim-medium" />}
+          <div>
+            <p class="text-sm text-muted m-0 mb-sm">
+              {dbId ? 'Utförande, muskler och steg för steg i övningsdatabasen.' : 'Övningen har ingen koppling till databasen än, sök på namnet.'}
+            </p>
+            <Link href={dbId ? `/ovningar/${dbId}` : `/ovningar?q=${encodeURIComponent(exercise.name)}`} class="btn btn-sm btn-secondary">
+              {dbId ? 'Visa i övningsdatabasen' : 'Sök i övningsdatabasen'}
+            </Link>
+          </div>
+        </div>
+      </Card>
 
       {/* Progressionsdiagram med valbart mått */}
       <Card title="Progression över tid" class="mb">
