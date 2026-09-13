@@ -84,7 +84,10 @@ const EXERCISE_DB_MAP: Record<string, string> = {
   'Axelpress maskin': 'Machine_Shoulder_Military_Press', 'Latsdrag': 'Wide-Grip_Lat_Pulldown', 'Leg curl': 'Seated_Leg_Curl',
   'Leg extension': 'Leg_Extensions', 'Triceps dips stång': 'Dips_-_Triceps_Version', 'Triceps skull crush': 'EZ-Bar_Skullcrusher',
   'Underarm rulla vroom': 'Wrist_Roller', 'Underarm rulla inte-vroom': 'Wrist_Roller', 'Utfall bakåt': 'Dumbbell_Rear_Lunge',
-  'Vadpress hantel': 'Standing_Dumbbell_Calf_Raise', 'Vadpress kettlebell': 'Standing_Dumbbell_Calf_Raise'
+  'Vadpress hantel': 'Standing_Dumbbell_Calf_Raise', 'Vadpress kettlebell': 'Standing_Dumbbell_Calf_Raise',
+  // Startprogrammens övningar (src/data/starterPrograms.ts)
+  'Kabelrodd': 'Seated_Cable_Rows', 'Face pull': 'Face_Pull', 'Hammercurl': 'Hammer_Curls',
+  'Triceps över huvudet': 'Cable_Rope_Overhead_Triceps_Extension', 'Rumänsk marklyft': 'Romanian_Deadlift', 'Benpress': 'Leg_Press'
 }
 const MAP_LOWER = new Map(Object.entries(EXERCISE_DB_MAP).map(([k, v]) => [k.toLowerCase(), v]))
 

@@ -54,7 +54,14 @@ const MUSCLE_GROUP_MAP: Record<string, string> = {
   'Triceps pushdown': 'Triceps', 'Triceps stång': 'Triceps', 'Triceps övning': 'Triceps',
   'Vadpress skivstång': 'Ben', 'Vadpress maskin': 'Ben', 'Ab roller': 'Mage',
   'Axelpress maskin': 'Axlar', 'Latsdrag': 'Rygg', 'Leg curl': 'Ben',
-  'Leg extension': 'Ben'
+  'Leg extension': 'Ben',
+  // Startprogrammens övningar som inte fanns i katalogen (src/data/starterPrograms.ts)
+  'Kabelrodd': 'Rygg', 'Face pull': 'Axlar', 'Hammercurl': 'Biceps', 'Triceps över huvudet': 'Triceps',
+  'Rumänsk marklyft': 'Bakre kedjan', 'Benpress': 'Ben'
+}
+
+export function muscleGroupForName(name: string): string | undefined {
+  return MUSCLE_GROUP_MAP[name]
 }
 
 // Övningar med stång: styr plattraden i loggvyn. Ingen övning i seeden har equipment satt,
@@ -62,7 +69,7 @@ const MUSCLE_GROUP_MAP: Record<string, string> = {
 const EQUIPMENT_MAP: Record<string, string> = {
   'Benböj': 'skivstång', 'Bänk': 'skivstång', 'Marklyft': 'skivstång', 'Militärpress': 'skivstång',
   'Skivstångsrodd': 'skivstång', 'Snedbänk': 'skivstång', 'Vadpress skivstång': 'skivstång',
-  'Hip-thrusts': 'skivstång', 'Bicepscurl ez stång': 'ez-stång', 'Triceps stång': 'ez-stång'
+  'Hip-thrusts': 'skivstång', 'Bicepscurl ez stång': 'ez-stång', 'Triceps stång': 'ez-stång', 'Rumänsk marklyft': 'skivstång'
 }
 
 // Fyll på muscleGroup och equipment där de saknas, ur namnkartorna. Additivt: ett satt värde rörs aldrig.
@@ -141,10 +148,12 @@ export async function getOrCreateExercise(name: string, muscleGroup?: string): P
     }
     return existing
   }
+  const equipment = EQUIPMENT_MAP[name]
   const exercise: Exercise = {
     id: generateId(),
     name,
-    muscleGroup,
+    muscleGroup: muscleGroup ?? MUSCLE_GROUP_MAP[name],
+    ...(equipment ? { equipment } : {}),
     createdAt: nowISO()
   }
   await db.put('exercises', exercise)

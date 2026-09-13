@@ -1582,6 +1582,14 @@ canvas { display: block; max-width: 100%; }
 .exdb-steps { padding-left: 1.25rem; margin: 0; }
 .exdb-steps li { margin-bottom: var(--space-2); line-height: var(--leading-body); }
 .exdb-badge-secondary { background: var(--surface-hover); color: var(--text-muted); }
+/* Startprogram på Program-sidan: text till vänster, knappen till höger, staplat på telefon */
+.starter-list { display: flex; flex-direction: column; gap: var(--space-4); }
+.starter-item { display: flex; gap: var(--space-4); align-items: flex-start; justify-content: space-between; padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.starter-text { min-width: 0; }
+.starter-text p { line-height: 1.5; }
+.starter-item .btn { flex-shrink: 0; }
+@media (max-width: 767px) { .starter-item { flex-direction: column; } .starter-item .btn { width: 100%; } }
+
 /* Programredigerarens övningsrad: sex barn i ett rutnät som rymmer dem. Den gamla `grid-4` bröt
    papperskorgen till en egen rad. Telefon: miniatyr, namn och papperskorg på rad ett, talen på rad två. */
 .template-exercise-row { display: grid; grid-template-columns: 66px minmax(0, 2fr) 1fr 1fr 1fr 44px; gap: var(--space-3); align-items: end; }

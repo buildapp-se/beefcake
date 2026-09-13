@@ -9,6 +9,7 @@ import { Field } from '../components/Field'
 import { ExerciseAnimation } from '../components/ExerciseAnimation'
 import { dbIdForName } from '../lib/exerciseDb'
 import { Link } from 'wouter'
+import { STARTER_PROGRAMS, type StarterProgram } from '../data/starterPrograms'
 import type { Template, Exercise, SetEntry } from '../models'
 
 interface FormExercise {
@@ -214,6 +215,30 @@ export function Templates() {
 
   function dismissToast() {
     setToastMessage(null)
+  }
+
+  // Ett startprogram blir vanliga program i katalogen: samma createTemplate som formuläret,
+  // övningarna hämtas eller skapas på namn. Pass som redan finns med samma namn hoppas över.
+  async function addStarterProgram(p: StarterProgram) {
+    try {
+      const existing = new Set(templates.map(t => t.name))
+      let added = 0
+      for (const t of p.templates) {
+        if (existing.has(t.name)) continue
+        const exercises = []
+        for (const e of t.exercises) {
+          const ex = await getOrCreateExercise(e.name)
+          exercises.push({ exerciseId: ex.id, defaultSetEntry: { sets: e.sets, reps: e.reps, weight: 0 } })
+        }
+        await createTemplate(t.name, exercises)
+        added++
+      }
+      await loadData()
+      setToastMessage(added === 0 ? `${p.name}: passen finns redan.` : `${added} pass tillagda från ${p.name}.`)
+    } catch (err) {
+      console.error('Kunde inte lägga till startprogram:', err)
+      setToastMessage('Kunde inte lägga till programmet. Försök igen.')
+    }
   }
 
   if (loading) {
@@ -431,6 +456,27 @@ export function Templates() {
           </div>
           </>
         )}
+      </Card>
+
+      {/* Startprogram: etablerade upplägg med källa, blir vanliga program med ett tryck */}
+      <Card title="Startprogram" class="mt">
+        <p class="text-sm text-muted m-0 mb">Färdiga nybörjarupplägg med källa. Vikten är 0 tills du sätter den, loggvyn förifyller sedan från förra passet.</p>
+        <div class="starter-list" role="list" aria-label="Startprogram">
+          {STARTER_PROGRAMS.map(p => (
+            <div key={p.id} class="starter-item" role="listitem">
+              <div class="starter-text">
+                <h4 class="m-0">{p.name}</h4>
+                <p class="text-sm m-0 mt-1">{p.description}</p>
+                <p class="text-sm text-muted m-0 mt-1"><strong>Progression:</strong> {p.progression}</p>
+                <p class="text-xs text-muted m-0 mt-1">
+                  {p.author} · <a href={p.source.url} target="_blank" rel="noopener noreferrer" class="exercise-link">{p.source.label}</a>
+                  {' · '}{p.templates.map(t => t.name).join(', ')}
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => addStarterProgram(p)}>Lägg till ({p.templates.length} pass)</Button>
+            </div>
+          ))}
+        </div>
       </Card>
 
       {/* Delete dialog */}
