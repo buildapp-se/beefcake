@@ -1,8 +1,8 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: Övningsdatabasen (873 övningar med tvåbilders-animation, sök och filter, kopplad till egna övningar i programredigeraren och på övningssidan) byggd och verifierad 2026-09-13, commits b2dd172 och den efterföljande flytten ur loggvyn, pushade
-nextAction: Öppna Övningar på telefonen (Hem, hantelikonen) och redigera ett program, se att miniatyrerna och animationen fungerar live. Sedan Firebase sign-up-kontrollen och Resend (BACKLOG P0), båda kräver Patrik
+currentGoal: Övningsdatabasen (873 övningar med animation, sök och filter, förhandsvisning i programredigeraren och på övningssidan) och tre startprogram med källa på Program-sidan, byggda och verifierade 2026-09-13 (b2dd172, 2f5c81d, 0880e37), pushade
+nextAction: Öppna Program på telefonen, lägg till ett startprogram och redigera det, se att miniatyrerna och animationen fungerar live. Säg till om någon av de sju gissade kopplingarna i namnkartan är fel. Sedan Firebase sign-up-kontrollen och Resend (BACKLOG P0), båda kräver Patrik
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
   - Resend: beefcake.buildapp.se ska verifieras och RESEND_API_KEY sättas som secret (regel 1, Patrik)
@@ -10,6 +10,8 @@ reviewedAt: 2026-09-13
 ---
 
 ## Recent work
+
+**2026-09-13, startprogram (`0880e37`).** Patrik: "gör startprogram och hänvisa till källor, eller hitta open source-databas". Sökning gav ingen öppen programdatabas med ren licens (Liftosaur AGPL med Liftoscript, Boostcamp proprietärt, övriga är övningsdatabaser), så tre upplägg skrevs ur thefitness.wiki: Basic Beginner Routine, GZCLP steg 1, Reddit PPL, med författare, progression och länk i kortet "Startprogram" längst ned på Program. Verifierat i Chromium: PPL gav 3 pass och 6 nya övningar med rätt muskelgrupp (Rumänsk marklyft även skivstång), andra trycket gav "passen finns redan", redigeraren visade 6 av 6 miniatyrer, 390 px utan sidled-scroll med knapparna 44 px och full bredd. Sets och reps är källans fasta tal; "+" (AMRAP) står bara i beskrivningen.
 
 **2026-09-13, förhandsvisningarna flyttade.** Patrik: bort med miniatyrerna i Logga pass, lägg dem under Program, och radbrytet i programredigeraren. Miniatyrkolumnen ligger nu först i programredigerarens övningsrad, som fick klassen `template-exercise-row` med ett eget rutnät (`66px 2fr 1fr 1fr 1fr 44px`, telefon åtta kolumner med talen på rad två). Radbrytet var `grid grid-4` med fem barn: papperskorgen föll ner på en egen rad. Mätt i Chromium 1440 (alla sex på en rad) och 390 (Set 87, Reps 80, Vikt 105 px, ingen sidled-scroll). Loggvyn har inga databasimporter kvar. Lint, 87 tester och build gröna. Standardprogram: free-exercise-db har inga, bara övningar.
 
