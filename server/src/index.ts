@@ -184,7 +184,7 @@ function isAllowedOrigin(origin: string, configured: string): boolean {
 function corsHeaders(origin: string | null, configured: string): Headers {
   const headers = new Headers({
     'Access-Control-Allow-Headers': 'content-type, authorization',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
     'Access-Control-Allow-Credentials': 'true',
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json'

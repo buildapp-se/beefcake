@@ -267,3 +267,11 @@ describe('latmask-mejlet', () => {
     expect(resendCalls).toHaveLength(2)
   })
 })
+
+describe('cors', () => {
+  it('preflighten tillåter PUT, annars stoppar webbläsaren sparandet av inställningen', async () => {
+    const response = await worker.fetch(new Request('https://beefcake-api.buildapp.se/api/reminders', { method: 'OPTIONS' }), env)
+    expect(response.status).toBe(204)
+    expect(response.headers.get('Access-Control-Allow-Methods')).toContain('PUT')
+  })
+})
