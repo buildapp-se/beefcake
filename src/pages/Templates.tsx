@@ -6,6 +6,9 @@ import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field } from '../components/Field'
+import { ExerciseAnimation } from '../components/ExerciseAnimation'
+import { dbIdForName } from '../lib/exerciseDb'
+import { Link } from 'wouter'
 import type { Template, Exercise, SetEntry } from '../models'
 
 interface FormExercise {
@@ -256,9 +259,19 @@ export function Templates() {
           <datalist id="template-exercise-suggestions">
             {allExercises.map(e => <option key={e.id} value={e.name} />)}
           </datalist>
-          {formExercises.map((fe, idx) => (
-            <div key={idx} class="grid grid-4 mb items-end gap-3">
-              <Field label="Övning" class="m-0 flex-2">
+          {formExercises.map((fe, idx) => {
+            const dbId = dbIdForName(fe.exerciseName)
+            return (
+            <div key={idx} class="template-exercise-row mb">
+              {/* Förhandsvisning ur övningsdatabasen när namnet har en koppling, annars tom plats så kolumnerna står still */}
+              <div class="exdb-thumb-slot">
+                {dbId && (
+                  <Link href={`/ovningar/${dbId}`} class="exdb-thumb-link" aria-label={`Visa ${fe.exerciseName} i övningsdatabasen`}>
+                    <ExerciseAnimation id={dbId} name="" class="exdb-anim-thumb" />
+                  </Link>
+                )}
+              </div>
+              <Field label="Övning" class="m-0 template-exercise-name">
                 <input
                   type="text"
                   value={fe.exerciseName}
@@ -305,7 +318,8 @@ export function Templates() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
 
           <Button variant="secondary" class="mb" onClick={addFormExercise}>+ Lägg till övning</Button>
 

@@ -21,9 +21,7 @@ import { warmupSets } from '../lib/warmup'
 import { setsVolume } from '../lib/volume'
 import { todayISO, nowISO } from '../models'
 import { icon } from '../icons'
-import { Link, useLocation } from 'wouter'
-import { ExerciseAnimation } from '../components/ExerciseAnimation'
-import { dbIdForName } from '../lib/exerciseDb'
+import { useLocation } from 'wouter'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -656,7 +654,6 @@ export function LogSession() {
                 const barWeight = barWeightFor(allExercises.find(e => e.id === ex.exerciseId)?.equipment)
                 // En plattrad per distinkt vikt bland seten, så tre set på 82,5 ger en rad, inte tre
                 const plateWeights = barWeight === null ? [] : Array.from(new Set(ex.setEntries.map(s => s.weight).filter(w => w > 0)))
-                const dbId = dbIdForName(ex.exerciseName)
                 return (
                   <Card
                     key={exIdx}
@@ -676,11 +673,6 @@ export function LogSession() {
                         >
                           <span aria-hidden="true">⋮⋮</span>
                         </button>
-                        {dbId && (
-                          <Link href={`/ovningar/${dbId}`} class="exdb-thumb-link" aria-label={`Visa ${ex.exerciseName} i övningsdatabasen`}>
-                            <ExerciseAnimation id={dbId} name="" class="exdb-anim-thumb" />
-                          </Link>
-                        )}
                         <input
                           type="text"
                           value={ex.exerciseName}

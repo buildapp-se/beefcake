@@ -1582,7 +1582,20 @@ canvas { display: block; max-width: 100%; }
 .exdb-steps { padding-left: 1.25rem; margin: 0; }
 .exdb-steps li { margin-bottom: var(--space-2); line-height: var(--leading-body); }
 .exdb-badge-secondary { background: var(--surface-hover); color: var(--text-muted); }
+/* Programredigerarens övningsrad: sex barn i ett rutnät som rymmer dem. Den gamla `grid-4` bröt
+   papperskorgen till en egen rad. Telefon: miniatyr, namn och papperskorg på rad ett, talen på rad två. */
+.template-exercise-row { display: grid; grid-template-columns: 66px minmax(0, 2fr) 1fr 1fr 1fr 44px; gap: var(--space-3); align-items: end; }
+.template-exercise-row > * { min-width: 0; }
+.exdb-thumb-slot { min-height: var(--touch-target); display: flex; align-items: center; }
 @media (max-width: 767px) {
+  /* Åtta kolumner så talen på rad två får ungefär en tredjedel var (Reps blev 49 px med fem) */
+  .template-exercise-row { grid-template-columns: 56px repeat(6, 1fr) 44px; }
+  .template-exercise-row .exdb-thumb-slot { grid-column: 1; grid-row: 1; }
+  .template-exercise-row .template-exercise-name { grid-column: 2 / 8; grid-row: 1; }
+  .template-exercise-row > :nth-child(3) { grid-column: 1 / 3; grid-row: 2; }
+  .template-exercise-row > :nth-child(4) { grid-column: 3 / 6; grid-row: 2; }
+  .template-exercise-row > :nth-child(5) { grid-column: 6 / 9; grid-row: 2; }
+  .template-exercise-row > :last-child { grid-column: 8; grid-row: 1; }
   .exdb-filters { grid-template-columns: 1fr 1fr; }
   .exdb-filters .input-group:first-child { grid-column: 1 / -1; }
   .exdb-grid { grid-template-columns: 1fr 1fr; }
