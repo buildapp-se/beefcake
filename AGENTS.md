@@ -56,6 +56,8 @@ Versalerna är ett krav: cockpiten (`cockpit.buildapp.se`) hämtar exakt `HANDOF
 - **Tvåklientstestet mockar `authService`** (`vi.mock`, låtsastoken) och seedar klient A med `syncSeed(true)`: seeden är avstängd så fort moln är konfigurerat.
 - **Wrangler kan försöka skriva logg utanför arbetsytan och ge `EPERM` i sandbox.** Sätt `WRANGLER_LOG_PATH` till en tillfällig fil i repot för kontroller, till exempel `.wrangler-verify.log`, och ta bort filen efteråt. Ett tillfälligt D1-fel `7403` har lösts genom `wrangler whoami` och omedelbar retry.
 - **Övningskort i `LogSession` får inte ha `exerciseId` som React-nyckel medan namnet skrivs.** Ett namn utan katalogträff får ett nytt tidsbaserat id vid varje tecken; en sådan nyckel monterar om kortet och tappar fokus. Den stabila renderingsidentiteten är listpositionen.
+- **Playwright-MCP:n sparar bara skärmbilder inne i repot** (tillåtna rötter: repot och `.playwright-mcp/`). Ge filnamnet `.playwright-mcp/x.png`, som är gitignorerat; ett bart filnamn hamnar i repots rot och riskerar att committas, scratchpad-sökvägar nekas.
+- **`src/data/exerciseDb.json` är genererad**, aldrig handredigerad. Bygg om med `python scripts/generate-exercise-db.py` och uppdatera `EXERCISE_DB_COMMIT` i `src/lib/exerciseDb.ts` till samma commit, annars pekar bilderna på en annan version än texten.
 - **Direktnavigering till `/log` ska vara tom.** Ladda bara program via ett uttryckligt `?template=`, tidigare pass via `?from=` eller ett sparat utkast med minst ett set. "Nästa pass" är ett förslag på Hem, inte ett automatiskt startat pass.
 
 ## Flera agenter i samma repo

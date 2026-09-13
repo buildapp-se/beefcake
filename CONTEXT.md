@@ -89,6 +89,12 @@ Avatarerna i `src/assets/beefcake/` och ikonerna `favicon.ico`, `apple-touch-ico
 
 `MUSCLE_GROUP_MAP` och `EQUIPMENT_MAP` i `dataService.ts` mappar övningsnamn till muskelgrupp respektive stång (`skivstång` 20 kg, `ez-stång` 10 kg, stångvikterna i `src/lib/plates.ts`). `backfillExerciseMeta()` körs i `syncSeed` och fyller på det som saknas, aldrig över ett satt värde. Övningar utan mappning visas som "Övrigt" i statistiken och får ingen plattrad i loggvyn. Både grupp och utrustning härleds ur namnet, de väljs aldrig av användaren vid loggning.
 
+## Övningsdatabasen
+
+873 övningar ur free-exercise-db (public domain, Unlicense), låsta till en commit i både `scripts/generate-exercise-db.py` och `EXERCISE_DB_COMMIT` i `src/lib/exerciseDb.ts` så text och bild aldrig glider isär. `src/data/exerciseDb.json` är **genererad**, aldrig handredigerad (750 kB, egen chunk som bara laddas på `/ovningar` och via `loadExerciseDb()`). Bilderna (två rutor per övning, 850 × 567) hämtas i körtid från jsDelivr och cachas av service workern (`exercise-images`, 400 senaste, 180 dagar), så sedda övningar finns offline. Animationen är ren CSS: slutrutan ligger över startrutan och växlar opacitet var 0,8 sekund, stilla under `prefers-reduced-motion`.
+
+Databasen är **inte** en del av datamodellen: `Exercise` får inget nytt fält. Egna övningar kopplas via `EXERCISE_DB_MAP` i `src/lib/exerciseDb.ts` (övningsnamn → databas-id, jämfört på gemener och trimmat, samma mönster som muskelgruppskartan). En övning med rad i kartan får miniatyr i loggvyn och Teknik-kort på `/exercises/:id`; en utan får en länk som söker på namnet. Namn, instruktioner och muskler är engelska ur källan; muskel, utrustning, nivå och kategori har svenska etiketter i samma fil, och testet kräver att varje värde i datan har en etikett och att varje id i kartan finns.
+
 ## Arkitektur
 
 Vite 8 · Preact 10 · TypeScript strict · wouter · `idb` · Chart.js (lazy) · vite-plugin-pwa (Workbox) · Cloudflare Worker · D1 · Access. Cirka 2 000 rader klientkod.
@@ -97,7 +103,7 @@ Vite 8 · Preact 10 · TypeScript strict · wouter · `idb` · Chart.js (lazy) �
 src/main.tsx              entry, registerSW (prompt), syncSeed sedan render
 src/app.tsx               Router, navigering, rutter
 src/app.css               all styling, tokens överst
-src/components/           Button, Card, Stat, EmptyState, Field, LoginGate (inloggning, useAuthUser), RestTimer, PlateCalculator, CloudSyncStatus, UpdateBanner (ny version väntar), BeefcakeBadge (märke, avatar, useBeefcakeStreak)
+src/components/           Button, Card, Stat, EmptyState, Field, LoginGate (inloggning, useAuthUser), RestTimer, PlateCalculator, CloudSyncStatus, UpdateBanner (ny version väntar), BeefcakeBadge (märke, avatar, useBeefcakeStreak), ExerciseAnimation (två bildrutor som växlar)
 src/db/schema.ts          IndexedDB-schema och typer
 src/db/seedData.ts        GENERERAD, all träningshistorik
 src/lib/date.ts           all datumhantering, tidszonssäker (även mondayISO, isoWeek). Använd den, aldrig new Date() rakt av
@@ -109,6 +115,8 @@ src/lib/nextPrograms.ts   nästa pass i rotationen ur historiken för Hem
 src/lib/plates.ts         skivor per sida och stångvikt per utrustning
 src/lib/exerciseMetrics.ts Epley-1RM, grafens mått per genomförande, rekord per repsantal
 src/lib/warmup.ts         uppvärmningsset ur första arbetssetet
+src/lib/exerciseDb.ts     övningsdatabasen: laddning, svenska etiketter, sökning, namnkarta egna övningar → databas-id
+src/data/exerciseDb.json  GENERERAD ur free-exercise-db, se scripts/generate-exercise-db.py
 src/assets/beefcake/      GENERERADE avatarer, se assets-source/ och scripts/
 src/services/authService.ts   Firebase Auth från gstatic-CDN, ingen npm-beroende, svenska felmeddelanden
 src/services/dataService.ts   alla läsningar, skrivningar och statistik
@@ -118,10 +126,10 @@ server/src/index.ts         snapshot-API med revisionslås, /api/reminders och c
 server/src/email.ts         latmask-brevet via Resend
 server/src/reminders.ts     lazyDays (regeln) och stockholmToday
 server/migrations/          D1-schema för versionsnumrerade snapshots och reminders
-src/pages/                Home, LogSession, Templates, History, SessionDetail, ExerciseDetail, Stats, Settings (export, import, kroppsvikt)
+src/pages/                Home, LogSession, Templates, History, SessionDetail, ExerciseDetail, ExerciseDatabase (/ovningar), Stats, Settings (export, import, kroppsvikt)
 ```
 
-Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?date=<YYYY-MM-DD>`) · `/templates` · `/history` · `/history/:id` · `/exercises/:id` · `/stats` · `/settings`.
+Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?date=<YYYY-MM-DD>`) · `/templates` · `/history` · `/history/:id` · `/exercises/:id` (egen övning, statistik) · `/ovningar` (databasen, stödjer `?q=`) · `/ovningar/:id` · `/stats` · `/settings`.
 
 Loggvyn startar timern genom att skicka `beefcake-start-timer` på `window`; `RestTimer` lyssnar. Det håller avbockning och timer i olika komponenter utan delad state. Alarmtiden lagras lokalt per enhet i IndexedDB-inställningarna: standard är 19 sekunder, användaren kan välja 1 till 3 600 sekunder eller låta ljudet fortsätta tills det tystas manuellt.
 
