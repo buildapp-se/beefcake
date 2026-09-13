@@ -1,8 +1,8 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: Övningsdatabasen (873 övningar med tvåbilders-animation, sök och filter, kopplad till egna övningar i loggvyn och på övningssidan) byggd och verifierad 2026-09-13, commit b2dd172, pushad
-nextAction: Öppna Övningar på telefonen (buildapp.se/beefcake/ovningar) och en övning i Logga pass, se att miniatyren och animationen fungerar live. Sedan Firebase sign-up-kontrollen och Resend (BACKLOG P0), båda kräver Patrik
+currentGoal: Övningsdatabasen (873 övningar med tvåbilders-animation, sök och filter, kopplad till egna övningar i programredigeraren och på övningssidan) byggd och verifierad 2026-09-13, commits b2dd172 och den efterföljande flytten ur loggvyn, pushade
+nextAction: Öppna Övningar på telefonen (Hem, hantelikonen) och redigera ett program, se att miniatyrerna och animationen fungerar live. Sedan Firebase sign-up-kontrollen och Resend (BACKLOG P0), båda kräver Patrik
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
   - Resend: beefcake.buildapp.se ska verifieras och RESEND_API_KEY sättas som secret (regel 1, Patrik)
@@ -10,6 +10,8 @@ reviewedAt: 2026-09-13
 ---
 
 ## Recent work
+
+**2026-09-13, förhandsvisningarna flyttade.** Patrik: bort med miniatyrerna i Logga pass, lägg dem under Program, och radbrytet i programredigeraren. Miniatyrkolumnen ligger nu först i programredigerarens övningsrad, som fick klassen `template-exercise-row` med ett eget rutnät (`66px 2fr 1fr 1fr 1fr 44px`, telefon åtta kolumner med talen på rad två). Radbrytet var `grid grid-4` med fem barn: papperskorgen föll ner på en egen rad. Mätt i Chromium 1440 (alla sex på en rad) och 390 (Set 87, Reps 80, Vikt 105 px, ingen sidled-scroll). Loggvyn har inga databasimporter kvar. Lint, 87 tester och build gröna. Standardprogram: free-exercise-db har inga, bara övningar.
 
 **2026-09-13, övningsdatabasen (`b2dd172`).** Patrik: "bygg en övningsdatabas med bilder och animationer". Källa free-exercise-db (public domain, 873 övningar, två bildrutor var), inte exercisedb-api som Patrik föreslog under arbetet: den är en betald RapidAPI-produkt med media under egna villkor, och playgrounden svarade 429 bakom Vercels checkpoint. Byggt: `/ovningar` med sök och filter, `/ovningar/:id` med animation och steg för steg, namnkarta för 40 egna namn (seedens 33 plus katalogens senare, sju av dem gissade: se dagsnoten 2026-09-13 i vaulten och namnkartan i `src/lib/exerciseDb.ts`), miniatyr i loggvyn, Teknik-kort på övningssidan, Övningar i sidebar, rail och mobilheaderns ikoner (bottennavigeringen är oförändrad). Konventioner följda: tokens (ny `--exdb-photo-bg`), 44 px tryckytor, `role="list"`, inga hex i tsx. Verifierat: lint, 87 tester, build, Chromium 1440 och 390 utan konsolfel eller sidled-scroll, bilder laddade (48 av 48), animationen mätt (opacitet 1 → 0 efter 850 ms), `?q=bench press` gav 21 träffar. Firebase sign-up: en sond mot `accounts:signUp` med ett för kort lösenord gav `WEAK_PASSWORD`, inte `ADMIN_ONLY_OPERATION`, vilket tyder på att sign-up fortfarande är påslaget men inte bevisar det (kontrollordningen är okänd). Kvar för Patrik: bekräfta i Firebase-konsolen, Resend.
 
