@@ -19,7 +19,7 @@
 - [x] `[P3]` RIR/RPE och anteckningar i gränssnittet
 - [x] `[P3]` Tvåanvändarstöd: löst med Firebase-konton, ett D1-spår per adress, seeden bara utan moln
 - [x] `[P0]` Firebase-projekt `beefcake-4865a` skapat, konfigurationen i `src/config.ts` och `wrangler.jsonc`, Access-appen borta, Worker `6d8ef727` och klient live 2026-09-04. Patriks första riktiga inloggning återstår (HANDOFF nextAction)
-- [ ] `[P0]` Resend: verifiera `beefcake.buildapp.se` (DNS i Cloudflare) och sätt `RESEND_API_KEY` som Worker-secret, sedan första riktiga brevet. Migrering 0002 är körd 2026-09-04, cronen loggar `reminders_skipped` tills nyckeln finns
+- [ ] `[P0]` Resend: domänen `beefcake.buildapp.se` verifierad och `RESEND_API_KEY` satt 2026-09-13, CORS-buggen som stoppade kryssrutan rättad (`2d59c4a`). Kvar: se första riktiga brevet gå och bocka av. Cronen körde 13 och 14 sep men hoppade med rätta över (senaste pass 12 sep), tidigast 2026-09-16 19:00
 - [x] `[P1]` Flytta repot till GitHub-orgen `buildapp-se` och appen till buildapp.se: gjort 2026-09-04 (repo överfört, Pages på buildapp.se/beefcake, Worker-route `beefcake-api.buildapp.se`, CORS och app-URL bytta). Kvar för Patrik: `buildapp.se` under Firebase Authorized domains och sign-up avstängt
 
 ## Byggt
