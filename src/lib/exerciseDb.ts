@@ -57,7 +57,10 @@ export const CATEGORY_SV: Record<string, string> = {
 export function muscleLabel(m: string): string { return MUSCLE_SV[m] ?? m }
 export function equipmentLabel(e: string | null): string { return e === null ? 'Ospecificerad' : (EQUIPMENT_SV[e] ?? e) }
 
-export interface DbFilter { q: string; muscle: string; equipment: string }
+/** category: '' är alla, NO_STRETCH allt utom stretch, annars en kategori ur CATEGORY_SV */
+export interface DbFilter { q: string; muscle: string; equipment: string; category: string }
+
+export const NO_STRETCH = 'no-stretching'
 
 // Alla ord i sökningen måste finnas i namnet (svenskt eller engelskt), ordningen kvittar.
 // Muskel matchar primär eller sekundär.
@@ -68,6 +71,7 @@ export function searchExerciseDb(all: DbExercise[], f: DbFilter): DbExercise[] {
     if (!words.every(w => name.includes(w))) return false
     if (f.muscle && !e.primaryMuscles.includes(f.muscle) && !e.secondaryMuscles.includes(f.muscle)) return false
     if (f.equipment && (e.equipment ?? 'other') !== f.equipment) return false
+    if (f.category === NO_STRETCH ? e.category === 'stretching' : f.category && e.category !== f.category) return false
     return true
   })
 }

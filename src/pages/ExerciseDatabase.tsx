@@ -7,12 +7,14 @@ import { EmptyState } from '../components/EmptyState'
 import { ExerciseAnimation } from '../components/ExerciseAnimation'
 import { getAllExercises } from '../services/dataService'
 import {
-  CATEGORY_SV, EQUIPMENT_SV, LEVEL_SV, MUSCLE_SV, equipmentLabel, loadExerciseDb, muscleLabel,
+  CATEGORY_SV, EQUIPMENT_SV, LEVEL_SV, MUSCLE_SV, NO_STRETCH, equipmentLabel, loadExerciseDb, muscleLabel,
   ownNamesForDbId, searchExerciseDb, type DbExercise
 } from '../lib/exerciseDb'
-import type { Exercise } from '../models'
+import { getDB, type Exercise } from '../models'
 
 const PAGE = 24
+// Typvalet sparas per enhet i settings-storen, samma som vilotimerns inställningar: "allt utom stretch" ska stå kvar
+const CATEGORY_KEY = 'exercise-db-category'
 
 function useExerciseDb(): DbExercise[] | null {
   const [all, setAll] = useState<DbExercise[] | null>(null)
@@ -98,11 +100,23 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
   const [q, setQ] = useState(() => new URLSearchParams(search).get('q') ?? '')
   const [muscle, setMuscle] = useState('')
   const [equipment, setEquipment] = useState('')
+  const [category, setCategory] = useState('')
   const [shown, setShown] = useState(PAGE)
 
-  const hits = useMemo(() => searchExerciseDb(all, { q, muscle, equipment }), [all, q, muscle, equipment])
+  useEffect(() => {
+    getDB().then(db => db.get('settings', CATEGORY_KEY)).then(s => {
+      if (typeof s?.value === 'string' && (s.value === NO_STRETCH || CATEGORY_SV[s.value])) setCategory(s.value)
+    }).catch(() => undefined)
+  }, [])
+
+  function chooseCategory(value: string) {
+    setCategory(value)
+    getDB().then(db => db.put('settings', { key: CATEGORY_KEY, value })).catch(() => undefined)
+  }
+
+  const hits = useMemo(() => searchExerciseDb(all, { q, muscle, equipment, category }), [all, q, muscle, equipment, category])
   // Ny sökning börjar om från första sidan
-  useEffect(() => { setShown(PAGE) }, [q, muscle, equipment])
+  useEffect(() => { setShown(PAGE) }, [q, muscle, equipment, category])
 
   return (
     <div>
@@ -110,7 +124,7 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
       <Card class="mb">
         <div class="exdb-filters">
           <Field label="Sök">
-            <input type="search" value={q} placeholder="Namn, på engelska" enterKeyHint="search"
+            <input type="search" value={q} placeholder="Namn, svenska eller engelska" enterKeyHint="search"
               onInput={(e: Event) => setQ((e.target as HTMLInputElement).value)} />
           </Field>
           <Field label="Muskel">
@@ -123,6 +137,13 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
             <select value={equipment} onChange={(e: Event) => setEquipment((e.target as HTMLSelectElement).value)}>
               <option value="">Alla</option>
               {Object.entries(EQUIPMENT_SV).sort((a, b) => a[1].localeCompare(b[1], 'sv')).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </Field>
+          <Field label="Typ">
+            <select value={category} onChange={(e: Event) => chooseCategory((e.target as HTMLSelectElement).value)}>
+              <option value="">Alla</option>
+              <option value={NO_STRETCH}>Allt utom stretch</option>
+              {Object.entries(CATEGORY_SV).sort((a, b) => a[1].localeCompare(b[1], 'sv')).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </Field>
         </div>

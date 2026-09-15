@@ -606,6 +606,13 @@ th, td {
 .beefcake-avatar.level-3 { border-color: var(--accent); }
 .beefcake-avatar.level-4 { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .header-brand { display: flex; align-items: center; gap: var(--space-3); }
+/* Märket länkar till Hem på alla tre ställen: samma färg som förut, ingen understrykning */
+.brand-link { display: inline-flex; align-items: center; gap: var(--space-3); min-height: var(--touch-target); color: inherit; text-decoration: none; border-radius: var(--radius-sm); }
+.brand-link:hover { background: var(--surface); }
+.sidebar-header .brand-link { margin: calc(-1 * var(--space-2)); padding: var(--space-2); }
+.sidebar-header .brand-link:hover { background: rgba(255, 255, 255, 0.06); }
+.rail-header .brand-link { min-width: var(--touch-target); justify-content: center; }
+.brand-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 600px) {
   /* 120 px bild plus 34ch text får inte plats bredvid varandra på telefon. */
@@ -1563,7 +1570,7 @@ canvas { display: block; max-width: 100%; }
 .exdb-anim-medium { width: 240px; max-width: 100%; flex-shrink: 0; border: 1px solid var(--border); }
 .exdb-anim-large { border-radius: var(--radius); }
 .exdb-detail-row { display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; }
-.exdb-filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-3); }
+.exdb-filters { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: var(--space-3); }
 .exdb-filters .input-group { margin-bottom: 0; }
 .exdb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-3); }
 .exdb-card {
@@ -1605,7 +1612,7 @@ canvas { display: block; max-width: 100%; }
   .template-exercise-row > :nth-child(5) { grid-column: 6 / 9; grid-row: 2; }
   .template-exercise-row > :last-child { grid-column: 8; grid-row: 1; }
   .exdb-filters { grid-template-columns: 1fr 1fr; }
-  .exdb-filters .input-group:first-child { grid-column: 1 / -1; }
+  .exdb-filters .input-group:first-child, .exdb-filters .input-group:last-child { grid-column: 1 / -1; }
   .exdb-grid { grid-template-columns: 1fr 1fr; }
   .exdb-detail-grid { grid-template-columns: 1fr; }
   .exdb-anim-thumb { width: 56px; }

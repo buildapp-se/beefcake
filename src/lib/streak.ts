@@ -1,4 +1,4 @@
-import { parseLocalDate } from './date'
+import { localDateISO, monthNames, parseLocalDate, weekdayNames } from './date'
 
 /**
  * Beefcake-nivån: hur muskulös Cartman är i headern.
@@ -17,6 +17,10 @@ export interface BeefcakeStreak {
   streak: number
   /** Dagar sedan senaste passet, null om det inte finns något pass alls. */
   daysSinceLast: number | null
+  /** Första passet i den obrutna kedjan, null när kedjan är bruten eller saknas. */
+  startDate: string | null
+  /** Sista dagen ett pass håller kedjan vid liv (senaste passet plus MAX_GAP_DAYS), null när kedjan är bruten eller saknas. */
+  deadline: string | null
 }
 
 const DAY_MS = 86_400_000
@@ -38,12 +42,12 @@ function levelForStreak(streak: number): BeefcakeLevel {
  */
 export function beefcakeStreak(dates: string[], todayISO: string): BeefcakeStreak {
   const days = Array.from(new Set(dates)).sort().reverse()
-  if (days.length === 0) return { level: 1, streak: 0, daysSinceLast: null }
+  if (days.length === 0) return { level: 1, streak: 0, daysSinceLast: null, startDate: null, deadline: null }
 
   const daysSinceLast = daysBetween(days[0], todayISO)
   // Ett pass daterat i framtiden ska inte straffas, därför Math.max mot 0.
   if (Math.max(0, daysSinceLast) > MAX_GAP_DAYS) {
-    return { level: 1, streak: 0, daysSinceLast }
+    return { level: 1, streak: 0, daysSinceLast, startDate: null, deadline: null }
   }
 
   let streak = 1
@@ -52,7 +56,22 @@ export function beefcakeStreak(dates: string[], todayISO: string): BeefcakeStrea
     streak += 1
   }
 
-  return { level: levelForStreak(streak), streak, daysSinceLast }
+  const deadline = parseLocalDate(days[0])
+  deadline.setDate(deadline.getDate() + MAX_GAP_DAYS)
+  return { level: levelForStreak(streak), streak, daysSinceLast, startDate: days[streak - 1], deadline: localDateISO(deadline) }
+}
+
+/**
+ * "28 dagars streak. Träna senast i dag, tisdag 15 sep, annars bryts den."
+ * Dagarna räknas från kedjans första pass till och med i dag.
+ */
+function streakDeadlineText(startDate: string, deadline: string, todayISO: string): string {
+  const days = Math.max(1, daysBetween(startDate, todayISO) + 1)
+  const d = parseLocalDate(deadline)
+  const date = `${weekdayNames[d.getDay()].toLowerCase()} ${d.getDate()} ${monthNames[d.getMonth()]}`
+  const left = daysBetween(todayISO, deadline)
+  const when = left <= 0 ? `i dag, ${date}` : left === 1 ? `i morgon, ${date}` : date
+  return `${days} ${days === 1 ? 'dags' : 'dagars'} streak. Träna senast ${when}, annars bryts den.`
 }
 
 export const BEEFCAKE_LABELS: Record<BeefcakeLevel, string> = {
@@ -67,7 +86,7 @@ export const BEEFCAKE_LABELS: Record<BeefcakeLevel, string> = {
  * förklaringen. Radbrytningen är en del av formatet: texten renderas med
  * `white-space: pre-line`, så slå aldrig ihop raderna till en enda mening.
  */
-export function beefcakeStatusText(streak: BeefcakeStreak): string {
+export function beefcakeStatusText(streak: BeefcakeStreak, todayISO: string): string {
   const label = BEEFCAKE_LABELS[streak.level]
   if (streak.daysSinceLast === null) {
     return `${label}\nInga pass loggade än. Dags att börja.`
@@ -76,5 +95,7 @@ export function beefcakeStatusText(streak: BeefcakeStreak): string {
     // Påminnelsen bor här, inte i en egen banner på Hem: en text, inte två som sa samma sak
     return `${label}\n${streak.daysSinceLast} dagar sedan senaste passet, din jävla latmask. Kedjan bruten, träna inom ${MAX_GAP_DAYS} dagar nästa gång.`
   }
-  return `${label}\n${streak.streak} pass i rad utan mer än ${MAX_GAP_DAYS} dagars uppehåll.`
+  const chain = `${label}\n${streak.streak} pass i rad utan mer än ${MAX_GAP_DAYS} dagars uppehåll.`
+  if (!streak.startDate || !streak.deadline) return chain
+  return `${chain}\n${streakDeadlineText(streak.startDate, streak.deadline, todayISO)}`
 }

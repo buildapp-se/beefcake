@@ -17,7 +17,7 @@ const AVATARS = { 1: level1, 2: level2, 3: level3, 4: level4 } as const
  */
 export function useBeefcakeStreak(): BeefcakeStreak {
   const [location] = useLocation()
-  const [streak, setStreak] = useState<BeefcakeStreak>({ level: 1, streak: 0, daysSinceLast: null })
+  const [streak, setStreak] = useState<BeefcakeStreak>({ level: 1, streak: 0, daysSinceLast: null, startDate: null, deadline: null })
 
   useEffect(() => {
     let cancelled = false
@@ -44,7 +44,7 @@ export function BeefcakeBadge({ streak }: { streak: BeefcakeStreak }) {
         width="320"
         height="320"
       />
-      <p class="beefcake-banner-text">{beefcakeStatusText(streak)}</p>
+      <p class="beefcake-banner-text">{beefcakeStatusText(streak, todayISO())}</p>
     </div>
   )
 }
@@ -56,7 +56,7 @@ export function BeefcakeAvatar({ streak }: { streak: BeefcakeStreak }) {
       class={`beefcake-avatar level-${streak.level}`}
       src={AVATARS[streak.level]}
       alt={`Beefcake-nivå ${streak.level}: ${BEEFCAKE_LABELS[streak.level]}`}
-      title={beefcakeStatusText(streak).replace('\n', ' ')}
+      title={beefcakeStatusText(streak, todayISO()).replaceAll('\n', ' ')}
       width="40"
       height="40"
     />

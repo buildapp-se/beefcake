@@ -54,8 +54,10 @@ function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
   return (
     <aside class="sidebar">
       <div class="sidebar-header">
-        {avatar && <BeefcakeAvatar streak={avatar} />}
-        <span class="sidebar-wordmark">Beefcake</span>
+        <Link href="/" class="brand-link" aria-label="Beefcake, till Hem">
+          {avatar && <BeefcakeAvatar streak={avatar} />}
+          <span class="sidebar-wordmark">Beefcake</span>
+        </Link>
       </div>
       <nav class="sidebar-nav">
         {MAIN_NAV.map(item => (
@@ -73,11 +75,13 @@ function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
   return (
     <aside class="rail">
       <div class="rail-header">
-        {avatar ? <BeefcakeAvatar streak={avatar} /> : (
-          <svg class="rail-wordmark" width="24" height="24" viewBox="0 0 24 24">
-            <use href={icon('home-icon')} />
-          </svg>
-        )}
+        <Link href="/" class="brand-link" aria-label="Beefcake, till Hem">
+          {avatar ? <BeefcakeAvatar streak={avatar} /> : (
+            <svg class="rail-wordmark" width="24" height="24" viewBox="0 0 24 24">
+              <use href={icon('home-icon')} />
+            </svg>
+          )}
+        </Link>
       </div>
       <nav class="rail-nav">
         {MAIN_NAV.map(item => (
@@ -136,10 +140,10 @@ function Shell() {
       <SidebarNav avatar={avatar} />
       <RailNav avatar={avatar} />
       <header class="header">
-        <div class="header-brand">
+        <Link href="/" class="header-brand brand-link" aria-label="Beefcake, till Hem">
           {avatar && <BeefcakeAvatar streak={avatar} />}
           <h1>Beefcake</h1>
-        </div>
+        </Link>
         <HeaderNav />
       </header>
       <main class="main">

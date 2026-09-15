@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import data from '../data/exerciseDb.json'
 import {
-  CATEGORY_SV, EQUIPMENT_SV, EXERCISE_DB_MAP_IDS, LEVEL_SV, MUSCLE_SV,
+  CATEGORY_SV, EQUIPMENT_SV, EXERCISE_DB_MAP_IDS, LEVEL_SV, MUSCLE_SV, NO_STRETCH,
   dbIdForName, exerciseImageUrl, ownNamesForDbId, searchExerciseDb, type DbExercise
 } from './exerciseDb'
 
@@ -37,12 +37,25 @@ describe('exerciseDb', () => {
   })
 
   it('sökningen kräver alla ord och filtrerar på muskel och utrustning', () => {
-    const hits = searchExerciseDb(all, { q: 'press bench', muscle: 'chest', equipment: 'barbell' })
+    const none = { q: '', muscle: '', equipment: '', category: '' }
+    const hits = searchExerciseDb(all, { ...none, q: 'press bench', muscle: 'chest', equipment: 'barbell' })
     expect(hits.length).toBeGreaterThan(0)
     expect(hits.every(e => /bench/i.test(e.nameEn) && /press/i.test(e.nameEn) && e.equipment === 'barbell')).toBe(true)
-    expect(searchExerciseDb(all, { q: 'bänkpress', muscle: '', equipment: 'barbell' }).length).toBeGreaterThan(0)
-    expect(searchExerciseDb(all, { q: '', muscle: '', equipment: '' })).toHaveLength(all.length)
-    expect(searchExerciseDb(all, { q: 'zzzz', muscle: '', equipment: '' })).toEqual([])
+    expect(searchExerciseDb(all, { ...none, q: 'bänkpress', equipment: 'barbell' }).length).toBeGreaterThan(0)
+    expect(searchExerciseDb(all, none)).toHaveLength(all.length)
+    expect(searchExerciseDb(all, { ...none, q: 'zzzz' })).toEqual([])
+  })
+
+  it('typfiltret: allt utom stretch och en enskild typ', () => {
+    const none = { q: '', muscle: '', equipment: '', category: '' }
+    const stretches = all.filter(e => e.category === 'stretching').length
+    const noStretch = searchExerciseDb(all, { ...none, category: NO_STRETCH })
+    expect(stretches).toBeGreaterThan(0)
+    expect(noStretch).toHaveLength(all.length - stretches)
+    expect(noStretch.some(e => e.category === 'stretching')).toBe(false)
+    const cardio = searchExerciseDb(all, { ...none, category: 'cardio' })
+    expect(cardio.length).toBeGreaterThan(0)
+    expect(cardio.every(e => e.category === 'cardio')).toBe(true)
   })
 
   it('bild-URL:en pekar på den låsta commiten', () => {

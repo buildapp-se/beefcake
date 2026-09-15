@@ -2,13 +2,38 @@ import { describe, expect, it } from 'vitest'
 import { beefcakeStatusText, beefcakeStreak } from './streak'
 
 describe('beefcakeStatusText', () => {
-  it('sätter nivåns namn på egen rad före förklaringen', () => {
-    const text = beefcakeStatusText(beefcakeStreak(['2026-08-19', '2026-08-21'], '2026-08-21'))
-    expect(text.split('\n')).toEqual(['På gång', '2 pass i rad utan mer än 3 dagars uppehåll.'])
+  it('sätter nivåns namn på egen rad före förklaringen och streaken', () => {
+    const text = beefcakeStatusText(beefcakeStreak(['2026-08-19', '2026-08-21'], '2026-08-21'), '2026-08-21')
+    expect(text.split('\n')).toEqual([
+      'På gång',
+      '2 pass i rad utan mer än 3 dagars uppehåll.',
+      '3 dagars streak. Träna senast måndag 24 aug, annars bryts den.'
+    ])
+  })
+
+  it('sista dagen står som i dag eller i morgon när den är nära', () => {
+    const dates = ['2026-08-18']
+    expect(beefcakeStatusText(beefcakeStreak(dates, '2026-08-21'), '2026-08-21').split('\n')[2])
+      .toBe('4 dagars streak. Träna senast i dag, fredag 21 aug, annars bryts den.')
+    expect(beefcakeStatusText(beefcakeStreak(dates, '2026-08-20'), '2026-08-20').split('\n')[2])
+      .toBe('3 dagars streak. Träna senast i morgon, fredag 21 aug, annars bryts den.')
+  })
+
+  it('pass i dag som första i kedjan ger en dags streak', () => {
+    expect(beefcakeStatusText(beefcakeStreak(['2026-08-21'], '2026-08-21'), '2026-08-21').split('\n')[2])
+      .toBe('1 dags streak. Träna senast måndag 24 aug, annars bryts den.')
+  })
+
+  it('streak och sista dag över ett månadsskifte', () => {
+    const result = beefcakeStreak(['2026-08-29', '2026-08-31'], '2026-09-01')
+    expect(result.startDate).toBe('2026-08-29')
+    expect(result.deadline).toBe('2026-09-03')
+    expect(beefcakeStatusText(result, '2026-09-01').split('\n')[2])
+      .toBe('4 dagars streak. Träna senast torsdag 3 sep, annars bryts den.')
   })
 
   it('bruten kedja förklarar hur länge det var sedan', () => {
-    const text = beefcakeStatusText(beefcakeStreak(['2026-08-01'], '2026-08-21'))
+    const text = beefcakeStatusText(beefcakeStreak(['2026-08-01'], '2026-08-21'), '2026-08-21')
     expect(text.split('\n')).toEqual([
       'Weight Gain 4000',
       '20 dagar sedan senaste passet, din jävla latmask. Kedjan bruten, träna inom 3 dagar nästa gång.'
@@ -16,14 +41,14 @@ describe('beefcakeStatusText', () => {
   })
 
   it('utan pass står det att man inte börjat', () => {
-    const text = beefcakeStatusText(beefcakeStreak([], '2026-08-21'))
+    const text = beefcakeStatusText(beefcakeStreak([], '2026-08-21'), '2026-08-21')
     expect(text.split('\n')).toEqual(['Weight Gain 4000', 'Inga pass loggade än. Dags att börja.'])
   })
 })
 
 describe('beefcakeStreak', () => {
   it('utan pass står Cartman kvar på nivå 1', () => {
-    expect(beefcakeStreak([], '2026-08-21')).toEqual({ level: 1, streak: 0, daysSinceLast: null })
+    expect(beefcakeStreak([], '2026-08-21')).toEqual({ level: 1, streak: 0, daysSinceLast: null, startDate: null, deadline: null })
   })
 
   it('mer än tre dagars uppehåll faller tillbaka till nivå 1', () => {
@@ -39,12 +64,12 @@ describe('beefcakeStreak', () => {
 
   it('varannan dag stegar upp: 4 pass ger nivå 3', () => {
     const dates = ['2026-08-15', '2026-08-17', '2026-08-19', '2026-08-21']
-    expect(beefcakeStreak(dates, '2026-08-21')).toEqual({ level: 3, streak: 4, daysSinceLast: 0 })
+    expect(beefcakeStreak(dates, '2026-08-21')).toEqual({ level: 3, streak: 4, daysSinceLast: 0, startDate: '2026-08-15', deadline: '2026-08-24' })
   })
 
   it('tio pass i rad ger nivå 4', () => {
     const dates = Array.from({ length: 10 }, (_, i) => `2026-08-${String(3 + i * 2).padStart(2, '0')}`)
-    expect(beefcakeStreak(dates, '2026-08-21')).toEqual({ level: 4, streak: 10, daysSinceLast: 0 })
+    expect(beefcakeStreak(dates, '2026-08-21')).toMatchObject({ level: 4, streak: 10, daysSinceLast: 0, startDate: '2026-08-03' })
   })
 
   it('kedjan bryts vid det första för långa glappet, äldre pass räknas inte', () => {
