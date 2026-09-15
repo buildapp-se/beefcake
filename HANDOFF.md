@@ -1,14 +1,16 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: Övningsdatabasen (873 övningar med animation, sök och filter, förhandsvisning i programredigeraren och på övningssidan) och tre startprogram med källa på Program-sidan, byggda och verifierade 2026-09-13 (b2dd172, 2f5c81d, 0880e37), pushade
+currentGoal: Övningsdatabasen på svenska med stillbilder i översikten, byggd och verifierad 2026-09-15; före det övningsdatabas och startprogram 2026-09-13
 nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
-reviewedAt: 2026-09-14
+reviewedAt: 2026-09-15
 ---
 
 ## Recent work
+
+**2026-09-15, övningsdatabasen på svenska och stillbilder i översikten.** Patrik: "gör det" på P3-posten, plus "fundera på om bilderna ska vara animerade i översikten". Beslut efter förslag: stillbild i översikten och programredigerarens miniatyrer, animation där en övning är vald. Översättningen gjordes av nio Sonnet-agenter med gemensam ordlista, sammanslagen och kontrollerad (samma id-mängd, samma stegantal, noll engelskklingande steg, en namndubblett rättad för hand). Detaljer i BACKLOG under Byggt. Språket är maskinöversatt: säg till om ett namn låter fel, rättelsen görs i `scripts/exerciseDbSv.json` och generatorn körs om. **Fälla vid lokal verifiering:** `.env.local` sätter API-URL:en i alla Vite-lägen (även `--mode test`), och `$env:VAR=''` i PowerShell tar bort variabeln i stället för att tömma den, så appen stannar i inloggningen. Det som fungerade: en tillfällig `vite.nocloud.config.mts` utanför repot som importerar `C:/dev/beefcake/vite.config.ts` och sätter `envDir` till en tom mapp (`.ts` gav cjs-fel med preact-presetet, `.mts` gick).
 
 **2026-09-13 kväll, Resend kopplat och CORS-buggen (`2d59c4a`).** Patrik la till `beefcake.buildapp.se` i Resend (eu-west-1, spårning av) med auto-configure via Cloudflare: DKIM-TXT, SPF-TXT och MX på `send.beefcake` landade i zonen direkt, domänen Verified. `RESEND_API_KEY` satt som Worker-secret. **Fälla:** `! npx wrangler secret put` i Claude Codes `!`-skal frågar inte efter värdet (ingen interaktiv stdin) och laddar upp en tom secret med "Success"; kör kommandot i ett vanligt terminalfönster. Kryssrutan i Inställningar gav "Kunde inte spara inställningen": preflighten svarade `Allow-Methods: GET,POST,OPTIONS` utan PUT, så webbläsaren stoppade anropet innan Workern. En rad i `server/src/index.ts` plus ett preflight-test i `twoClients.test.ts` (90 tester). Worker deployad som `8d6105db`, curl mot produktion visar PUT, Patriks konto står som `enabled = 1` i `reminders`. Första riktiga brevet är inte sett ännu: cronen går 19:00.
 

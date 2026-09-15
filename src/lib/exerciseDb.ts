@@ -8,7 +8,10 @@
 
 export interface DbExercise {
   id: string
+  /** Svenskt namn ur scripts/exerciseDbSv.json */
   name: string
+  /** Originalnamnet i källan, sökbart */
+  nameEn: string
   primaryMuscles: string[]
   secondaryMuscles: string[]
   equipment: string | null
@@ -56,11 +59,12 @@ export function equipmentLabel(e: string | null): string { return e === null ? '
 
 export interface DbFilter { q: string; muscle: string; equipment: string }
 
-// Alla ord i sökningen måste finnas i namnet, ordningen kvittar. Muskel matchar primär eller sekundär.
+// Alla ord i sökningen måste finnas i namnet (svenskt eller engelskt), ordningen kvittar.
+// Muskel matchar primär eller sekundär.
 export function searchExerciseDb(all: DbExercise[], f: DbFilter): DbExercise[] {
   const words = f.q.trim().toLowerCase().split(/\s+/).filter(Boolean)
   return all.filter(e => {
-    const name = e.name.toLowerCase()
+    const name = `${e.name} ${e.nameEn}`.toLowerCase()
     if (!words.every(w => name.includes(w))) return false
     if (f.muscle && !e.primaryMuscles.includes(f.muscle) && !e.secondaryMuscles.includes(f.muscle)) return false
     if (f.equipment && (e.equipment ?? 'other') !== f.equipment) return false

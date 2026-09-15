@@ -292,7 +292,7 @@ export function Templates() {
               <div class="exdb-thumb-slot">
                 {dbId && (
                   <Link href={`/ovningar/${dbId}`} class="exdb-thumb-link" aria-label={`Visa ${fe.exerciseName} i övningsdatabasen`}>
-                    <ExerciseAnimation id={dbId} name="" class="exdb-anim-thumb" />
+                    <ExerciseAnimation id={dbId} name="" class="exdb-anim-thumb" still />
                   </Link>
                 )}
               </div>

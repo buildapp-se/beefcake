@@ -14,6 +14,11 @@ describe('exerciseDb', () => {
     expect(missing).toEqual([])
   })
 
+  it('varje övning har svenskt namn, originalnamn och instruktioner utan tankstreck', () => {
+    const bad = all.filter(e => !e.name.trim() || !e.nameEn.trim() || e.instructions.some(s => !s.trim() || s.includes('—')))
+    expect(bad.map(e => e.id)).toEqual([])
+  })
+
   it('varje muskel, utrustning, nivå och kategori i datan har en svensk etikett', () => {
     const unlabeled = new Set<string>()
     for (const e of all) {
@@ -34,7 +39,8 @@ describe('exerciseDb', () => {
   it('sökningen kräver alla ord och filtrerar på muskel och utrustning', () => {
     const hits = searchExerciseDb(all, { q: 'press bench', muscle: 'chest', equipment: 'barbell' })
     expect(hits.length).toBeGreaterThan(0)
-    expect(hits.every(e => /bench/i.test(e.name) && /press/i.test(e.name) && e.equipment === 'barbell')).toBe(true)
+    expect(hits.every(e => /bench/i.test(e.nameEn) && /press/i.test(e.nameEn) && e.equipment === 'barbell')).toBe(true)
+    expect(searchExerciseDb(all, { q: 'bänkpress', muscle: '', equipment: 'barbell' }).length).toBeGreaterThan(0)
     expect(searchExerciseDb(all, { q: '', muscle: '', equipment: '' })).toHaveLength(all.length)
     expect(searchExerciseDb(all, { q: 'zzzz', muscle: '', equipment: '' })).toEqual([])
   })

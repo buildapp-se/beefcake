@@ -55,7 +55,8 @@ function DbExerciseDetail({ id, all }: { id: string; all: DbExercise[] }) {
         <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         Övningar
       </button>
-      <h1 class="page-title m-0 mb-sm">{ex.name}</h1>
+      <h1 class="page-title m-0">{ex.name}</h1>
+      <p class="text-sm text-muted m-0 mb-sm" lang="en">{ex.nameEn}</p>
       <div class="flex flex-wrap gap-1 mb">
         {ex.primaryMuscles.map(m => <span key={m} class="badge badge-primary">{muscleLabel(m)}</span>)}
         {ex.secondaryMuscles.map(m => <span key={m} class="badge exdb-badge-secondary">{muscleLabel(m)}</span>)}
@@ -86,7 +87,7 @@ function DbExerciseDetail({ id, all }: { id: string; all: DbExercise[] }) {
         <ol class="exdb-steps">
           {ex.instructions.map((step, i) => <li key={i}>{step}</li>)}
         </ol>
-        <p class="text-xs text-muted m-0 mt-2">Text och bilder ur free-exercise-db (public domain), därför på engelska.</p>
+        <p class="text-xs text-muted m-0 mt-2">Text och bilder ur free-exercise-db (public domain), texten översatt från engelska.</p>
       </Card>
     </div>
   )
@@ -134,7 +135,7 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
         <div class="exdb-grid" role="list" aria-label="Övningar">
           {hits.slice(0, shown).map(e => (
             <Link key={e.id} href={`/ovningar/${e.id}`} class="exdb-card" role="listitem">
-              <ExerciseAnimation id={e.id} name="" />
+              <ExerciseAnimation id={e.id} name="" still />
               <span class="exdb-card-name">{e.name}</span>
               <span class="exdb-card-meta">{e.primaryMuscles.map(muscleLabel).join(', ')} · {equipmentLabel(e.equipment)}</span>
             </Link>
