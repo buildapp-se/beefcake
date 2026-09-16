@@ -68,6 +68,22 @@ function monthStart(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
 
+function shiftDays(date: Date, days: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+function weekStart(date: Date): Date {
+  return shiftDays(date, -((date.getDay() + 6) % 7))
+}
+
+function weekTitle(start: Date): string {
+  const end = shiftDays(start, 6)
+  const short = (d: Date) => `${d.getDate()} ${monthNames[d.getMonth()]}`
+  return `Vecka ${isoWeek(localDateISO(start))}, ${short(start)} till ${short(end)} ${end.getFullYear()}`
+}
+
 function monthTitle(date: Date): string {
   const title = date.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })
   return title.charAt(0).toUpperCase() + title.slice(1)
@@ -182,7 +198,9 @@ export function History() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [deletedSession, setDeletedSession] = useState<Session | null>(null)
   const [showUndoToast, setShowUndoToast] = useState(false)
-  const [calendarMonth, setCalendarMonth] = useState(() => monthStart(parseLocalDate(todayISO())))
+  // Markören är ett datum: månadsläget visar dess månad, veckoläget dess vecka (mån till sön)
+  const [cursor, setCursor] = useState(() => parseLocalDate(todayISO()))
+  const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
 
   // Load data
   async function load() {
@@ -309,11 +327,14 @@ export function History() {
   // Template options
   const templateOptions = ['Alla', ...templates.map(t => t.name).sort((a, b) => a.localeCompare(b))]
   const today = todayISO()
-  const showsCurrentMonth =
-    calendarMonth.getFullYear() === parseLocalDate(today).getFullYear() &&
-    calendarMonth.getMonth() === parseLocalDate(today).getMonth()
-  const calendarStart = monthStart(calendarMonth)
-  const monthSessionCount = filteredSessions.filter(s => s.date.startsWith(localDateISO(calendarStart).slice(0, 7))).length
+  const isWeek = calendarView === 'week'
+  const calendarStart = isWeek ? weekStart(cursor) : monthStart(cursor)
+  const rangeEnd = isWeek ? shiftDays(calendarStart, 7) : new Date(calendarStart.getFullYear(), calendarStart.getMonth() + 1, 1)
+  const rangeStartISO = localDateISO(calendarStart)
+  const rangeEndISO = localDateISO(rangeEnd)
+  const showsToday = today >= rangeStartISO && today < rangeEndISO
+  const rangeSessionCount = filteredSessions.filter(s => s.date >= rangeStartISO && s.date < rangeEndISO).length
+  const weekDays = Array.from({ length: 7 }, (_, index) => shiftDays(calendarStart, index))
   const firstWeekday = (calendarStart.getDay() + 6) % 7
   const calendarDays = Array.from({ length: 42 }, (_, index) => {
     const day = new Date(calendarStart)
@@ -381,27 +402,70 @@ export function History() {
       <Card class="history-calendar-card">
         <div class="history-calendar-header">
           <div>
-            <h2 class="card-title m-0">Månadsvy</h2>
+            <h2 class="card-title m-0">{isWeek ? 'Veckovy' : 'Månadsvy'}</h2>
             <p class="text-muted text-sm m-0">Klicka på en träningsdag för att öppna passet.</p>
           </div>
+          <div class="history-calendar-view" role="group" aria-label="Vy">
+            <Button variant={isWeek ? 'secondary' : 'primary'} size="sm" onClick={() => setCalendarView('month')}>Månad</Button>
+            <Button variant={isWeek ? 'primary' : 'secondary'} size="sm" onClick={() => setCalendarView('week')}>Vecka</Button>
+          </div>
         </div>
-        {/* Idag-rutan och månadsväljaren på en rad, så de hamnar i samma höjd */}
+        {/* Idag-rutan och väljaren på en rad, så de hamnar i samma höjd */}
         <div class="history-calendar-header">
           <div class="history-calendar-today">
             <span class="history-calendar-today-kicker">Idag</span>
             <strong>{formatDateFull(today)}</strong>
-            {!showsCurrentMonth && (
-              <button type="button" class="history-calendar-today-jump" onClick={() => setCalendarMonth(monthStart(parseLocalDate(today)))}>
-                Gå till denna månad
+            {!showsToday && (
+              <button type="button" class="history-calendar-today-jump" onClick={() => setCursor(parseLocalDate(today))}>
+                Gå till i dag
               </button>
             )}
           </div>
           <div class="history-calendar-nav">
-            <Button variant="secondary" size="sm" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} ariaLabel="Föregående månad">‹</Button>
-            <strong>{monthTitle(calendarMonth)} <span class="text-muted">· {monthSessionCount} pass</span></strong>
-            <Button variant="secondary" size="sm" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} ariaLabel="Nästa månad">›</Button>
+            <Button variant="secondary" size="sm" onClick={() => setCursor(isWeek ? shiftDays(calendarStart, -7) : new Date(calendarStart.getFullYear(), calendarStart.getMonth() - 1, 1))} ariaLabel={isWeek ? 'Föregående vecka' : 'Föregående månad'}>‹</Button>
+            <strong>{isWeek ? weekTitle(calendarStart) : monthTitle(calendarStart)} <span class="text-muted">· {rangeSessionCount} pass</span></strong>
+            <Button variant="secondary" size="sm" onClick={() => setCursor(isWeek ? shiftDays(calendarStart, 7) : rangeEnd)} ariaLabel={isWeek ? 'Nästa vecka' : 'Nästa månad'}>›</Button>
           </div>
         </div>
+        {isWeek ? (
+          <div class="history-week">
+            {weekDays.map((day, index) => {
+              const date = localDateISO(day)
+              const daySessions = sessionsByDate.get(date) || []
+              return (
+                <div
+                  class={`history-week-day${daySessions.length ? ' trained' : ''}${date === today ? ' today' : ''}`}
+                  key={date}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Logga pass ${date}`}
+                  onClick={() => logSessionOnDate(date)}
+                  onKeyDown={event => handleCalendarDayKey(event, date)}
+                >
+                  <span class="history-week-date">{calendarWeekdays[index]} {day.getDate()} {monthNames[day.getMonth()]}</span>
+                  <div class="history-week-sessions">
+                    {daySessions.length === 0 && <span class="history-week-rest">Inget pass</span>}
+                    {daySessions.map(session => (
+                      <button
+                        type="button"
+                        class="history-week-session"
+                        key={session.id}
+                        onClick={event => {
+                          event.stopPropagation()
+                          goToDetail(session.id)
+                        }}
+                      >
+                        <span>{session.templateName}</span>
+                        <small>{session.exercises.length} {session.exercises.length === 1 ? 'övning' : 'övningar'} · {calculateTotalVolume(session).toLocaleString('sv-SE')} kg</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <>
         <div class="history-calendar-weekdays">
           <span class="history-calendar-week-heading">V.</span>
           {calendarWeekdays.map(day => <span key={day}>{day}</span>)}
@@ -410,7 +474,7 @@ export function History() {
           {calendarDays.flatMap((day, index) => {
             const date = localDateISO(day)
             const daySessions = sessionsByDate.get(date) || []
-            const isCurrentMonth = day.getMonth() === calendarMonth.getMonth()
+            const isCurrentMonth = day.getMonth() === calendarStart.getMonth()
             const cells = []
             if (index % 7 === 0) {
               cells.push(
@@ -449,6 +513,8 @@ export function History() {
             return cells
           })}
         </div>
+          </>
+        )}
       </Card>
 
       {/* Session list */}
