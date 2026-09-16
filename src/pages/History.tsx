@@ -313,6 +313,7 @@ export function History() {
     calendarMonth.getFullYear() === parseLocalDate(today).getFullYear() &&
     calendarMonth.getMonth() === parseLocalDate(today).getMonth()
   const calendarStart = monthStart(calendarMonth)
+  const monthSessionCount = filteredSessions.filter(s => s.date.startsWith(localDateISO(calendarStart).slice(0, 7))).length
   const firstWeekday = (calendarStart.getDay() + 6) % 7
   const calendarDays = Array.from({ length: 42 }, (_, index) => {
     const day = new Date(calendarStart)
@@ -382,19 +383,22 @@ export function History() {
           <div>
             <h2 class="card-title m-0">Månadsvy</h2>
             <p class="text-muted text-sm m-0">Klicka på en träningsdag för att öppna passet.</p>
-            <div class="history-calendar-today">
-              <span class="history-calendar-today-kicker">Idag</span>
-              <strong>{formatDateFull(today)}</strong>
-              {!showsCurrentMonth && (
-                <button type="button" class="history-calendar-today-jump" onClick={() => setCalendarMonth(monthStart(parseLocalDate(today)))}>
-                  Gå till denna månad
-                </button>
-              )}
-            </div>
+          </div>
+        </div>
+        {/* Idag-rutan och månadsväljaren på en rad, så de hamnar i samma höjd */}
+        <div class="history-calendar-header">
+          <div class="history-calendar-today">
+            <span class="history-calendar-today-kicker">Idag</span>
+            <strong>{formatDateFull(today)}</strong>
+            {!showsCurrentMonth && (
+              <button type="button" class="history-calendar-today-jump" onClick={() => setCalendarMonth(monthStart(parseLocalDate(today)))}>
+                Gå till denna månad
+              </button>
+            )}
           </div>
           <div class="history-calendar-nav">
             <Button variant="secondary" size="sm" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} ariaLabel="Föregående månad">‹</Button>
-            <strong>{monthTitle(calendarMonth)}</strong>
+            <strong>{monthTitle(calendarMonth)} <span class="text-muted">· {monthSessionCount} pass</span></strong>
             <Button variant="secondary" size="sm" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} ariaLabel="Nästa månad">›</Button>
           </div>
         </div>

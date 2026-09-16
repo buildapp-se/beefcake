@@ -18,6 +18,7 @@ export function Home() {
   const [upcoming, setNextPrograms] = useState<NextProgram[]>([])
   const [templateCount, setTemplateCount] = useState(0)
   const [totalSessions, setTotalSessions] = useState(0)
+  const [monthSessions, setMonthSessions] = useState(0)
   const [lastWorkout, setLastWorkout] = useState<string | null>(null)
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkout | null>(null)
   // Veckan från måndag: pass, volym, nya PR (maxvikt eller maxvolym daterade i veckan) och set per muskelgrupp
@@ -51,6 +52,7 @@ export function Home() {
       setRecentSessions(sessions.slice(0, 5))
       setTemplateCount(allTemplates.length)
       setTotalSessions(sessions.length)
+      setMonthSessions(sessions.filter(s => s.date.startsWith(todayISO().slice(0, 7))).length)
       if (active && active.exercises.length > 0) {
         setActiveWorkout(active)
       } else {
@@ -163,7 +165,7 @@ export function Home() {
 
       <div class="grid grid-3 mb">
         <Card padding="sm">
-          <Stat label="Totala pass" value={totalSessions} />
+          <Stat label="Totala pass" value={totalSessions} sub={`${monthSessions} denna månad`} />
         </Card>
         <Card padding="sm">
           <Stat label="Program" value={templateCount} />
