@@ -1,7 +1,7 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: Övningsdatabasen på svenska med stillbilder i översikten, byggd och verifierad 2026-09-15; före det övningsdatabas och startprogram 2026-09-13
+currentGoal: Historik med veckovy, passräknare i kalendern och denna månad på Hem, byggt och pushat 2026-09-16 kväll; före det övningsdatabasen på svenska med stillbilder i översikten, byggd och verifierad 2026-09-15; före det övningsdatabas och startprogram 2026-09-13
 nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
@@ -9,6 +9,8 @@ reviewedAt: 2026-09-16
 ---
 
 ## Recent work
+
+**2026-09-16 kväll, historik och Hem.** Fyra beställningar från Patrik i ett svep, fyra commits `76ebb6f`, `8aa25ba`, `8cf1443`, `a8a1583`, pushade. Detaljer i BACKLOG under Byggt. Set-buggen ("lägg till set tog gamla vikten") var regeln från 2026-09-01 som lät förra passets set på samma plats vinna över det du nyss ändrat; nu vinner dagens sista set, förra passets trappa hämtas med "Som förra gången". Patrik rapporterade buggen igen efter fixen: den var bara committad lokalt. **Kolla på telefonen** att appen uppdaterat sig (UpdateBanner, annars ladda om), särskilt Historik: Vecka och Lägg till set efter en ändrad vikt. Typkontrollen i sessionen var vacuös fram till slutet (`tsc -p .` mot en `files: []`-root), rätt kommando står i BACKLOG-raden. Ett parallellt beefcake-pass rörde `History.tsx` mitt i arbetet och återställde sig självt.
 
 **2026-09-16, granskningsbatchen (chunkläge).** Två P2 och två P3 rättade:
 utloggning tömmer enheten (`signOutAndClear`), D1 är sanningen även när kontot
