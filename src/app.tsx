@@ -50,11 +50,16 @@ function NavLink({ href, label, icon: iconId, showLabel = true }: { href: string
   )
 }
 
+// Märket på Hem länkar till sidan du redan står på: då är toppen det man vill åt
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
   return (
     <aside class="sidebar">
       <div class="sidebar-header">
-        <Link href="/" class="brand-link" aria-label="Beefcake, till Hem">
+        <Link href="/" class="brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
           {avatar && <BeefcakeAvatar streak={avatar} />}
           <span class="sidebar-wordmark">Beefcake</span>
         </Link>
@@ -75,7 +80,7 @@ function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
   return (
     <aside class="rail">
       <div class="rail-header">
-        <Link href="/" class="brand-link" aria-label="Beefcake, till Hem">
+        <Link href="/" class="brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
           {avatar ? <BeefcakeAvatar streak={avatar} /> : (
             <svg class="rail-wordmark" width="24" height="24" viewBox="0 0 24 24">
               <use href={icon('home-icon')} />
@@ -140,7 +145,7 @@ function Shell() {
       <SidebarNav avatar={avatar} />
       <RailNav avatar={avatar} />
       <header class="header">
-        <Link href="/" class="header-brand brand-link" aria-label="Beefcake, till Hem">
+        <Link href="/" class="header-brand brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
           {avatar && <BeefcakeAvatar streak={avatar} />}
           <h1>Beefcake</h1>
         </Link>
