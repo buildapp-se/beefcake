@@ -63,6 +63,10 @@ export default {
 } satisfies ExportedHandler<Env>
 
 async function writeReminderSetting(request: Request, db: D1Database, owner: string, headers: Headers): Promise<Response> {
+  // Kroppen är {"enabled": true}: allt över en kilobyte avvisas före läsningen.
+  if (Number(request.headers.get('content-length') ?? 0) > 1_024) {
+    throw new ApiError(413, 'payload_too_large', 'Fel format.')
+  }
   let body: unknown
   try {
     body = JSON.parse(await request.text())
@@ -209,7 +213,6 @@ function corsHeaders(origin: string | null, configured: string): Headers {
   const headers = new Headers({
     'Access-Control-Allow-Headers': 'content-type, authorization',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-    'Access-Control-Allow-Credentials': 'true',
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json'
   })
@@ -226,6 +229,10 @@ function errorResponse(error: unknown, headers: Headers): Response {
     ? error
     : new ApiError(500, 'internal_error', 'Ett oväntat serverfel inträffade.')
   if (!(error instanceof ApiError)) console.error(JSON.stringify({ event: 'request_failed', error: safeMessage(error) }))
+  // Nekade och kolliderande anrop syns i loggen, utan token och utan kropp (OWASP 2026-09-16, A09).
+  if (apiError.status === 401 || apiError.status === 403 || apiError.status === 409) {
+    console.warn(JSON.stringify({ event: 'request_denied', status: apiError.status, code: apiError.code }))
+  }
   return json({ error: { code: apiError.code, message: apiError.message } }, apiError.status, headers)
 }
 
