@@ -49,13 +49,13 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
 
 function Shell({ children }: { children: ComponentChildren }) {
   return (
-    <div class="login-gate-container">
+    <main class="login-gate-container">
       <div class="login-gate-form">
         <h1 class="login-gate-title">Beefcake</h1>
         <p class="login-subtitle">Träningslogg</p>
         {children}
       </div>
-    </div>
+    </main>
   )
 }
 
