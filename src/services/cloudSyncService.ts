@@ -1,5 +1,5 @@
 import { getDB } from '../models'
-import { getIdToken } from './authService'
+import { getCurrentUid, getIdToken } from './authService'
 import {
   selectAuthoritativeSnapshot,
   type SnapshotData
@@ -13,6 +13,10 @@ interface ServerSnapshot {
 }
 
 const REVISION_SETTING_KEY = 'server-revision'
+/** Vilket konto den lokala datan hör till. Sätts när D1 lästs in, kontrolleras före varje uppladdning. */
+const OWNER_SETTING_KEY = 'owner-uid'
+/** Inställningarna som töms vid utloggning, tillsammans med passen (OWASP 2026-09-16, A01). */
+export const CLOUD_SETTING_KEYS = [REVISION_SETTING_KEY, OWNER_SETTING_KEY] as const
 const apiUrl = typeof import.meta.env.VITE_BEEFCAKE_API_URL === 'string'
   ? import.meta.env.VITE_BEEFCAKE_API_URL.replace(/\/$/, '')
   : ''
@@ -34,6 +38,17 @@ async function getKnownRevision(): Promise<number> {
 async function setKnownRevision(revision: number): Promise<void> {
   const db = await getDB()
   await db.put('settings', { key: REVISION_SETTING_KEY, value: revision })
+}
+
+async function getKnownOwner(): Promise<string | null> {
+  const db = await getDB()
+  const value = (await db.get('settings', OWNER_SETTING_KEY))?.value
+  return typeof value === 'string' ? value : null
+}
+
+async function setKnownOwner(uid: string | null): Promise<void> {
+  const db = await getDB()
+  await db.put('settings', { key: OWNER_SETTING_KEY, value: uid })
 }
 
 function setSyncError(error: string | null): void {
@@ -77,9 +92,10 @@ export async function loadSnapshotFromCloud(
 
   try {
     const server = await getServerSnapshot()
-    const snapshot = selectAuthoritativeSnapshot(local, server.data)
+    const snapshot = selectAuthoritativeSnapshot(server.data)
     await replaceLocalSnapshot(snapshot)
     await setKnownRevision(server.revision)
+    await setKnownOwner(await getCurrentUid())
     setSyncError(null)
     return snapshot
   } catch (error) {
@@ -93,6 +109,11 @@ async function syncSnapshotNow(snapshot: SnapshotData): Promise<void> {
   if (!isCloudSyncConfigured()) return
 
   try {
+    // Kontobyte utan att D1 hunnit läsas in (till exempel offline): det lokala hör
+    // till ett annat konto och får inte laddas upp under det här.
+    if ((await getKnownOwner()) !== (await getCurrentUid())) {
+      throw new Error('Datan på enheten hör till ett annat konto. Ladda om sidan.')
+    }
     const knownRevision = await getKnownRevision()
     const server = await getServerSnapshot()
     const data = snapshot

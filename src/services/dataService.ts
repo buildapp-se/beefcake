@@ -13,7 +13,8 @@ import type {
   BodyWeight
 } from '../models'
 import type { SnapshotData } from '../lib/snapshot'
-import { isCloudSyncConfigured, loadSnapshotFromCloud, syncSnapshot } from './cloudSyncService'
+import { CLOUD_SETTING_KEYS, isCloudSyncConfigured, loadSnapshotFromCloud, syncSnapshot } from './cloudSyncService'
+import { signOutUser } from './authService'
 import { parseImportData } from '../lib/importValidation'
 import { setVolume, setsVolume } from '../lib/volume'
 import { localDateISO, parseLocalDate } from '../lib/date'
@@ -646,6 +647,24 @@ export async function exportSessionsCSV(): Promise<string> {
     }
   }
   return rows.join('\n')
+}
+
+/**
+ * Utloggning tömmer enheten: passen, det pågående passet, serverrevisionen och
+ * kontomärket. Nästa konto på samma enhet startar från sin egen D1-snapshot, aldrig
+ * från förra kontots (OWASP 2026-09-16, A01). Säkerhetskopians filhandtag är
+ * enhetens och lämnas.
+ */
+export async function signOutAndClear(): Promise<void> {
+  await signOutUser()
+  const db = await getDB()
+  const tx = db.transaction([...SNAPSHOT_STORES, 'settings', 'activeWorkout'], 'readwrite')
+  await Promise.all([
+    ...SNAPSHOT_STORES.map(store => tx.objectStore(store).clear()),
+    ...CLOUD_SETTING_KEYS.map(key => tx.objectStore('settings').delete(key)),
+    tx.objectStore('activeWorkout').clear()
+  ])
+  await tx.done
 }
 
 export async function clearAllData(): Promise<void> {

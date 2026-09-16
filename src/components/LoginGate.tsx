@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'preact/hooks'
 import type { ComponentChildren } from 'preact'
 import { isCloudSyncConfigured } from '../services/cloudSyncService'
-import { syncSeed } from '../services/dataService'
+import { signOutAndClear, syncSeed } from '../services/dataService'
 import {
   authErrorMessage, isAuthConfigured, refreshUser, registerWithEmail, resendVerification,
-  sendPasswordReset, signInWithEmail, signInWithGoogle, signOutUser, subscribeToAuth, type AuthUser
+  sendPasswordReset, signInWithEmail, signInWithGoogle, subscribeToAuth, type AuthUser
 } from '../services/authService'
 import { Button } from './Button'
 
@@ -156,7 +156,7 @@ function VerifyEmail({ user }: { user: AuthUser }) {
       <Button class="btn-block mb" onClick={check}>Jag har bekräftat</Button>
       <div class="login-links">
         <button type="button" class="link-button" onClick={() => resendVerification().then(() => setInfo('Nytt mejl skickat.')).catch(err => setError(authErrorMessage(err)))}>Skicka mejlet igen</button>
-        <button type="button" class="link-button" onClick={() => void signOutUser()}>Logga ut</button>
+        <button type="button" class="link-button" onClick={() => void signOutAndClear()}>Logga ut</button>
       </div>
     </div>
   )

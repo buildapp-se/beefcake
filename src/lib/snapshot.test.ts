@@ -33,12 +33,14 @@ describe('selectAuthoritativeSnapshot', () => {
     const local = snapshot('Gammal lokal version', 'deleted-on-server')
     const server = snapshot('Aktuell serverversion')
 
-    expect(selectAuthoritativeSnapshot(local, server)).toEqual(server)
+    expect(selectAuthoritativeSnapshot(server)).toEqual(server)
+    expect(local.sessions).toHaveLength(2)
   })
 
-  it('behåller lokal data när D1 ännu saknar snapshot', () => {
-    const local = snapshot('Första lokala versionen')
-
-    expect(selectAuthoritativeSnapshot(local, null)).toBe(local)
+  // OWASP 2026-09-16, A01: nästa konto på enheten ärver inte förra kontots pass.
+  it('startar tomt när D1 saknar snapshot, lokalt följer aldrig med', () => {
+    expect(selectAuthoritativeSnapshot(null)).toEqual({
+      templates: [], exercises: [], sessions: [], exerciseHistory: [], bodyWeight: []
+    })
   })
 })

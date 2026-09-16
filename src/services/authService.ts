@@ -74,6 +74,11 @@ export async function getIdToken(): Promise<string> {
   return auth.currentUser.getIdToken()
 }
 
+export async function getCurrentUid(): Promise<string | null> {
+  const { auth } = await firebase()
+  return auth.currentUser?.uid ?? null
+}
+
 export async function signInWithGoogle(): Promise<void> {
   const { auth, mod } = await firebase()
   await mod.signInWithPopup(auth, new mod.GoogleAuthProvider())

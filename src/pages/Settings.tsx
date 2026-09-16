@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
-import { getAllTemplates, exportAllData, importAllData, exportSessionsCSV, clearAllData, getBodyWeights, saveBodyWeight, deleteBodyWeight } from '../services/dataService'
+import { getAllTemplates, exportAllData, importAllData, exportSessionsCSV, clearAllData, getBodyWeights, saveBodyWeight, deleteBodyWeight, signOutAndClear } from '../services/dataService'
 import { formatDateTime, formatDateWithWeekday, todayISO } from '../lib/date'
 import { formatWeight, parseDecimal } from '../lib/format'
 import { findLastBackupAt, saveBackupToFile } from '../services/backupService'
@@ -7,7 +7,6 @@ import { icon } from '../icons'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { useAuthUser } from '../components/LoginGate'
-import { signOutUser } from '../services/authService'
 import { getReminderEnabled, setReminderEnabled } from '../services/cloudSyncService'
 import {
   DEFAULT_REST_TIMER_ALARM_DURATION,
@@ -478,7 +477,7 @@ export function Settings() {
             />
             <span>Mejla mig varje dag jag inte har tränat, från dag fyra. "Nu har du inte tränat på 4 dagar, din latmask."</span>
           </label>
-          <Button variant="secondary" onClick={() => void signOutUser()}>Logga ut</Button>
+          <Button variant="secondary" onClick={() => void signOutAndClear()}>Logga ut</Button>
         </Card>
       )}
 
