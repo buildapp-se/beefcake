@@ -18,6 +18,7 @@ interface Row { owner: string; revision: number; payload: string; created_at: st
 class FakeD1 {
   rows: Row[] = []
   reminders = new Map<string, { enabled: number; last_sent: string | null }>()
+  quota = new Map<string, { day: string; count: number }>()
 
   prepare(sql: string) {
     const rows = this.rows
@@ -29,6 +30,13 @@ class FakeD1 {
           if (sql.includes('SELECT revision, payload')) return latest(owner) ?? null
           if (sql.includes('AS revision')) return { revision: latest(owner)?.revision ?? 0 }
           if (sql.includes('SELECT enabled FROM reminders')) return this.reminders.get(owner) ?? null
+          if (sql.includes('INSERT INTO write_quota')) {
+            const day = String(args[1])
+            const q = this.quota.get(owner)
+            const count = q && q.day === day ? q.count + 1 : 1
+            this.quota.set(owner, { day, count })
+            return { count }
+          }
           throw new Error(`FakeD1 kan inte: ${sql}`)
         },
         all: async () => {
@@ -46,6 +54,12 @@ class FakeD1 {
             const r = this.reminders.get(owner)
             if (r) r.last_sent = lastSent
             return { meta: { changes: r ? 1 : 0 } }
+          }
+          if (sql.includes('DELETE FROM snapshots')) {
+            const [owner, upTo] = args as [string, number]
+            const before = rows.length
+            for (let i = rows.length - 1; i >= 0; i--) if (rows[i].owner === owner && rows[i].revision <= upTo) rows.splice(i, 1)
+            return { meta: { changes: before - rows.length } }
           }
           if (!sql.includes('INSERT INTO snapshots')) throw new Error(`FakeD1 kan inte: ${sql}`)
           const [owner, revision, payload, createdAt, , expected] = args as [string, number, string, string, string, number]
@@ -265,6 +279,32 @@ describe('latmask-mejlet', () => {
     await client.sync.setReminderEnabled(false)
     await run('2026-09-09T17:00:00Z')
     expect(resendCalls).toHaveLength(2)
+  })
+})
+
+describe('tak per konto (OWASP 2026-09-16)', () => {
+  it('sparar högst 20 revisioner och svarar 429 efter dagens 300 skrivningar', async () => {
+    const owner = 'local@beefcake.invalid'
+    if (db.latestRevision(owner) === 0) {
+      const c = await newClient()
+      await c.data.syncSeed(true)
+    }
+    const latest = db.rows.filter(r => r.owner === owner).sort((a, b) => b.revision - a.revision)[0]
+    const data = JSON.parse(latest.payload) as unknown
+    const post = () => worker.fetch(new Request(`${API}/api/snapshot`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer test-token' },
+      body: JSON.stringify({ expectedRevision: db.latestRevision(owner), data })
+    }), env)
+
+    for (let i = 0; i < 30; i++) expect((await post()).status).toBe(201)
+    expect(db.rows.filter(r => r.owner === owner)).toHaveLength(20)
+    expect(db.latestRevision(owner)).toBe(latest.revision + 30)
+
+    db.quota.set(owner, { day: new Date().toISOString().slice(0, 10), count: 300 })
+    const blocked = await post()
+    expect(blocked.status).toBe(429)
+    expect(db.latestRevision(owner)).toBe(latest.revision + 30)
   })
 })
 

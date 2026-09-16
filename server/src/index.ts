@@ -12,7 +12,12 @@ interface SnapshotRow {
   created_at: string
 }
 
-const MAX_PAYLOAD_BYTES = 5_000_000
+// Taken som håller den delade D1-kvoten (OWASP-granskningen 2026-09-16): registreringen
+// är öppen, så gränsen måste sitta i koden. Största riktiga snapshot 2026-09-16 var
+// 568 KB efter 25 revisioner, så 2 MB ger utrymme utan att ett konto kan fylla lagret.
+const MAX_PAYLOAD_BYTES = 2_000_000
+const KEEP_REVISIONS = 20
+const MAX_WRITES_PER_DAY = 300
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -157,6 +162,7 @@ async function writeSnapshot(request: Request, db: D1Database, owner: string, he
 
   const expectedRevision = body.expectedRevision
   const createdAt = new Date().toISOString()
+  await enforceDailyWriteQuota(db, owner, createdAt.slice(0, 10))
   const result = await db.prepare(
     `INSERT INTO snapshots (owner, revision, payload, created_at)
      SELECT ?, ?, ?, ?
@@ -170,7 +176,25 @@ async function writeSnapshot(request: Request, db: D1Database, owner: string, he
     throw new ApiError(409, 'revision_conflict', `Servern har revision ${current?.revision ?? 0}. Läs in den först.`)
   }
 
+  // Bara de senaste revisionerna sparas: lagret per konto är då högst KEEP_REVISIONS × MAX_PAYLOAD_BYTES.
+  await db.prepare('DELETE FROM snapshots WHERE owner = ? AND revision <= ?')
+    .bind(owner, expectedRevision + 1 - KEEP_REVISIONS).run()
+
   return json({ revision: expectedRevision + 1, updatedAt: createdAt }, 201, headers)
+}
+
+/** En rad per konto med dagens antal skrivningar. Över taket blir 429, raden räknas ändå upp så att svaret är stabilt. */
+async function enforceDailyWriteQuota(db: D1Database, owner: string, day: string): Promise<void> {
+  const row = await db.prepare(
+    `INSERT INTO write_quota (owner, day, count) VALUES (?, ?, 1)
+     ON CONFLICT(owner) DO UPDATE SET
+       count = CASE WHEN write_quota.day = excluded.day THEN write_quota.count + 1 ELSE 1 END,
+       day = excluded.day
+     RETURNING count`
+  ).bind(owner, day).first<{ count: number }>()
+  if ((row?.count ?? 0) > MAX_WRITES_PER_DAY) {
+    throw new ApiError(429, 'write_quota', 'För många sparningar i dag. Försök igen i morgon.')
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
