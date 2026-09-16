@@ -66,7 +66,7 @@
 - Vokabulär (2026-09-01): *program* i hela gränssnittet där det stod *mall*, koden heter fortfarande `Template`
 - RPE per set (5 till 10, valfritt, `SetEntry.rpe`) och anteckning per övning (`SessionExercise.notes`) i loggvyn, visade som "@8,5" och en rad under övningen i passdetaljen. Settabellen krympt på telefon så RPE-kolumnen ryms utan sidled-scroll
 - Kortkommandon i loggvyn: Ctrl+Enter slutför, Escape stänger dialog, plattkalkylator och programsparning
-- Logga pass börjar på noll set per övning (2026-09-01). Varje "+ Lägg till set" förifylls från samma plats i förra passet, set kan tas bort ner till noll, Slutför är avstängd tills minst ett set finns och övningar utan set sparas inte. "Kör igen" från historiken kopierar fortfarande passets set
+- Logga pass börjar på noll set per övning (2026-09-01). Varje "+ Lägg till set" kopierar dagens sista set, annars förra passets första set (2026-09-16, tidigare samma plats i förra passet, vilket skrev över en nyss ändrad vikt), set kan tas bort ner till noll, Slutför är avstängd tills minst ett set finns och övningar utan set sparas inte. "Kör igen" från historiken kopierar fortfarande passets set
 - Lämna sidan med vilotimern igång ger en bekräftelsefråga, både för flikstängning och appens egna länkar
 - Tvåklientstest `server/src/twoClients.test.ts`: riktig dataService och Worker mot fake-indexeddb och en D1-attrapp. Hittade att seeden återupplivade raderade seedpass vid varje uppstart, nu körs den bara i en tom databas
 - `validateSnapshot()` i `src/lib/importValidation.ts` kontrollerar hela domänmodellen och delas av JSON-importen och Worker-API:t
