@@ -109,9 +109,10 @@ async function syncSnapshotNow(snapshot: SnapshotData): Promise<void> {
   if (!isCloudSyncConfigured()) return
 
   try {
-    // Kontobyte utan att D1 hunnit läsas in (till exempel offline): det lokala hör
-    // till ett annat konto och får inte laddas upp under det här.
-    if ((await getKnownOwner()) !== (await getCurrentUid())) {
+    // Kontobyte utan att D1 hunnit läsas in: det lokala hör till ett annat konto och
+    // får inte laddas upp under det här. Utan märke (ny enhet) räcker revisionsspärren.
+    const owner = await getKnownOwner()
+    if (owner !== null && owner !== (await getCurrentUid())) {
       throw new Error('Datan på enheten hör till ett annat konto. Ladda om sidan.')
     }
     const knownRevision = await getKnownRevision()

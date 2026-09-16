@@ -10,7 +10,12 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import worker from './index'
 
 // Firebase finns inte i testet: klienten skickar en låtsastoken, Workern kör i dev-läge och läser den inte
-vi.mock('../../src/services/authService', () => ({ getIdToken: async () => 'test-token' }))
+const auth = vi.hoisted(() => ({ uid: 'test-uid' }))
+vi.mock('../../src/services/authService', () => ({
+  getIdToken: async () => 'test-token',
+  getCurrentUid: async () => auth.uid,
+  signOutUser: async () => undefined
+}))
 
 interface Row { owner: string; revision: number; payload: string; created_at: string }
 
@@ -170,6 +175,26 @@ describe('två klienter mot D1', () => {
     const fromC = await c.data.createSession('2026-09-03', 'custom', 'Pass från C', [])
     expect(db.latestRevision()).toBe(5)
     expect(db.latestSessionIds()).toContain(fromC.id)
+  })
+
+  // OWASP 2026-09-16, A01: nästa konto på enheten ärver inte förra kontots pass.
+  it('utloggning tömmer enheten och ett kontobyte utan omladdning får inte ladda upp', async () => {
+    const a = await newClient()
+    await a.data.syncSeed()
+    expect((await sessionIds(a)).length).toBeGreaterThan(0)
+    const revisionBefore = db.latestRevision()
+
+    // Samma enhet, annat konto, D1 inte inläst: kontomärket stoppar uppladdningen
+    auth.uid = 'other-uid'
+    await expect(a.data.createSession('2026-09-04', 'custom', 'Pass från fel konto', [])).rejects.toThrow('annat konto')
+    expect(db.latestRevision()).toBe(revisionBefore)
+    auth.uid = 'test-uid'
+
+    // Utloggning: passen, revisionen och märket borta; nästa skrivning är fail-closed
+    await a.data.signOutAndClear()
+    expect(await sessionIds(a)).toEqual([])
+    await expect(a.data.createSession('2026-09-04', 'custom', 'Pass efter utloggning', [])).rejects.toThrow('lokala revisionen saknas')
+    expect(db.latestRevision()).toBe(revisionBefore)
   })
 
   it('Workern svarar 409 på en förlegad revision', async () => {
