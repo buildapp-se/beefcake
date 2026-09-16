@@ -93,3 +93,7 @@ Genomlysningens byggpass 2026-09-01 i chunkläge, 14 commits efter `4f36f07` (`6
 ## Resume here
 
 Prova loggvyn och kroppsvikten på telefonen innan något mer byggs. Sedan chunk F visar appen själv bannern "Ny version av Beefcake finns" när ett nytt bygge väntar; den första deployen efter `7a4b0c3` går fortfarande via den gamla autoUpdate-workern (den nya bundeln aktiveras som förut, utan banner), därefter gäller bannern. IndexedDB uppgraderas till version 4 automatiskt. Två användare, Web Push och Cloudflare Pages med Access kräver beslut eller infrastruktur.
+
+## Granskning 2026-09-16
+
+Cross-project audit run from elwyn-dash (session 5 in the daily note). Results written to `## Audits` in CONTEXT.md, findings appended to BACKLOG.md under `## Granskning 2026-09-16`. Headers on buildapp.se and the TLS grade are zone-level and are fixed once in Cloudflare, not here. OWASP by a read-only subagent, 12 live requests, findings in BACKLOG P1 to P3.

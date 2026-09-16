@@ -132,3 +132,13 @@ Underlag, skärmbilder och källor: `Beefcake Designgenomlysning` i vaulten. Tv�
 
 - [x] [P3] [Wish] göra vanlig sån firebase-inlogg. Löst 2026-09-02 med Firebase Auth, se Byggt
 - [x] `[P3]` Övningsdatabasen på svenska: gjort 2026-09-15, se Byggt. Kvar som känd gräns: nya egna övningar utan rad i namnkartan får ingen bild förrän kartan i `src/lib/exerciseDb.ts` fylls på
+
+## Granskning 2026-09-16
+
+Fynd från cockpitens granskningskolumner (Lighthouse mobil, W3C, UX-skript, headers, TLS, OWASP). Mätvärdena står under `## Audits` i CONTEXT.md.
+
+- [ ] `[P1]` OWASP A04, granskning 2026-09-16: vilket Firebase-konto som helst med bekräftad adress får POST:a 5 MB-snapshots utan tak, varje skrivning är en ny rad som aldrig rensas, ingen rate limit (`server/src/index.ts`, `MAX_PAYLOAD_BYTES` och insert-vägen). Registrering ser öppen ut. Delad D1-kvot med Sipdeck. Fix: allowlist på ägare i Workern (403 för andra), sänk taket till ~1 MB, `DELETE ... WHERE owner = ? AND revision < ? - 20` efter insert, stäng e-postregistrering i Firebase.
+- [ ] `[P2]` OWASP A01, granskning 2026-09-16: utloggning rensar inte IndexedDB (`authService.ts` signOut). Nästa konto på samma enhet utan D1-data ärver förra kontots data via `server ?? local` och laddar upp det under ny adress (`cloudSyncService.ts`, `snapshot.ts`). Offline släpper LoginGate in på gamla datan. Fix: rensa alla stores plus `settings.server-revision` vid signOut och uid-byte, fall aldrig tillbaka till lokalt när moln är konfigurerat.
+- [ ] `[P2]` OWASP A04, granskning 2026-09-16: revisionskonflikt plus "Ladda om" i bannern kastar lokala ändringar (`CloudSyncStatus.tsx`, `replaceDataInLocal`). Fix: exportera lokal snapshot med `exportAllData` före ersättning, eller slå ihop per pass-id.
+- [ ] `[P3]` OWASP A09: 401, 403 och 409 loggas inte (`index.ts` loggar bara icke-ApiError). `/api/reminders` PUT läser hela kroppen före storlekskontroll. `Access-Control-Allow-Credentials: true` onödig med bearer.
+- [ ] `[P3]` Lighthouse: inget `<main>`-landmärke (a11y 98), CLS 0,83 vid laddning på mobil.
