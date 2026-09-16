@@ -21,6 +21,11 @@
 - [x] `[P0]` Firebase-projekt `beefcake-4865a` skapat, konfigurationen i `src/config.ts` och `wrangler.jsonc`, Access-appen borta, Worker `6d8ef727` och klient live 2026-09-04. Patriks första riktiga inloggning återstår (HANDOFF nextAction)
 - [ ] `[P0]` Resend: domänen `beefcake.buildapp.se` verifierad och `RESEND_API_KEY` satt 2026-09-13, CORS-buggen som stoppade kryssrutan rättad (`2d59c4a`). Kvar: se första riktiga brevet gå och bocka av. Cronen körde 13 och 14 sep men hoppade med rätta över (senaste pass 12 sep), tidigast 2026-09-16 19:00
 - [x] `[P1]` Flytta repot till GitHub-orgen `buildapp-se` och appen till buildapp.se: gjort 2026-09-04 (repo överfört, Pages på buildapp.se/beefcake, Worker-route `beefcake-api.buildapp.se`, CORS och app-URL bytta). Kvar för Patrik: `buildapp.se` under Firebase Authorized domains och sign-up avstängt
+- [ ] `[P2]` UX-granskning 2026-09-16, Fitts: tryckytor under konventionens 44 px på telefon (390 px). Vilotidens snabbval `3 min` `5 min` `8 min` 40 px och fältet "Vald vilotid i minuter" 30 px (`RestTimer.tsx:257`), Historikens månadspilar 30 px (`History.tsx:396`) och kalenderdagarna 40 px. Övningsnamnen i Statistikens PR-kort är 22 px (`Stats.tsx:590`) men har luft nog för WCAG 2.5.8
+- [ ] `[P2]` UX-granskning 2026-09-16, Postel: vilotidsfältet (`type=number`, 1 till 60) gör `12,5` till `60` utan besked, eftersom kommat faller bort och 125 kapas. Antingen godta 1,5 min eller säg nej synligt
+- [ ] `[P3]` UX-granskning 2026-09-16, Jakob: mobilhuvudets tre ikoner saknar synlig text, och bokmärket för Program är ingen ikon folk känner igen. Överväg etikett under ikonen eller Program i bottennavigeringen
+- [ ] `[P3]` UX-granskning 2026-09-16, Hick: Statistik och Övningar har var sin rullista med över 15 val (Övningar har en sökruta bredvid, Statistik inte). Kontrollera att listorna behöver vara så långa eller kan grupperas
+- [ ] `[P3]` UX-granskning 2026-09-16, Von Restorff: tre knappar med primärstil finns på samma sida i Logga pass och Inställningar, eftersom `Button` har `primary` som standard. Skärmdumpen av Logga pass ser ändå tydlig ut; gå igenom Inställningar och ge bara huvudhandlingen primärstil
 
 ## Byggt
 

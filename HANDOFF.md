@@ -5,10 +5,12 @@ currentGoal: Övningsdatabasen på svenska med stillbilder i översikten, byggd 
 nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
-reviewedAt: 2026-09-15
+reviewedAt: 2026-09-16
 ---
 
 ## Recent work
+
+**2026-09-16, första UX-granskningen (Laws of UX).** Provkörning av den nya globala skillen `ux-audit` (`~/.claude/skills/ux-audit`), UX-kolumnen i cockpitens Audits-flik. Skriptet på sju vyer i 390 px med `--interact`: varning, 3 av 8 godkända (Chunking, Doherty vid klick, sidfel). Fynden står som fem poster under Öppet i BACKLOG. Godkänt vid bedömning av skärmdumpar: kg-fältet tar `12,5` och skriver om `12.5` till `12,5` (Postel), "0 av 0 set klara" (Goal-Gradient), tomläget i Logga pass säger vad man ska göra, Förra-kolumnen gör att man inte behöver minnas förra vikten, datum och Fritt pass är förval. Zeigarnik-varningen gällde ett fält i Inställningar och är inget fynd, påbörjat pass sparas redan som utkast. Ej bedömt: slutförandet av ett pass och synkindikatorn, eftersom granskningen kördes utan moln. **Enklare sätt att köra utan moln:** i Bash tömmer `VITE_BEEFCAKE_API_URL= npx vite` variabeln så att grinden försvinner (till skillnad från PowerShell, se fällan 2026-09-15). Ingen kod ändrad.
 
 **2026-09-15 eftermiddag, streak-rad, typfilter och klickbart märke.** Tre beställningar från Patrik, godkända samlat. Detaljer i BACKLOG under Byggt. Streak-raden syns bara vid hel kedja; dev-seeden har inga färska pass, så raden är layoutmätt i Chromium med insatt text och logiken testad i `streak.test.ts`, inte sedd med riktig data. Kolla Hem på telefonen.
 

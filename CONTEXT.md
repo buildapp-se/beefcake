@@ -155,3 +155,7 @@ Loggvyn startar timern genom att skicka `beefcake-start-timer` på `window`; `Re
 Firebase Auth i ett eget projekt för Beefcake (inte grammats `grammat-78450`, beslut 2026-09-02), Google eller e-post med lösenord, samma mönster som grammat och sipdeck. `src/config.ts` bär de publika identifierarna (apiKey, authDomain, projectId), tomt projectId betyder ingen inloggning. `LoginGate` sitter framför hela appen när moln är konfigurerat; utan `VITE_BEEFCAKE_API_URL` finns ingen grind alls (lokal utveckling). Workern verifierar ID-token med `jose` mot Googles JWKS och kräver `email_verified`, eftersom D1-datan ligger under adressen: utan kravet kunde vem som helst registrera någon annans adress med lösenord och läsa dennes pass. E-postkonton får Firebase eget bekräftelsemejl, grinden visar "Jag har bekräftat" tills adressen är bekräftad. Firebase-SDK:n cachas av service workern (`runtimeCaching` på gstatic) så appen startar offline med sparad inloggning.
 
 Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudflare Access framför API:t är borttagna 2026-09-02. IndexedDB är okrypterat, och GitHub Pages kan inte sätta CSP-headers.
+
+## Audits
+
+- UX: 2026-09-16, warn, 3 of 8 script checks pass, targets under 44 px on log and history
