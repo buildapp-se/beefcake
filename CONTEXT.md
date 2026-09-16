@@ -158,9 +158,9 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 
 ## Audits
 - UX: 2026-09-16, warn, 3 of 8 script checks pass, targets under 44 px on log and history
-- OWASP Top 10: 2026-09-16, warn, 0 high, 2 medium open, snapshot caps deployed (2 MB, 20 revisions, 300 writes per day per account); account switch on one device still leaks data, conflict banner still discards local edits
+- OWASP Top 10: 2026-09-16, pass, 0 high, 0 medium open, snapshot caps, sign-out clears the device and D1 is authoritative, conflict banner saves local copy first, 401/403/409 logged
 - Headers: 2026-09-16, warn, 6 of 6 on buildapp.se/beefcake, beefcake.buildapp.se 1 of 6 (HSTS only), beefcake-api 1 of 6
 - TLS: 2026-09-16, pass, SSL Labs A+ on beefcake.buildapp.se (GitHub Pages) and on buildapp.se (TLS 1.2 minimum since today)
-- Lighthouse: 2026-09-16, warn, a11y 98 (no main landmark), best practices 100, SEO 60 by design (noindex), CLS 0,83 (mobile, no perf)
+- Lighthouse: 2026-09-16, warn, a11y 98 (main landmark added to the login page 2026-09-16, not remeasured), best practices 100, SEO 60 by design (noindex), CLS 0,83 (mobile, no perf)
 - Markup: 2026-09-16, pass, W3C 0 errors, 7 warnings, 0 broken links
 - npm audit: 2026-09-16, pass, 0 in production, 4 high 2 moderate in the dev chain (wrangler, miniflare, sharp, fast-uri)
