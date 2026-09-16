@@ -157,11 +157,10 @@ Firebase Auth i ett eget projekt för Beefcake (inte grammats `grammat-78450`, b
 Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudflare Access framför API:t är borttagna 2026-09-02. IndexedDB är okrypterat, och GitHub Pages kan inte sätta CSP-headers.
 
 ## Audits
-
 - UX: 2026-09-16, warn, 3 of 8 script checks pass, targets under 44 px on log and history
-- OWASP Top 10: 2026-09-16, fail, 1 high, 2 medium open, any verified Firebase account can fill the shared D1 pool; account switch on one device leaks data across accounts
-- Headers: 2026-09-16, fail, 0 of 6 on buildapp.se/beefcake, beefcake.buildapp.se 1 of 6 (HSTS only), beefcake-api 0 of 6
-- TLS: 2026-09-16, pass, SSL Labs A+ on beefcake.buildapp.se (GitHub Pages), B on buildapp.se (TLS 1.0 and 1.1 on the zone)
+- OWASP Top 10: 2026-09-16, warn, 0 high, 2 medium open, snapshot caps deployed (2 MB, 20 revisions, 300 writes per day per account); account switch on one device still leaks data, conflict banner still discards local edits
+- Headers: 2026-09-16, warn, 6 of 6 on buildapp.se/beefcake, beefcake.buildapp.se 1 of 6 (HSTS only), beefcake-api 1 of 6
+- TLS: 2026-09-16, pass, SSL Labs A+ on beefcake.buildapp.se (GitHub Pages) and on buildapp.se (TLS 1.2 minimum since today)
 - Lighthouse: 2026-09-16, warn, a11y 98 (no main landmark), best practices 100, SEO 60 by design (noindex), CLS 0,83 (mobile, no perf)
 - Markup: 2026-09-16, pass, W3C 0 errors, 7 warnings, 0 broken links
 - npm audit: 2026-09-16, pass, 0 in production, 4 high 2 moderate in the dev chain (wrangler, miniflare, sharp, fast-uri)

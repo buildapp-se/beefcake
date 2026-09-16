@@ -97,3 +97,13 @@ Prova loggvyn och kroppsvikten på telefonen innan något mer byggs. Sedan chunk
 ## Granskning 2026-09-16
 
 Cross-project audit run from elwyn-dash (session 5 in the daily note). Results written to `## Audits` in CONTEXT.md, findings appended to BACKLOG.md under `## Granskning 2026-09-16`. Headers on buildapp.se and the TLS grade are zone-level and are fixed once in Cloudflare, not here. OWASP by a read-only subagent, 12 live requests, findings in BACKLOG P1 to P3.
+
+## Tak på snapshots, 2026-09-16
+
+OWASP-rundans P1, på Patriks linje (registreringen förblir öppen): `MAX_PAYLOAD_BYTES`
+2 MB (största riktiga snapshot var 568 KB), `KEEP_REVISIONS` 20 (äldre rader raderas
+efter varje insert), `MAX_WRITES_PER_DAY` 300 per konto i tabellen `write_quota`
+(migration 0003, upsert med RETURNING, 429 `write_quota` över taket). Test i
+`twoClients.test.ts`: 30 skrivningar ger 20 rader, 301:a ger 429. Verifierat: 96
+tester, lint, dry-run; migration applicerad remote; Worker `71ae15bd`; live health
+och POST utan token ger 401. Kvar från rundan: P2 kontobyte och konfliktbannern.
