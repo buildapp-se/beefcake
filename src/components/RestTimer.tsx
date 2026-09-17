@@ -118,6 +118,30 @@ export function RestTimer() {
     return () => window.clearInterval(interval)
   }, [status, alarmDuration])
 
+  // Håll skärmen tänd medan timern går: iOS söver sidans JS vid låst skärm, och då uteblir både ljud och notis.
+  // ponytail: bara under 'running', inte 'finished', så en glömd telefon inte lyser för evigt.
+  // Räcker inte det (annan app i förgrunden, låst skärm) är nästa steg riktig webb-push.
+  useEffect(() => {
+    if (status !== 'running' || !('wakeLock' in navigator)) return
+    let lock: WakeLockSentinel | null = null
+    let cancelled = false
+    // Webbläsaren släpper låset själv när appen döljs, så det begärs om varje gång den syns igen.
+    const acquire = () => {
+      if (document.visibilityState !== 'visible') return
+      navigator.wakeLock.request('screen').then(sentinel => {
+        if (cancelled) void sentinel.release()
+        else lock = sentinel
+      }).catch(() => undefined) // Nekas t.ex. i strömsparläge; timern fungerar som förut.
+    }
+    acquire()
+    document.addEventListener('visibilitychange', acquire)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', acquire)
+      void lock?.release()
+    }
+  }, [status])
+
   useEffect(() => {
     const handleStart = (event: Event) => {
       const customEvent = event as CustomEvent<{ seconds?: number }>
