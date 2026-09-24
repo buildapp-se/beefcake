@@ -139,6 +139,8 @@ Underlag, skärmbilder och källor: `Beefcake Designgenomlysning` i vaulten. Tv�
 
 ## Granskning 2026-09-24
 
+- [x] `[P2]` (rättad 2026-09-24, blanksteg tas bort före tolkning, test sett rött före) `parseDecimal` gjorde tyst "1 000,5" till 1, eftersom `parseFloat` stannar vid mellanslaget; svensk tusentalsavgränsning i vikt- eller måttfält gav fel värde utan felmeddelande. Flaggad av Antigravity som misstänkt bugg i mutation-lanen för `format.ts`. Kvar och avsiktligt: "82,5 kg" tolkas som 82,5.
+
 - [ ] `[P1]` Lösenordsgrindens hash (`AUTH_HASH`, borttagen med Firebase-inloggningen i `1fd3f50`) ligger kvar i git-historiken från `7ff0e56`, och repot är publikt. Grinden skyddar inget längre, men hashen kan knäckas offline om lösenordet var kort. **Patrik:** används samma lösenord någon annanstans? Byt det där i så fall. Att skriva om historiken (git filter-repo plus force push) kräver ett eget ja och löser inget för kopior som redan finns; byt hellre lösenordet. Hittad av gitleaks, Secrets-kolumnen.
 
 ## Granskning 2026-09-16

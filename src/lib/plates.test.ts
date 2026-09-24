@@ -12,6 +12,13 @@ describe('calculatePlates', () => {
   it('vikt som inte går jämnt ut lämnar en rest', () => {
     expect(calculatePlates(21, 20).remainingWeight).toBe(1)
   })
+
+  it('vikt under stångens vikt kräver inga skivor och ger ingen rest', () => {
+    expect(calculatePlates(10, 20)).toEqual({
+      platesPerSide: [],
+      remainingWeight: 0
+    })
+  })
 })
 
 describe('formatPlatesPerSide', () => {

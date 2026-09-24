@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatWeight, formatSet, formatSets, formatSetCompact } from './format'
+import { formatWeight, parseDecimal, formatSet, formatSets, formatSetCompact } from './format'
 
 // Non-breaking space: svensk tusentalsavgränsare i Intl är U+00A0, inte mellanslag.
 const NBSP = ' '
@@ -15,6 +15,34 @@ describe('formatWeight', () => {
 
   it('använder mellanslag som tusentalsavgränsare', () => {
     expect(formatWeight(1897.5)).toBe(`1${NBSP}897,5`)
+  })
+
+  it('avrundar till max två decimaler', () => {
+    expect(formatWeight(82.125)).toBe('82,13')
+  })
+})
+
+describe('parseDecimal', () => {
+  it('tolkar text med decimalkomma', () => {
+    expect(parseDecimal('82,5')).toBe(82.5)
+  })
+
+  it('tolkar text med decimalpunkt', () => {
+    expect(parseDecimal('82.5')).toBe(82.5)
+  })
+
+  it('trimmar blanksteg', () => {
+    expect(parseDecimal('  82,5  ')).toBe(82.5)
+  })
+
+  it('förstår svensk tusentalsavgränsare, vanligt och hårt mellanslag', () => {
+    expect(parseDecimal('1 000,5')).toBe(1000.5)
+    expect(parseDecimal(`1${NBSP}000,5`)).toBe(1000.5)
+  })
+
+  it('returnerar null för ogiltig text', () => {
+    expect(parseDecimal('abc')).toBeNull()
+    expect(parseDecimal('')).toBeNull()
   })
 })
 

@@ -10,7 +10,9 @@ export function formatWeight(kg: number): string {
  * vikt eller andra decimaltal skrivs in som text.
  */
 export function parseDecimal(text: string): number | null {
-  const n = parseFloat(text.trim().replace(',', '.'))
+  // Blanksteg bort först, även hårt mellanslag: "1 000,5" är svensk tusentalsavgränsning
+  // och blev annars tyst 1, eftersom parseFloat stannar vid första mellanslaget.
+  const n = parseFloat(text.replace(/\s/g, '').replace(',', '.'))
   return Number.isFinite(n) ? n : null
 }
 
