@@ -164,7 +164,7 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 - Lighthouse: 2026-09-16, warn, a11y 98 (main landmark added to the login page 2026-09-16, not remeasured), best practices 100, SEO 60 by design (noindex), CLS 0,83 (mobile, no perf)
 - Markup: 2026-09-16, pass, W3C 0 errors, 7 warnings, 0 broken links
 - npm audit: 2026-09-24, pass, 0 in production, 4 high 2 moderate in the dev chain
-- Secrets: 2026-09-24, fail, gitleaks 1 finding in 159 commits: the retired password gate's AUTH_HASH in src/config.ts history (7ff0e56 to 1fd3f50), public repo, see BACKLOG; 2 reviewed as public in .gitleaksignore
+- Secrets: 2026-09-24, pass, gitleaks 0 findings in 163 commits, 3 reviewed as public in .gitleaksignore
 - Actions: 2026-09-24, pass, zizmor 0 high, 0 medium, 0 low
 - Mutation: 2026-09-24, Stryker on 6 of 10 logic files: importValidation 85,00 % (was 66,67), streak 100 % (92,86), date 100 % (64,37), plates 98,08 % (94,23), exerciseMetrics 100 % (86,96), format 95,83 % (79,17), exerciseDb 97,04 % (86,98), timerService 49,14 % (21,55), snapshot 100 % already; tests by Antigravity, reviewed; volume lane made no changes
 - WCAG 2.2 AA: 2026-09-24, warn, axe 4.13.0 0 violations on buildapp.se/beefcake (mobile, one page); manual keyboard pass not done
