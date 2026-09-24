@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- testerna bygger medvetet felaktig importdata */
 import { describe, expect, it } from 'vitest'
 import { parseImportData } from './importValidation'
 
@@ -74,5 +75,101 @@ describe('parseImportData', () => {
       ...valid(),
       templates: [valid().templates[0], valid().templates[0]]
     }))).toThrow('dubbletter')
+  })
+
+  it('avvisar import som inte är ett objekt', () => {
+    expect(() => parseImportData('null')).toThrow(/^Importen har fel format$/)
+    expect(() => parseImportData('42')).toThrow(/^Importen har fel format$/)
+    expect(() => parseImportData('"string"')).toThrow(/^Importen har fel format$/)
+  })
+
+  it('avvisar kroppsvikt som inte är en lista', () => {
+    expect(() => parseImportData(JSON.stringify({ ...valid(), bodyWeight: {} }))).toThrow('Importen har fel format: bodyWeight')
+  })
+
+  it('avvisar saknad eller felaktig template-samling', () => {
+    expect(() => parseImportData(JSON.stringify({ ...valid(), templates: null }))).toThrow('Importen har fel format: templates')
+    expect(() => parseImportData(JSON.stringify({ ...valid(), templates: {} }))).toThrow('Importen har fel format: templates')
+  })
+
+  it('avvisar objekt utan id i samlingar', () => {
+    const d1 = valid(); d1.templates.push(null as any);
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow('templates');
+
+    const d2 = valid(); delete (d2.exercises[0] as any).id;
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow('exercises');
+
+    const d3 = valid(); d3.sessions[0].id = '';
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow('sessions');
+  })
+
+  it('avvisar ogiltiga övningar', () => {
+    const d1 = valid(); d1.exercises[0].name = '';
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow('exercises');
+
+    const d2 = valid(); d2.exercises[0].createdAt = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow('exercises');
+
+    const d3 = valid(); d3.exercises[0].muscleGroup = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow('exercises');
+  })
+
+  it('avvisar ogiltiga templates', () => {
+    const d1 = valid(); d1.templates[0].name = '';
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow('templates');
+
+    const d2 = valid(); d2.templates[0].updatedAt = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow('templates');
+
+    const d3 = valid(); d3.templates[0].exercises = {} as any;
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow('templates');
+
+    const d4 = valid(); d4.templates[0].exercises[0] = null as any;
+    expect(() => parseImportData(JSON.stringify(d4))).toThrow('templates');
+
+    const d5 = valid(); d5.templates[0].exercises[0].exerciseId = '';
+    expect(() => parseImportData(JSON.stringify(d5))).toThrow('templates');
+
+    const d6 = valid(); d6.templates[0].exercises[0].defaultSetEntry = {} as any;
+    expect(() => parseImportData(JSON.stringify(d6))).toThrow('templates');
+
+    const d7 = valid(); d7.templates[0].exercises[0].order = '0' as any;
+    expect(() => parseImportData(JSON.stringify(d7))).toThrow('templates');
+
+    const d8 = valid(); 
+    d8.templates[0].exercises.push({ exerciseId: 'e2', defaultSetEntry: { sets: 1, reps: 1, weight: 1 }, order: 1 });
+    d8.templates[0].exercises[0].order = '0' as any;
+    expect(() => parseImportData(JSON.stringify(d8))).toThrow('templates');
+  })
+
+  it('accepterar sessionsövningar med noteringar', () => {
+    const data = valid();
+    (data.sessions[0].exercises[0] as any).notes = 'Bra pass';
+    expect(() => parseImportData(JSON.stringify(data))).not.toThrow();
+  })
+
+  it('avvisar sessionsövningar med ogiltiga fält', () => {
+    const d1 = valid(); d1.sessions[0].exercises[0].exerciseName = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow('sessions');
+
+    const d2 = valid(); d2.sessions[0].exercises[0].order = '0' as any;
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow('sessions');
+
+    const d3 = valid(); (d3.sessions[0].exercises[0] as any).notes = 123;
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow('sessions');
+
+    const d4 = valid(); d4.sessions[0].exercises[0].exerciseId = '';
+    expect(() => parseImportData(JSON.stringify(d4))).toThrow('sessions');
+
+    const d5 = valid(); d5.sessions[0].exercises[0].setEntries = {} as any;
+    expect(() => parseImportData(JSON.stringify(d5))).toThrow('sessions');
+    
+    const d6 = valid(); d6.sessions[0].exercises[0] = null as any;
+    expect(() => parseImportData(JSON.stringify(d6))).toThrow('sessions');
+
+    const d7 = valid(); 
+    d7.sessions[0].exercises.push({ exerciseId: 'e2', exerciseName: 'Mark', setEntries: [], order: 1 });
+    d7.sessions[0].exercises[0].order = '0' as any;
+    expect(() => parseImportData(JSON.stringify(d7))).toThrow('sessions');
   })
 })

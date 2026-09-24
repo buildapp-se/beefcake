@@ -137,6 +137,10 @@ Underlag, skärmbilder och källor: `Beefcake Designgenomlysning` i vaulten. Tv�
 - [x] [P3] [Wish] göra vanlig sån firebase-inlogg. Löst 2026-09-02 med Firebase Auth, se Byggt
 - [x] `[P3]` Övningsdatabasen på svenska: gjort 2026-09-15, se Byggt. Kvar som känd gräns: nya egna övningar utan rad i namnkartan får ingen bild förrän kartan i `src/lib/exerciseDb.ts` fylls på
 
+## Granskning 2026-09-24
+
+- [ ] `[P1]` Lösenordsgrindens hash (`AUTH_HASH`, borttagen med Firebase-inloggningen i `1fd3f50`) ligger kvar i git-historiken från `7ff0e56`, och repot är publikt. Grinden skyddar inget längre, men hashen kan knäckas offline om lösenordet var kort. **Patrik:** används samma lösenord någon annanstans? Byt det där i så fall. Att skriva om historiken (git filter-repo plus force push) kräver ett eget ja och löser inget för kopior som redan finns; byt hellre lösenordet. Hittad av gitleaks, Secrets-kolumnen.
+
 ## Granskning 2026-09-16
 
 Fynd från cockpitens granskningskolumner (Lighthouse mobil, W3C, UX-skript, headers, TLS, OWASP). Mätvärdena står under `## Audits` i CONTEXT.md.

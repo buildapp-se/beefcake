@@ -5,10 +5,12 @@ currentGoal: Historik med veckovy, passräknare i kalendern och denna månad på
 nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
-reviewedAt: 2026-09-17
+reviewedAt: 2026-09-24
 ---
 
 ## Recent work
+
+**2026-09-24, audits från aifabriken.** Mutation: Antigravity (Gemini 3.1 Pro High) skrev tester för `src/lib/importValidation.ts`, 66,67 % till 85,00 %, granskade av Claude; lint och typfel i kandidaten rättade (lint-undantag för `any` i testfilen, som medvetet bygger felaktig data). Nya kolumner: Secrets (gitleaks, fail: gamla `AUTH_HASH` i historiken, BACKLOG §Granskning 2026-09-24) och Actions (zizmor, pass efter `persist-credentials: false` i deploy.yml). `.gitleaksignore` bär de granskade publika fynden. lint, build, 105 tester gröna.
 
 **2026-09-17, skärmlås under vilotimern.** Julia fick ingen signal på iPhone. Orsak: appen har ingen webb-push, notisen är lokal och skickas av sidans `setInterval`, som iOS söver vid låst skärm. Dessutom finns `Notification` på iPhone bara i hemskärmsappen, och UI:t visar inget alls vid `unsupported`. Fix: Screen Wake Lock medan timern går (`RestTimer.tsx`). Verifierat i Chromium, **inte på iPhone**: det provet är P1 i BACKLOG, med webb-push som nästa steg om det faller. En `python -m http.server` från 2026-09-16 20:10 höll port 4173 (PID 61824), lämnad orörd.
 
