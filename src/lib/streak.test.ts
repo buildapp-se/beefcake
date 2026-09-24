@@ -44,6 +44,21 @@ describe('beefcakeStatusText', () => {
     const text = beefcakeStatusText(beefcakeStreak([], '2026-08-21'), '2026-08-21')
     expect(text.split('\n')).toEqual(['Weight Gain 4000', 'Inga pass loggade än. Dags att börja.'])
   })
+
+  it('skriver ut rätt namn för nivå 3 och 4', () => {
+    const text3 = beefcakeStatusText({ level: 3, streak: 4, daysSinceLast: 0, startDate: '2026-08-15', deadline: '2026-08-24' }, '2026-08-21')
+    expect(text3.split('\n')[0]).toBe('Beefcake')
+
+    const text4 = beefcakeStatusText({ level: 4, streak: 10, daysSinceLast: 0, startDate: '2026-08-03', deadline: '2026-08-24' }, '2026-08-21')
+    expect(text4.split('\n')[0]).toBe('BEEFCAAAAKE!')
+  })
+
+  it('faller tillbaka till att bara visa kedjan om startdatum eller deadline saknas', () => {
+    const base = { level: 2 as const, streak: 2, daysSinceLast: 1, startDate: '2026-08-19', deadline: '2026-08-24' }
+    const expected = 'På gång\n2 pass i rad utan mer än 3 dagars uppehåll.'
+    expect(beefcakeStatusText({ ...base, startDate: null }, '2026-08-21')).toBe(expected)
+    expect(beefcakeStatusText({ ...base, deadline: null }, '2026-08-21')).toBe(expected)
+  })
 })
 
 describe('beefcakeStreak', () => {
@@ -84,5 +99,15 @@ describe('beefcakeStreak', () => {
 
   it('ett pass daterat i framtiden bryter inte kedjan', () => {
     expect(beefcakeStreak(['2026-08-25'], '2026-08-21').level).toBe(2)
+  })
+
+  it('exakt tre dagars uppehåll mellan två historiska pass håller kedjan vid liv', () => {
+    const dates = ['2026-08-15', '2026-08-18', '2026-08-21']
+    expect(beefcakeStreak(dates, '2026-08-21').streak).toBe(3)
+  })
+
+  it('datum i oordning sorteras före beräkning av streak', () => {
+    const dates = ['2026-08-19', '2026-08-15', '2026-08-21', '2026-08-17']
+    expect(beefcakeStreak(dates, '2026-08-21').streak).toBe(4)
   })
 })
