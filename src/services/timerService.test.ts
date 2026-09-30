@@ -54,30 +54,35 @@ describe('vilotimerns snabbval (presets)', () => {
     await expect(loadRestTimerPresets()).resolves.toEqual([1, 2, 60])
   })
 
-  it('sparar inte om arrayen inte har exakt tre element', async () => {
-    await saveRestTimerPresets([1, 2])
+  it('sparar halva minuter', async () => {
+    await saveRestTimerPresets([1.5, 5, 8])
+    await expect(loadRestTimerPresets()).resolves.toEqual([1.5, 5, 8])
+  })
+
+  it('avvisar om arrayen inte har exakt tre element', async () => {
+    await expect(saveRestTimerPresets([1, 2])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
 
-    await saveRestTimerPresets([1, 2, 3, 4])
+    await expect(saveRestTimerPresets([1, 2, 3, 4])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
   })
 
-  it('sparar inte värden utanför 1 till 60', async () => {
-    await saveRestTimerPresets([0, 5, 8])
+  it('avvisar värden utanför 1 till 60', async () => {
+    await expect(saveRestTimerPresets([0, 5, 8])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
 
-    await saveRestTimerPresets([3, 5, 61])
+    await expect(saveRestTimerPresets([3, 5, 61])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
   })
 
-  it('sparar inte om värdena inte är ändliga nummer', async () => {
-    await saveRestTimerPresets([NaN, 5, 8])
+  it('avvisar om värdena inte är ändliga nummer', async () => {
+    await expect(saveRestTimerPresets([NaN, 5, 8])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
 
-    await saveRestTimerPresets([Infinity, 5, 8])
+    await expect(saveRestTimerPresets([Infinity, 5, 8])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
     
-    await saveRestTimerPresets(["3", 5, 8] as unknown as number[])
+    await expect(saveRestTimerPresets(["3", 5, 8] as unknown as number[])).rejects.toThrow('1 till 60 minuter')
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
   })
 

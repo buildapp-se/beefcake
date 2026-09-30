@@ -477,8 +477,14 @@ export function Stats() {
         <Card title="Volym över tid">
           <div class="grid grid-2 gap-sm mb-sm">
             <Field label="Övning" class="m-0">
+              {/* Två grupper så de få man faktiskt tränar inte drunknar bland resten (Hick) */}
               <select value={selectedExerciseId} onChange={handleSelectChange}>
-                {exercises.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                <optgroup label="Tränade senaste kvartalet">
+                  {exercises.filter(e => recentCounts.has(e.id)).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </optgroup>
+                <optgroup label="Övriga">
+                  {exercises.filter(e => !recentCounts.has(e.id)).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </optgroup>
               </select>
             </Field>
             <Field label="Period" class="m-0">

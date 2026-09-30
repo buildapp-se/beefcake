@@ -18,7 +18,9 @@ export async function loadRestTimerPresets(): Promise<number[]> {
 }
 
 export async function saveRestTimerPresets(presets: number[]): Promise<void> {
-  if (!validPresets(presets)) return
+  if (!validPresets(presets)) {
+    throw new Error('Snabbvalen måste vara tre tider på 1 till 60 minuter.')
+  }
   const db = await getDB()
   await db.put('settings', { key: PRESETS_KEY, value: presets })
 }

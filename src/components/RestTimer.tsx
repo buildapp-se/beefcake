@@ -9,6 +9,7 @@ import {
   showRestTimerNotification,
   type RestTimerAlarmDuration
 } from '../services/timerService'
+import { formatWeight, parseDecimal } from '../lib/format'
 
 type TimerStatus = 'idle' | 'running' | 'paused' | 'finished'
 
@@ -71,6 +72,8 @@ function playTimerSound(duration: RestTimerAlarmDuration): void {
 export function RestTimer() {
   const [presets, setPresets] = useState([3, 5, 8])
   const [selectedPreset, setSelectedPreset] = useState(0)
+  // Det som skrivs i snabbvalsfältet, null när fältet visar det sparade värdet
+  const [presetDraft, setPresetDraft] = useState<string | null>(null)
   const [remaining, setRemaining] = useState(180)
   const [status, setStatus] = useState<TimerStatus>('idle')
   const [alarmDuration, setAlarmDuration] = useState<RestTimerAlarmDuration>(DEFAULT_REST_TIMER_ALARM_DURATION)
@@ -188,14 +191,19 @@ export function RestTimer() {
 
   function choosePreset(index: number) {
     setSelectedPreset(index)
+    setPresetDraft(null)
     if (status !== 'running') {
       setRemaining(presets[index] * 60)
       setStatus('idle')
     }
   }
 
+  // Komma eller punkt, halva minuter. Utanför 1 till 60 sparas inget och fältet säger nej (presetInvalid).
   function updatePreset(value: string) {
-    const minutes = Math.min(60, Math.max(1, Number.parseInt(value, 10) || 1))
+    setPresetDraft(value)
+    const parsed = parseDecimal(value)
+    if (parsed === null || parsed < 1 || parsed > 60) return
+    const minutes = Math.round(parsed * 2) / 2
     const nextPresets = presets.map((preset, index) => index === selectedPreset ? minutes : preset)
     setPresets(nextPresets)
     void saveRestTimerPresets(nextPresets)
@@ -230,6 +238,8 @@ export function RestTimer() {
     setNotificationPermission(permission)
   }
 
+  const draftMinutes = presetDraft === null ? null : parseDecimal(presetDraft)
+  const presetInvalid = presetDraft !== null && (draftMinutes === null || draftMinutes < 1 || draftMinutes > 60)
   const isActive = status === 'running' || status === 'paused'
   const statusLabel = status === 'finished' ? 'Klar' : status === 'paused' ? 'Pausad' : status === 'running' ? 'Pågår' : 'Redo'
 
@@ -264,21 +274,26 @@ export function RestTimer() {
             onClick={() => choosePreset(index)}
             aria-pressed={selectedPreset === index}
           >
-            {preset} min
+            {formatWeight(preset)} min
           </button>
         ))}
       </div>
 
       <label class="rest-timer-edit">
-        <span>Ändra valt snabbval</span>
+        <span>
+          Ändra valt snabbval
+          {presetInvalid && <span class="rest-timer-edit-error" id="rest-timer-edit-error">Skriv 1 till 60 minuter</span>}
+        </span>
         <div class="rest-timer-input-wrap">
           <input
-            type="number"
-            min="1"
-            max="60"
-            value={presets[selectedPreset]}
+            type="text"
+            inputMode="decimal"
+            value={presetDraft ?? formatWeight(presets[selectedPreset])}
             onInput={event => updatePreset((event.target as HTMLInputElement).value)}
+            onBlur={() => setPresetDraft(null)}
             aria-label="Vald vilotid i minuter"
+            aria-invalid={presetInvalid}
+            aria-describedby={presetInvalid ? 'rest-timer-edit-error' : undefined}
           />
           <span>min</span>
         </div>

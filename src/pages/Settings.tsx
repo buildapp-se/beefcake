@@ -436,7 +436,7 @@ export function Settings() {
               <span>sekunder</span>
             </div>
           </Field>
-          <Button type="submit" disabled={alarmDuration === null || alarmSaving || parseAlarmSeconds(alarmSeconds) === null}>Spara</Button>
+          <Button variant="secondary" type="submit" disabled={alarmDuration === null || alarmSaving || parseAlarmSeconds(alarmSeconds) === null}>Spara</Button>
         </form>
         <p class="text-xs text-muted m-0 mt-sm">Inställningen sparas på den här enheten.</p>
       </Card>
@@ -447,7 +447,7 @@ export function Settings() {
           <Button variant="secondary" onClick={handleExportCSV}>Export CSV (passlista)</Button>
         </div>
         <div class="flex gap mb">
-          <Button onClick={handleBackup}>Spara manuell backup</Button>
+          <Button variant="secondary" onClick={handleBackup}>Spara manuell backup</Button>
         </div>
         <p class="text-xs text-muted m-0 mt-sm">
           {lastBackupAt ? `Senaste manuella backup: ${formatDateTime(lastBackupAt)}` : 'Ingen manuell backup sparad än'}

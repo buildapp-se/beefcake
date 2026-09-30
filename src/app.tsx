@@ -101,8 +101,9 @@ function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
 }
 
 function BottomNav() {
-  // Hem, Logga pass, Historik, Statistik: Program, Övningar och Inställningar nås via headern
-  const mobileNavItems = [navItems[0], navItems[1], navItems[4], navItems[5]]
+  // Hem, Logga pass, Program, Historik, Statistik: Övningar och Inställningar nås via headern.
+  // Program flyttade hit 2026-09-30: bokmärket i headern var ingen ikon folk känner igen (UX-granskning, Jakob)
+  const mobileNavItems = [navItems[0], navItems[1], navItems[2], navItems[4], navItems[5]]
   return (
     <nav class="bottom-nav">
       {mobileNavItems.map(item => (
@@ -118,11 +119,6 @@ function HeaderNav() {
       <Link href="/ovningar" class="header-settings" aria-label="Övningar">
         <svg width="24" height="24" viewBox="0 0 24 24">
           <use href={icon('barbell-icon')} />
-        </svg>
-      </Link>
-      <Link href="/templates" class="header-settings" aria-label="Program">
-        <svg width="24" height="24" viewBox="0 0 24 24">
-          <use href={icon('template-icon')} />
         </svg>
       </Link>
       <Link href="/settings" class="header-settings" aria-label="Inställningar">
