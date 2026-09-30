@@ -5,10 +5,12 @@ currentGoal: Historik med veckovy, passräknare i kalendern och denna månad på
 nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
-reviewedAt: 2026-09-24
+reviewedAt: 2026-09-30
 ---
 
 ## Recent work
+
+**2026-09-30, UX-batchen (chunkläge).** De fem UX-posterna från 2026-09-16 och timerService-kontraktet rättade i `c62d012`, detaljer per rad i BACKLOG. lint, `tsc -b`, 137 tester och build gröna. Chromium 390 utan moln: vilotimerns snabbval och fält 44 px, `1,5` och `125` beter sig rätt, bottennavigeringen fem flikar, ingen sidled-scroll. **Inte sett i webbläsare:** månadspilarna, Statistikens grupperade lista och Inställningarnas knappar; webbläsarprovet stoppades av behörighetsklassaren efter att jag tömt Playwright-profilens IndexedDB. **Fälla:** Playwright-MCP:ns profil hade 419 pass i formatet från före SetEntry (aug), och Historik kraschade i `setsVolume`. `getDB` har ingen datamigrering i `upgrade`, så en enhet med data från före 2026-08-09 som aldrig synkat mot D1 kraschar likadant; riktiga konton läser validerad D1 och berörs inte. Kvar från granskningen: CLS 0,83.
 
 **2026-09-24, audits från aifabriken.** Mutation: Antigravity (Gemini 3.1 Pro High) skrev tester för `src/lib/importValidation.ts`, 66,67 % till 85,00 %, granskade av Claude; lint och typfel i kandidaten rättade (lint-undantag för `any` i testfilen, som medvetet bygger felaktig data). Nya kolumner: Secrets (gitleaks, fail: gamla `AUTH_HASH` i historiken, BACKLOG §Granskning 2026-09-24) och Actions (zizmor, pass efter `persist-credentials: false` i deploy.yml). `.gitleaksignore` bär de granskade publika fynden. Senare samma dag: mutation-batch över streak, date, plates, exerciseMetrics och format (poäng i CONTEXT §Audits), `parseDecimal` rättad för "1 000,5" (BACKLOG §Granskning 2026-09-24), WCAG-rad axe 0 fel på buildapp.se/beefcake. lint, build, 125 tester gröna.
 
