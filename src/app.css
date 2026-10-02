@@ -842,15 +842,17 @@ canvas { display: block; max-width: 100%; }
 .dialog p { color: var(--text); line-height: 1.6; margin-bottom: var(--space-4); }
 
 /* Password Gate: a "reveal" screen, not a login form */
+/* Förankrat uppifrån, inte centrerat: kortet växer från "Laddar…" till formuläret när Firebase
+   svarat, och centrerat flyttade det då uppåt (CLS 0,83 i Lighthouse mobil). */
 .login-gate-container {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   min-height: 100vh;
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-sans);
-  padding: var(--space-4);
+  padding: max(var(--space-4), 10vh) var(--space-4) var(--space-4);
 }
 
 .login-gate-form {
