@@ -5,10 +5,12 @@ currentGoal: Historik med veckovy, passräknare i kalendern och denna månad på
 nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
 blockers:
   - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
-reviewedAt: 2026-09-30
+reviewedAt: 2026-10-02
 ---
 
 ## Recent work
+
+**2026-10-02, CLS och brevkontrollen.** CLS på inloggningssidan rättad (`ca24259`, detaljer i BACKLOG): kortet förankrat uppifrån, 0,000 i tre lokala laddningar på 390 px. Latmask-brevet: `reminders` läst i D1 (en rad, `enabled = 1`, `last_sent` tom), och passdatumen i senaste snapshoten visar att dag fyra aldrig nåtts sedan 16 sep; P0 står kvar tills ett längre uppehåll. IndexedDB-migreringen från 2026-09-30 står nu som P3 i BACKLOG. **Fälla:** `TaskStop` på en `npx vite` i Bash stoppar inte node-barnet, porten blir kvar; stoppa via PowerShell på kommandoraden (`Win32_Process` med `vite.js* --port N`).
 
 **2026-09-30 kväll, flytta övning i Logga pass.** Patriks fynd: handtaget ⋮⋮ flyttade inget. `Card` kastade alla props utom `class`, `padding` och `title`, så `data-exercise-index` nådde aldrig DOM:en och dragningen hittade inget målkort; felet har funnits sedan loggvyns övningar blev `Card`. Nu skickar `Card` övriga attribut vidare. Verifierat i Chromium 390 med programmet Ben och ett set: sista övningen dragen överst, ordningen och setet följde med och låg kvar efter omladdning. Inte provat med finger på telefon (samma pointer-väg, `touch-action: none` på handtaget). lint, `tsc -b`, 137 tester och build gröna.
 
