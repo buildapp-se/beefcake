@@ -6,7 +6,7 @@ import { findLastBackupAt, saveBackupToFile } from '../services/backupService'
 import { icon } from '../icons'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
-import { useAuthUser } from '../components/LoginGate'
+import { useAuthUser, useIsGuest } from '../components/LoginGate'
 import { getReminderEnabled, setReminderEnabled } from '../services/cloudSyncService'
 import {
   DEFAULT_REST_TIMER_ALARM_DURATION,
@@ -83,6 +83,7 @@ function DeleteDialog({
 }
 
 export function Settings() {
+  const guest = useIsGuest()
   const [importing, setImporting] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
@@ -464,6 +465,13 @@ export function Settings() {
           />
         </Field>
       </Card>
+
+      {guest && (
+        <Card title="Konto">
+          <p class="mb text-muted">Du kör utan konto: passen finns bara på den här enheten. Med ett konto sparas de i molnet, och det du redan loggat följer med.</p>
+          <Button href="/konto">Logga in eller skapa konto</Button>
+        </Card>
+      )}
 
       {authUser && (
         <Card title="Konto">

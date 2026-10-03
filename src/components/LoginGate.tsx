@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'preact/hooks'
+import { createContext } from 'preact'
+import { useContext, useEffect, useState } from 'preact/hooks'
 import type { ComponentChildren } from 'preact'
-import { isCloudSyncConfigured } from '../services/cloudSyncService'
-import { signOutAndClear, syncSeed } from '../services/dataService'
+import { Redirect } from 'wouter'
+import { canBrowseAsGuest, isCloudSyncConfigured } from '../services/cloudSyncService'
+import { syncSeed } from '../services/dataService'
 import {
   authErrorMessage, isAuthConfigured, refreshUser, registerWithEmail, resendVerification,
-  sendPasswordReset, signInWithEmail, signInWithGoogle, subscribeToAuth, type AuthUser
+  sendPasswordReset, signInWithEmail, signInWithGoogle, signOutUser, subscribeToAuth, type AuthUser
 } from '../services/authService'
 import { Button } from './Button'
 
+/** Sant när appen körs utan konto: passen sparas bara på enheten (beslut 2026-10-03). */
+export const GuestContext = createContext(false)
+
+export function useIsGuest(): boolean {
+  return useContext(GuestContext)
+}
+
 /**
- * Inloggningen sitter framför hela appen. Utan moln (lokal utveckling) finns ingen
- * grind alls. Med moln kräver Workern en bekräftad e-postadress, eftersom D1-datan
- * ligger under adressen: en obekräftad adress får inte ens se appen.
+ * Med moln går appen att använda utan konto (gäst), passen stannar då på enheten och
+ * följer med in i kontot vid inloggning. Ligger ett kontos data på enheten krävs
+ * inloggning som förut (canBrowseAsGuest). Workern kräver en bekräftad e-postadress,
+ * eftersom D1-datan ligger under adressen. Utan moln (lokal utveckling) finns ingen grind.
  */
 export function useAuthUser(): AuthUser | null | undefined {
   const [user, setUser] = useState<AuthUser | null | undefined>(isCloudSyncConfigured() ? undefined : null)
@@ -36,10 +46,21 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
       .finally(() => { if (!cancelled) setLoadedFor(uid) })
     return () => { cancelled = true }
   }, [uid])
+  // Utloggad: gäst om enheten är tom eller gästens, annars inloggning som förut
+  const [guest, setGuest] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (user !== null || !isCloudSyncConfigured()) return
+    let cancelled = false
+    canBrowseAsGuest()
+      .then(ok => { if (!cancelled) setGuest(ok) })
+      .catch(() => { if (!cancelled) setGuest(false) })
+    return () => { cancelled = true }
+  }, [user])
 
   if (!isCloudSyncConfigured()) return <>{children}</>
   if (!isAuthConfigured()) return <Shell><p class="login-error">Inloggningen är inte konfigurerad i det här bygget.</p></Shell>
-  if (user === undefined) return <Shell><p class="login-subtitle">Laddar…</p></Shell>
+  if (user === undefined || (user === null && guest === null)) return <Shell><p class="login-subtitle">Laddar…</p></Shell>
+  if (user === null && guest) return <GuestContext.Provider value={true}>{children}</GuestContext.Provider>
   if (user === null) return <Shell><LoginForm /></Shell>
   if (!user.emailVerified) return <Shell><VerifyEmail user={user} /></Shell>
   // Misslyckas hämtningen släpps appen in ändå: synkfelet visas beständigt av CloudSyncStatus
@@ -59,10 +80,50 @@ function Shell({ children }: { children: ComponentChildren }) {
   )
 }
 
+/** /konto: inloggning för en gäst. Inloggad (eller utan moln) finns inget att göra här. */
+export function AccountPage() {
+  if (!useIsGuest()) return <Redirect to="/" />
+  return (
+    <div class="account-page">
+      <h1 class="page-title">Konto</h1>
+      <div class="login-gate-form account-login">
+        <p class="mb">Med ett konto sparas passen i molnet och följer med mellan dina enheter. Det du redan loggat följer med in i kontot.</p>
+        <LoginForm initialMode="register" />
+      </div>
+    </div>
+  )
+}
+
+const GUEST_SAVED_EVENT = 'beefcake-guest-saved'
+
+/** Anropas efter varje pass en gäst sparar: rutan i GuestSaveBanner visas igen. */
+export function announceGuestSave(): void {
+  window.dispatchEvent(new Event(GUEST_SAVED_EVENT))
+}
+
+export function GuestSaveBanner() {
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const show = () => setShown(true)
+    window.addEventListener(GUEST_SAVED_EVENT, show)
+    return () => window.removeEventListener(GUEST_SAVED_EVENT, show)
+  }, [])
+  if (!shown) return null
+  return (
+    <div class="update-banner guest-banner" role="status">
+      <span><strong>Passet är sparat, men bara på den här enheten.</strong> Rensas webbläsarens data eller byter du telefon är passen borta. Skapa ett konto så sparas de i molnet, även de du redan loggat.</span>
+      <div class="flex gap-sm">
+        <Button size="sm" href="/konto">Skapa konto</Button>
+        <Button size="sm" variant="secondary" onClick={() => setShown(false)}>Inte nu</Button>
+      </div>
+    </div>
+  )
+}
+
 type Mode = 'login' | 'register' | 'reset'
 
-function LoginForm() {
-  const [mode, setMode] = useState<Mode>('login')
+function LoginForm({ initialMode = 'login' }: { initialMode?: Mode }) {
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -133,6 +194,7 @@ function LoginForm() {
   )
 }
 
+// Obekräftad adress har aldrig läst D1, så det lokala är gästens: utloggningen behåller det
 function VerifyEmail({ user }: { user: AuthUser }) {
   const [info, setInfo] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -156,7 +218,7 @@ function VerifyEmail({ user }: { user: AuthUser }) {
       <Button class="btn-block mb" onClick={check}>Jag har bekräftat</Button>
       <div class="login-links">
         <button type="button" class="link-button" onClick={() => resendVerification().then(() => setInfo('Nytt mejl skickat.')).catch(err => setError(authErrorMessage(err)))}>Skicka mejlet igen</button>
-        <button type="button" class="link-button" onClick={() => void signOutAndClear()}>Logga ut</button>
+        <button type="button" class="link-button" onClick={() => void signOutUser()}>Logga ut</button>
       </div>
     </div>
   )

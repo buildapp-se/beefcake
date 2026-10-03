@@ -28,6 +28,7 @@ import { EmptyState } from '../components/EmptyState'
 import { Field } from '../components/Field'
 import { PlateCalculatorModal } from '../components/PlateCalculator'
 import { RestTimer } from '../components/RestTimer'
+import { announceGuestSave, useIsGuest } from '../components/LoginGate'
 import type { Template, Exercise, TemplateExercise, SetEntry, ActiveSetEntry, SetType } from '../models'
 
 // Settyp som fullt ord i pickern (bokstaven ensam var obegriplig på mobil), tom sträng för normal i brickan
@@ -42,6 +43,7 @@ export interface LogFormExercise {
 }
 
 export function LogSession() {
+  const guest = useIsGuest()
   const [, navigate] = useLocation()
   const [templates, setTemplates] = useState<Template[]>([])
   const [allExercises, setAllExercises] = useState<Exercise[]>([])
@@ -511,6 +513,8 @@ export function LogSession() {
       )
 
       await createSession(date, selectedTemplateId || 'custom', templateTitle, validExercises)
+      // Gästen påminns efter varje pass: passen finns bara på enheten tills ett konto skapas
+      if (guest) announceGuestSave()
       setSaved(true)
       setExercises([])
       await clearActiveWorkout()

@@ -2,7 +2,7 @@
 
 import { Router, Link, Switch, Route, useLocation } from 'wouter'
 import { lazy, Suspense } from 'preact/compat'
-import { LoginGate } from './components/LoginGate'
+import { AccountPage, GuestSaveBanner, LoginGate, useIsGuest } from './components/LoginGate'
 import { CloudSyncStatus } from './components/CloudSyncStatus'
 import { UpdateBanner } from './components/UpdateBanner'
 import { BeefcakeBadge, BeefcakeAvatar, useBeefcakeStreak } from './components/BeefcakeBadge'
@@ -70,6 +70,7 @@ function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
         ))}
       </nav>
       <div class="sidebar-footer">
+        {useIsGuest() && <Link href="/konto" class="nav-link guest-login-link">Logga in eller skapa konto</Link>}
         <NavLink href={SETTINGS_NAV.href} label={SETTINGS_NAV.label} icon={SETTINGS_NAV.icon} showLabel />
       </div>
     </aside>
@@ -116,6 +117,7 @@ function BottomNav() {
 function HeaderNav() {
   return (
     <div class="header-nav-right flex gap-sm">
+      {useIsGuest() && <Link href="/konto" class="header-settings header-login">Logga in</Link>}
       <Link href="/ovningar" class="header-settings" aria-label="Övningar">
         <svg width="24" height="24" viewBox="0 0 24 24">
           <use href={icon('barbell-icon')} />
@@ -133,9 +135,11 @@ function HeaderNav() {
 function Shell() {
   const [location] = useLocation()
   const streak = useBeefcakeStreak()
+  // Cartman är bara för inloggade (beslut 2026-10-03): den öppna sajten visar en känd figur annars
+  const guest = useIsGuest()
   // Hem har märket i full storlek, alla andra sidor får 40 px avatar i navigeringen
   const isHome = location === '/'
-  const avatar = isHome ? null : streak
+  const avatar = isHome || guest ? null : streak
   return (
     <div class="app">
       <SidebarNav avatar={avatar} />
@@ -150,7 +154,8 @@ function Shell() {
       <main class="main">
         <UpdateBanner />
         <CloudSyncStatus />
-        {isHome && <BeefcakeBadge streak={streak} />}
+        <GuestSaveBanner />
+        {isHome && !guest && <BeefcakeBadge streak={streak} />}
         <Switch>
             <Route path="/" component={Home} />
             <Route path="/log" component={LogSession} />
@@ -166,6 +171,7 @@ function Shell() {
               </Suspense>
             )} />
           <Route path="/settings" component={Settings} />
+          <Route path="/konto" component={AccountPage} />
         </Switch>
       </main>
       <BottomNav />

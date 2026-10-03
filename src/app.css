@@ -272,6 +272,11 @@ th, td {
 
 .sync-error a { color: inherit; font-weight: 700; }
 
+/* Gästläget (2026-10-03): kontosidan, länken i headern och sidebaren */
+.account-login { margin: 0 auto; }
+.header-login { width: auto; font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
+.guest-login-link { color: var(--surface-deep-text); font-weight: 600; margin-bottom: var(--space-2); }
+
 /* Ny version väntar: överst i innehållet, i flödet, så bottennavigeringen aldrig täcker den */
 .update-banner {
   margin-bottom: var(--space-4);

@@ -1,6 +1,8 @@
 import { getDB } from '../models'
 import { getCurrentUid, getIdToken } from './authService'
 import {
+  hasTrainingData,
+  mergeGuestIntoAccount,
   selectAuthoritativeSnapshot,
   type SnapshotData
 } from '../lib/snapshot'
@@ -15,6 +17,9 @@ interface ServerSnapshot {
 const REVISION_SETTING_KEY = 'server-revision'
 /** Vilket konto den lokala datan hör till. Sätts när D1 lästs in, kontrolleras före varje uppladdning. */
 const OWNER_SETTING_KEY = 'owner-uid'
+/** Kontomärket för data loggad utan konto: den enda lokala data som får följa med in i ett konto. */
+const GUEST_OWNER = 'guest'
+const SNAPSHOT_STORES = ['templates', 'exercises', 'sessions', 'exerciseHistory', 'bodyWeight'] as const
 /** Inställningarna som töms vid utloggning, tillsammans med passen (OWASP 2026-09-16, A01). */
 export const CLOUD_SETTING_KEYS = [REVISION_SETTING_KEY, OWNER_SETTING_KEY] as const
 const apiUrl = typeof import.meta.env.VITE_BEEFCAKE_API_URL === 'string'
@@ -49,6 +54,22 @@ async function getKnownOwner(): Promise<string | null> {
 async function setKnownOwner(uid: string | null): Promise<void> {
   const db = await getDB()
   await db.put('settings', { key: OWNER_SETTING_KEY, value: uid })
+}
+
+/**
+ * Utan inloggad användare: får appen användas som gäst? Ja om enheten är gästens eller tom
+ * (tom märks som gästens). Data som hör till ett konto, med märke eller äldre utan märke,
+ * kräver inloggning som förut, så att en utgången session inte visar eller blandar kontots pass.
+ */
+export async function canBrowseAsGuest(): Promise<boolean> {
+  const owner = await getKnownOwner()
+  if (owner === GUEST_OWNER) return true
+  if (owner !== null) return false
+  const db = await getDB()
+  const counts = await Promise.all(SNAPSHOT_STORES.map(store => db.count(store)))
+  if (counts.some(count => count > 0)) return false
+  await setKnownOwner(GUEST_OWNER)
+  return true
 }
 
 function setSyncError(error: string | null): void {
@@ -92,11 +113,18 @@ export async function loadSnapshotFromCloud(
 
   try {
     const server = await getServerSnapshot()
-    const snapshot = selectAuthoritativeSnapshot(server.data)
+    // Gästens pass följer med in i kontot, sammanslagna med det som redan finns där
+    const guest = (await getKnownOwner()) === GUEST_OWNER && hasTrainingData(local) ? local : null
+    const snapshot = guest
+      ? mergeGuestIntoAccount(selectAuthoritativeSnapshot(server.data), guest)
+      : selectAuthoritativeSnapshot(server.data)
     await replaceLocalSnapshot(snapshot)
     await setKnownRevision(server.revision)
     await setKnownOwner(await getCurrentUid())
     setSyncError(null)
+    // Misslyckas uppladdningen visar synkbannern felet och nästa sparning försöker igen;
+    // passen ligger redan lokalt under kontot.
+    if (guest) await syncSnapshotNow(snapshot).catch(() => undefined)
     return snapshot
   } catch (error) {
     const message = syncErrorMessage(error, 'D1 kunde inte läsas.')
@@ -109,10 +137,13 @@ async function syncSnapshotNow(snapshot: SnapshotData): Promise<void> {
   if (!isCloudSyncConfigured()) return
 
   try {
+    // Gäst: allt stannar på enheten tills ett konto loggar in (loadSnapshotFromCloud tar med det)
+    const uid = await getCurrentUid()
+    if (uid === null) return
     // Kontobyte utan att D1 hunnit läsas in: det lokala hör till ett annat konto och
     // får inte laddas upp under det här. Utan märke (ny enhet) räcker revisionsspärren.
     const owner = await getKnownOwner()
-    if (owner !== null && owner !== (await getCurrentUid())) {
+    if (owner !== null && owner !== uid) {
       throw new Error('Datan på enheten hör till ett annat konto. Ladda om sidan.')
     }
     const knownRevision = await getKnownRevision()

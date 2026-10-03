@@ -10,7 +10,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import worker from './index'
 
 // Firebase finns inte i testet: klienten skickar en låtsastoken, Workern kör i dev-läge och läser den inte
-const auth = vi.hoisted(() => ({ uid: 'test-uid' }))
+const auth = vi.hoisted(() => ({ uid: 'test-uid' as string | null }))
 vi.mock('../../src/services/authService', () => ({
   getIdToken: async () => 'test-token',
   getCurrentUid: async () => auth.uid,
@@ -338,5 +338,41 @@ describe('cors', () => {
     const response = await worker.fetch(new Request('https://beefcake-api.buildapp.se/api/reminders', { method: 'OPTIONS' }), env)
     expect(response.status).toBe(204)
     expect(response.headers.get('Access-Control-Allow-Methods')).toContain('PUT')
+  })
+})
+
+describe('gäst utan konto (2026-10-03)', () => {
+  it('gästens pass stannar på enheten, följer med in i ett tomt konto och slås ihop med ett konto som har data', async () => {
+    const saved = db.rows.splice(0) // tom D1 för dev-ägaren, återställs efteråt
+    db.quota.clear() // kvottestet ovan har förbrukat dagens 300 skrivningar
+    try {
+      auth.uid = null
+      const g = await newClient()
+      expect(await g.sync.canBrowseAsGuest()).toBe(true)
+      await g.data.createSession('2026-10-02', 'custom', 'Gästpass', [])
+      expect(db.rows).toHaveLength(0)
+
+      auth.uid = 'test-uid'
+      await g.data.syncSeed()
+      expect((await sessionIds(g)).sort()).toEqual(db.latestSessionIds().sort())
+      expect(db.latestSessionIds()).toHaveLength(1)
+
+      // Ny gäst på en annan enhet, kontot har redan ett pass: båda finns efter inloggningen
+      auth.uid = null
+      const h = await newClient()
+      expect(await h.sync.canBrowseAsGuest()).toBe(true)
+      await h.data.createSession('2026-10-03', 'custom', 'Andra gästpasset', [])
+      auth.uid = 'test-uid'
+      await h.data.syncSeed()
+      expect(await sessionIds(h)).toHaveLength(2)
+      expect(db.latestSessionIds()).toHaveLength(2)
+
+      // Kontots data på enheten utan inloggning: ingen gäst, inloggningen krävs som förut
+      auth.uid = null
+      expect(await h.sync.canBrowseAsGuest()).toBe(false)
+    } finally {
+      auth.uid = 'test-uid'
+      db.rows.splice(0, db.rows.length, ...saved)
+    }
   })
 })
