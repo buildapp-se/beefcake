@@ -37,4 +37,19 @@ describe('nextPrograms', () => {
   it('utan historik finns inget nästa pass', () => {
     expect(nextPrograms([])).toEqual([])
   })
+
+  it('senaste datumet behålls om ett program förekommer flera gånger innan rotationen är full', () => {
+    const result = nextPrograms([
+      s('Bröst', '2026-08-02'),
+      s('Rygg', '2026-08-03'),
+      s('Ben', '2026-08-04'), // Äldre pass för Ben
+      s('Ben', '2026-08-05')  // Senaste passet för Ben
+    ])
+    // Rotation ska innehålla Bröst, Rygg, Ben med deras senaste datum
+    expect(result).toEqual([
+      { name: 'Bröst', date: '2026-08-02' },
+      { name: 'Rygg', date: '2026-08-03' },
+      { name: 'Ben', date: '2026-08-05' }
+    ])
+  })
 })

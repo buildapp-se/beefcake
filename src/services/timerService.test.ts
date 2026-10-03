@@ -4,8 +4,12 @@ const settings = vi.hoisted(() => new Map<string, unknown>())
 
 vi.mock('../models', () => ({
   getDB: async () => ({
-    get: async (_store: string, key: string) => settings.has(key) ? { key, value: settings.get(key) } : undefined,
-    put: async (_store: string, setting: { key: string; value: unknown }) => {
+    get: async (store: string, key: string) => {
+      if (store !== 'settings') throw new Error(`Wrong store: ${store}`)
+      return settings.has(key) ? { key, value: settings.get(key) } : undefined
+    },
+    put: async (store: string, setting: { key: string; value: unknown }) => {
+      if (store !== 'settings') throw new Error(`Wrong store: ${store}`)
       settings.set(setting.key, setting.value)
     }
   })
@@ -18,7 +22,9 @@ import {
   loadRestTimerPresets,
   saveRestTimerPresets,
   showRestTimerNotification,
-  requestRestTimerNotifications
+  requestRestTimerNotifications,
+  startRestTimer,
+  triggerHaptic
 } from './timerService'
 
 describe('vilotimerns alarmtid', () => {
@@ -33,6 +39,14 @@ describe('vilotimerns alarmtid', () => {
     await expect(loadRestTimerAlarmDuration()).resolves.toBe(30)
   })
 
+  it('sparar gränsvärden 1 och 3600 sekunder', async () => {
+    await saveRestTimerAlarmDuration(1)
+    await expect(loadRestTimerAlarmDuration()).resolves.toBe(1)
+    
+    await saveRestTimerAlarmDuration(3600)
+    await expect(loadRestTimerAlarmDuration()).resolves.toBe(3600)
+  })
+
   it('sparar null för alarm som ljuder tills det tystas', async () => {
     await saveRestTimerAlarmDuration(null)
     await expect(loadRestTimerAlarmDuration()).resolves.toBeNull()
@@ -41,6 +55,10 @@ describe('vilotimerns alarmtid', () => {
   it('avvisar tider utanför det tillåtna intervallet', async () => {
     await expect(saveRestTimerAlarmDuration(0)).rejects.toThrow('1 till 3 600 sekunder')
     await expect(saveRestTimerAlarmDuration(3601)).rejects.toThrow('1 till 3 600 sekunder')
+  })
+
+  it('avvisar decimaltal för larmtiden', async () => {
+    await expect(saveRestTimerAlarmDuration(1.5)).rejects.toThrow('1 till 3 600 sekunder')
   })
 })
 
@@ -194,6 +212,93 @@ describe('begäran om notistillstånd', () => {
 
   it('returnerar unsupported utan notisstöd', async () => {
     await expect(requestRestTimerNotifications()).resolves.toBe('unsupported')
+  })
+})
+
+describe('startRestTimer', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', new EventTarget())
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('skickar ett event med angivet antal sekunder', () => {
+    let receivedEvent: CustomEvent | undefined
+    window.addEventListener('beefcake-start-timer', (e) => {
+      receivedEvent = e as CustomEvent
+    })
+    startRestTimer(120)
+    expect(receivedEvent).toBeDefined()
+    expect(receivedEvent?.detail).toEqual({ seconds: 120 })
+  })
+
+  it('skickar ett event utan angivna sekunder', () => {
+    let receivedEvent: CustomEvent | undefined
+    window.addEventListener('beefcake-start-timer', (e) => {
+      receivedEvent = e as CustomEvent
+    })
+    startRestTimer()
+    expect(receivedEvent).toBeDefined()
+    expect(receivedEvent?.detail).toEqual({ seconds: undefined })
+  })
+})
+
+describe('triggerHaptic', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('anropar navigator.vibrate med standardmönster om det stöds', () => {
+    const vibrate = vi.fn()
+    vi.stubGlobal('window', {})
+    vi.stubGlobal('navigator', { vibrate })
+    
+    triggerHaptic()
+    
+    expect(vibrate).toHaveBeenCalledWith(40)
+  })
+
+  it('anropar navigator.vibrate med angivet mönster', () => {
+    const vibrate = vi.fn()
+    vi.stubGlobal('window', {})
+    vi.stubGlobal('navigator', { vibrate })
+    
+    triggerHaptic([100, 50, 100])
+    
+    expect(vibrate).toHaveBeenCalledWith([100, 50, 100])
+  })
+
+  it('kraschar inte om window saknas (exempelvis på server)', () => {
+    const originalWindow = globalThis.window
+    const originalNavigator = globalThis.navigator
+    // @ts-expect-error test purpose
+    delete globalThis.window
+    // @ts-expect-error test purpose
+    delete globalThis.navigator
+
+    try {
+      expect(() => triggerHaptic()).not.toThrow()
+    } finally {
+      globalThis.window = originalWindow
+      globalThis.navigator = originalNavigator
+    }
+  })
+
+  it('kraschar inte om vibrate saknas i navigator', () => {
+    vi.stubGlobal('window', {})
+    vi.stubGlobal('navigator', {})
+    
+    expect(() => triggerHaptic()).not.toThrow()
+  })
+
+  it('sväljer eventuella fel från navigator.vibrate', () => {
+    const vibrate = vi.fn(() => { throw new TypeError('Not allowed') })
+    vi.stubGlobal('window', {})
+    vi.stubGlobal('navigator', { vibrate })
+    
+    expect(() => triggerHaptic()).not.toThrow()
+    expect(vibrate).toHaveBeenCalled()
   })
 })
 
