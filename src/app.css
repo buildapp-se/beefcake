@@ -457,6 +457,12 @@ th, td {
   .rest-timer-active .rest-timer-actions { margin-left: auto; margin-top: 0; }
 }
 
+/* 768 till 900 px: railen (64 px) syns men bottennavigeringen inte, så den fasta timerraden
+   ska börja till höger om railen och ligga mot nederkanten, inte under railen 64 px upp. */
+@media (min-width: 768px) and (max-width: 900px) {
+  .rest-timer-active { left: calc(64px + var(--space-3)); bottom: var(--space-3); }
+}
+
 /* ===================================================================
    NAVIGATION
    =================================================================== */
