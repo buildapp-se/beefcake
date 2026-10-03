@@ -1,10 +1,10 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: Historik med veckovy, passräknare i kalendern och denna månad på Hem, byggt och pushat 2026-09-16 kväll; före det övningsdatabasen på svenska med stillbilder i översikten, byggd och verifierad 2026-09-15; före det övningsdatabas och startprogram 2026-09-13
-nextAction: Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen
+currentGoal: "Historik med veckovy, passräknare i kalendern och denna månad på Hem, byggt och pushat 2026-09-16 kväll; före det övningsdatabasen på svenska med stillbilder i översikten, byggd och verifierad 2026-09-15; före det övningsdatabas och startprogram 2026-09-13"
+nextAction: "Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen"
 blockers:
-  - Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt
+  - "Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt"
 reviewedAt: 2026-10-02
 ---
 
