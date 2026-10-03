@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const settings = vi.hoisted(() => new Map<string, unknown>())
 
@@ -16,7 +16,9 @@ import {
   loadRestTimerAlarmDuration,
   saveRestTimerAlarmDuration,
   loadRestTimerPresets,
-  saveRestTimerPresets
+  saveRestTimerPresets,
+  showRestTimerNotification,
+  requestRestTimerNotifications
 } from './timerService'
 
 describe('vilotimerns alarmtid', () => {
@@ -95,6 +97,103 @@ describe('vilotimerns snabbval (presets)', () => {
 
     settings.set('rest-timer-presets', [3, null, 8])
     await expect(loadRestTimerPresets()).resolves.toEqual([3, 5, 8])
+  })
+})
+
+const REST_OVER = 'Vilopausen är slut. Dags för nästa set.'
+
+function installNotification(permission: NotificationPermission) {
+  const created: Array<{ title: string; options?: NotificationOptions }> = []
+  const requestPermission = vi.fn(async (): Promise<NotificationPermission> => 'denied')
+  class FakeNotification {
+    static permission = permission
+    static requestPermission = requestPermission
+    constructor(title: string, options?: NotificationOptions) {
+      created.push({ title, options })
+    }
+  }
+  vi.stubGlobal('Notification', FakeNotification)
+  return { created, requestPermission }
+}
+
+function installServiceWorker(showNotification: (title: string, options: NotificationOptions & { vibrate?: number[] }) => Promise<void>) {
+  vi.stubGlobal('navigator', { serviceWorker: { ready: Promise.resolve({ showNotification }) } })
+}
+
+describe('notis när vilopausen är slut', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', globalThis)
+    vi.stubGlobal('navigator', {})
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('visar notisen via service workern med text, tagg, ikon och vibration', async () => {
+    const { created } = installNotification('granted')
+    const showNotification = vi.fn(async () => {})
+    installServiceWorker(showNotification)
+
+    await showRestTimerNotification()
+
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    expect(showNotification).toHaveBeenCalledWith('Beefcake', {
+      body: REST_OVER,
+      tag: 'beefcake-rest-timer',
+      icon: `${import.meta.env.BASE_URL}pwa-192x192.svg`,
+      vibrate: [180, 100, 180]
+    })
+    expect(created).toEqual([])
+  })
+
+  it('faller tillbaka på en vanlig notis utan service worker', async () => {
+    const { created } = installNotification('granted')
+
+    await showRestTimerNotification()
+
+    expect(created).toEqual([{ title: 'Beefcake', options: { body: REST_OVER } }])
+  })
+
+  it('visar ingen notis när tillståndet inte är beviljat', async () => {
+    for (const permission of ['denied', 'default'] as const) {
+      const { created } = installNotification(permission)
+      const showNotification = vi.fn(async () => {})
+      installServiceWorker(showNotification)
+
+      await showRestTimerNotification()
+
+      expect(showNotification).not.toHaveBeenCalled()
+      expect(created).toEqual([])
+    }
+  })
+
+  it('gör ingenting i en webbläsare utan notiser', async () => {
+    const showNotification = vi.fn(async () => {})
+    installServiceWorker(showNotification)
+
+    await expect(showRestTimerNotification()).resolves.toBeUndefined()
+    expect(showNotification).not.toHaveBeenCalled()
+  })
+
+  it('sväljer fel när notisen blockeras', async () => {
+    installNotification('granted')
+    installServiceWorker(async () => { throw new Error('blockerad') })
+
+    await expect(showRestTimerNotification()).resolves.toBeUndefined()
+  })
+})
+
+describe('begäran om notistillstånd', () => {
+  beforeEach(() => vi.stubGlobal('window', globalThis))
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('returnerar webbläsarens svar', async () => {
+    const { requestPermission } = installNotification('default')
+
+    await expect(requestRestTimerNotifications()).resolves.toBe('denied')
+    expect(requestPermission).toHaveBeenCalledTimes(1)
+  })
+
+  it('returnerar unsupported utan notisstöd', async () => {
+    await expect(requestRestTimerNotifications()).resolves.toBe('unsupported')
   })
 })
 
