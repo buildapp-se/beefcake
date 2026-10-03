@@ -71,10 +71,19 @@ export function LogSession() {
   const [rpePicker, setRpePicker] = useState<{ exIdx: number; setIdx: number } | null>(null)
   // Settyp väljs i en rad brickor, samma mönster som RPE: bokstaven N/W/D/F på egen hand var obegriplig på mobil.
   const [typePicker, setTypePicker] = useState<{ exIdx: number; setIdx: number } | null>(null)
-  // Kg som fritext medan man skriver: value={set.weight} skulle nolla ett nyss skrivet
+  // Kg och reps som fritext medan man skriver: value={set.weight} skulle nolla ett nyss skrivet
   // kommatecken vid omrendering (kontrollerat fält, `<input type="number">` följer dessutom
-  // webbläsarens lokal för decimaltecken och godkänner bara komma ELLER punkt). Nyckel "exIdx:setIdx".
-  const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({})
+  // webbläsarens lokal för decimaltecken och godkänner bara komma ELLER punkt), och reps gick
+  // inte att tömma, ett tomt fält skrevs genast om till 1. Nyckel "kg:exIdx:setIdx" eller "reps:exIdx:setIdx".
+  const [inputDrafts, setInputDrafts] = useState<Record<string, string>>({})
+  function dropDraft(key: string) {
+    setInputDrafts(prev => {
+      if (!(key in prev)) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
 
   const draggedExerciseIndexRef = useRef<number | null>(null)
   const activeTemplateRequestRef = useRef<string>('')
@@ -219,7 +228,7 @@ export function LogSession() {
   // Ett nytt program eller pass laddar nya set på samma exIdx:setIdx-nycklar; en kvarvarande
   // kg-draft från förra programmet skulle annars visas på fel set.
   useEffect(() => {
-    setWeightDrafts({})
+    setInputDrafts({})
   }, [selectedTemplateId])
 
   // Auto-save to activeWorkout whenever exercises or settings change (after initial load)
@@ -334,16 +343,9 @@ export function LogSession() {
     const newExercises = [...exercises]
     newExercises[exerciseIdx] = { ...ex, setEntries: newSetEntries }
     setExercises(newExercises)
-    // Stegknappen sätter kg direkt: en kvarvarande kg-draft (mitt i skrivandet) ska inte överskugga den
-    if (deltaWeight !== 0) {
-      const key = `${exerciseIdx}:${setIdx}`
-      setWeightDrafts(prev => {
-        if (!(key in prev)) return prev
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    }
+    // Stegknappen sätter värdet direkt: en kvarvarande draft (mitt i skrivandet) ska inte överskugga den
+    if (deltaWeight !== 0) dropDraft(`kg:${exerciseIdx}:${setIdx}`)
+    if (deltaReps !== 0) dropDraft(`reps:${exerciseIdx}:${setIdx}`)
     triggerHaptic(20)
   }
 
@@ -729,7 +731,8 @@ export function LogSession() {
                             const isRecord = isRecordSet(ex.exerciseId, set)
 
                             const badgeLabel = setType === 'normal' ? `${setIdx + 1}` : SET_TYPE_LABELS[setType][0]
-                            const weightKey = `${exIdx}:${setIdx}`
+                            const weightKey = `kg:${exIdx}:${setIdx}`
+                            const repsKey = `reps:${exIdx}:${setIdx}`
 
                             return (
                               <tr
@@ -757,20 +760,15 @@ export function LogSession() {
                                       type="text"
                                       inputMode="decimal"
                                       enterKeyHint="next"
-                                      value={weightDrafts[weightKey] ?? formatWeight(set.weight)}
+                                      value={inputDrafts[weightKey] ?? formatWeight(set.weight)}
                                       aria-label="Kg"
                                       onInput={(e: Event) => {
                                         const text = (e.target as HTMLInputElement).value
-                                        setWeightDrafts(prev => ({ ...prev, [weightKey]: text }))
+                                        setInputDrafts(prev => ({ ...prev, [weightKey]: text }))
                                         const parsed = parseDecimal(text)
                                         updateSet(exIdx, setIdx, { weight: parsed !== null ? Math.max(0, Math.min(500, parsed)) : 0 })
                                       }}
-                                      onBlur={() => setWeightDrafts(prev => {
-                                        if (!(weightKey in prev)) return prev
-                                        const next = { ...prev }
-                                        delete next[weightKey]
-                                        return next
-                                      })}
+                                      onBlur={() => dropDraft(weightKey)}
                                       class="set-input"
                                     />
                                     <div class="stepper-buttons">
@@ -782,14 +780,19 @@ export function LogSession() {
                                 <td class="col-reps">
                                   <div class="input-with-steppers">
                                     <input
-                                      type="number"
-                                      min="1"
-                                      max="100"
+                                      type="text"
                                       inputMode="numeric"
                                       enterKeyHint="next"
-                                      value={set.reps}
+                                      value={inputDrafts[repsKey] ?? String(set.reps)}
                                       aria-label="Reps"
-                                      onChange={(e: Event) => updateSet(exIdx, setIdx, { reps: parseInt((e.target as HTMLInputElement).value, 10) || 1 })}
+                                      onInput={(e: Event) => {
+                                        const text = (e.target as HTMLInputElement).value
+                                        setInputDrafts(prev => ({ ...prev, [repsKey]: text }))
+                                        // Tomt eller 0 sparas inte: fältet går tillbaka till förra värdet när det lämnas
+                                        const reps = Number.parseInt(text, 10)
+                                        if (reps >= 1) updateSet(exIdx, setIdx, { reps: Math.min(100, reps) })
+                                      }}
+                                      onBlur={() => dropDraft(repsKey)}
                                       class="set-input"
                                     />
                                     <div class="stepper-buttons">

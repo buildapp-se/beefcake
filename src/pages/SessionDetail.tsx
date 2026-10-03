@@ -12,7 +12,7 @@ import {
 } from '../services/dataService'
 import { icon } from '../icons'
 import { formatDateFull, formatDateShort } from '../lib/date'
-import { formatSets } from '../lib/format'
+import { formatSets, restoreIfEmpty } from '../lib/format'
 import { setsVolume, exercisesVolume } from '../lib/volume'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
@@ -388,8 +388,10 @@ export function SessionDetail() {
 
   function handleInputChange(e: Event, idx: number, field: keyof FormExercise, setIdx?: number, nestedField?: keyof SetEntry) {
     const target = e.target as HTMLInputElement
+    // Ett tömt sifferfält sparas inte: annars skrevs 0 in direkt och 7 blev "07". restoreIfEmpty sätter tillbaka värdet.
+    if (target.type === 'number' && target.value === '') return
     const value = target.type === 'number' ? (parseFloat(target.value) || 0) : target.value
-    
+
     if (field === 'setEntries' && setIdx !== undefined && nestedField) {
       const exercise = formExercises[idx]
       const newSetEntries = [...exercise.setEntries]
@@ -659,15 +661,15 @@ export function SessionDetail() {
                     <div key={setIdx} class="input-group grid-3">
                       <div>
                         <label>Set {setIdx + 1}</label>
-                        <input type="number" min="1" max="20" value={set.sets} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'sets')} />
+                        <input type="number" min="1" max="20" value={set.sets} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'sets')} onBlur={restoreIfEmpty(set.sets)} />
                       </div>
                       <div>
                         <label>Reps</label>
-                        <input type="number" min="1" max="50" value={set.reps} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'reps')} />
+                        <input type="number" min="1" max="50" value={set.reps} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'reps')} onBlur={restoreIfEmpty(set.reps)} />
                       </div>
                       <div>
                         <label>Vikt (kg)</label>
-                        <input type="number" min="0" step="0.5" max="500" value={set.weight} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'weight')} />
+                        <input type="number" min="0" step="0.5" max="500" value={set.weight} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'weight')} onBlur={restoreIfEmpty(set.weight)} />
                       </div>
                       {ex.setEntries.length > 1 && (
                         <div class="m-0">

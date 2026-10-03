@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks'
 import { getAllTemplates, getAllExercises, createTemplate, updateTemplate, deleteTemplate, getOrCreateExercise } from '../services/dataService'
-import { formatWeight, parseDecimal } from '../lib/format'
+import { formatWeight, parseDecimal, restoreIfEmpty } from '../lib/format'
 import { icon } from '../icons'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
@@ -199,8 +199,10 @@ export function Templates() {
 
   function handleInputChange(e: Event, idx: number, field: keyof FormExercise, nestedField?: keyof SetEntry) {
     const target = e.target as HTMLInputElement
+    // Ett tömt sifferfält sparas inte: annars skrevs 0 in direkt och 7 blev "07". restoreIfEmpty sätter tillbaka värdet.
+    if (target.type === 'number' && target.value === '') return
     const value = target.type === 'number' ? (parseFloat(target.value) || 0) : target.value
-    
+
     if (nestedField && field === 'defaultSetEntry') {
       updateFormExercise(idx, field, { ...formExercises[idx].defaultSetEntry, [nestedField]: value })
     } else {
@@ -306,10 +308,10 @@ export function Templates() {
                 />
               </Field>
               <Field label="Set" class="m-0">
-                <input type="number" min="1" max="20" value={fe.defaultSetEntry.sets} onChange={e => handleInputChange(e, idx, 'defaultSetEntry', 'sets')} />
+                <input type="number" min="1" max="20" value={fe.defaultSetEntry.sets} onChange={e => handleInputChange(e, idx, 'defaultSetEntry', 'sets')} onBlur={restoreIfEmpty(fe.defaultSetEntry.sets)} />
               </Field>
               <Field label="Reps" class="m-0">
-                <input type="number" min="1" max="50" value={fe.defaultSetEntry.reps} onChange={e => handleInputChange(e, idx, 'defaultSetEntry', 'reps')} />
+                <input type="number" min="1" max="50" value={fe.defaultSetEntry.reps} onChange={e => handleInputChange(e, idx, 'defaultSetEntry', 'reps')} onBlur={restoreIfEmpty(fe.defaultSetEntry.reps)} />
               </Field>
               <Field label="Vikt (kg)" class="m-0">
                 <input

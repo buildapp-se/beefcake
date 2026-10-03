@@ -16,6 +16,14 @@ export function parseDecimal(text: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/** onBlur för sifferfält vars ändringshanterare inte sparar tomt: fältet visar det sparade värdet igen. */
+export function restoreIfEmpty(saved: number) {
+  return (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement
+    if (input.value === '') input.value = String(saved)
+  }
+}
+
 /** Ett set som text: "82,5 kg × 8", med "@8" efter när RPE finns. Vikt 0 betyder kroppsvikt eller kondition. */
 export function formatSet(set: { weight: number; reps: number; rpe?: number }): string {
   const base = set.weight > 0 ? `${formatWeight(set.weight)} kg × ${set.reps}` : `${set.reps} reps`
