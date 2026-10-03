@@ -1,14 +1,16 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: "Historik med veckovy, passräknare i kalendern och denna månad på Hem, byggt och pushat 2026-09-16 kväll; före det övningsdatabasen på svenska med stillbilder i översikten, byggd och verifierad 2026-09-15; före det övningsdatabas och startprogram 2026-09-13"
-nextAction: "Latmask-brevet har inte gått, med rätta: Patriks senaste pass är 2026-09-12 (inte 2 sep), så dag fyra är 2026-09-16 och första möjliga brev 19:00 den dagen om inget pass loggas. Cronen körde 13 och 14 sep utan `reminders_skipped`, alltså finns en icke-tom nyckel; att den är giltig bevisas först av ett brev (`last_sent` i `reminders`, https://resend.com/emails). Sedan Program på telefonen (startprogram, miniatyrer, animation, de sju gissade namnkopplingarna) och Firebase sign-up-kontrollen"
+currentGoal: "Buggfixar från Patriks och Julias användning: flytta övning, reps-fältet på mobil, vilotimern under railen (2026-09-30 till 2026-10-03)"
+nextAction: "Patriks beslut om webb-push för vilotimern (Julias iPhone-prov 2026-10-03: ingen signal med annan app i förgrunden), kräver ny VAPID-hemlighet och DO-alarm, förslaget står i BACKLOG P1. Latmask-brevet bevisas först vid ett glapp på fyra dagar (`last_sent` i `reminders`). Firebase sign-up-kontrollen"
 blockers:
   - "Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt"
-reviewedAt: 2026-10-02
+reviewedAt: 2026-10-03
 ---
 
 ## Recent work
+
+**2026-10-03, reps-fältet och timern under railen.** Patriks två fynd. Reps (`960bace`): preact/compat gör `onChange` till `onInput`, så reps-fältet i Logga pass läste varje tecken och `parseInt(...) || 1` skrev genast tillbaka 1 i ett tömt fält; 15 gick inte att göra till 7 på mobilen. Nu samma draft-mönster som kg (`inputDrafts`, nycklar `kg:` och `reps:`, textfält med `inputMode="numeric"`), tomt eller 0 sparas inte och fältet återgår vid blur. Passredigeringen och programredigeraren hade varianten "tomt blir 0, 7 blir 07": tomt sparas inte där heller, `restoreIfEmpty` i `format.ts` återställer vid blur. Timern (`540e60f`): mellan 768 och 900 px är timern fast men railen syns och bottennavigeringen inte, så den låg vid `left` 12 under railen och 64 px upp; nu `left` 64 + 12 och `bottom` 12 i det intervallet. Verifierat i Chromium: timern vid 767, 768, 850, 900 och 901 px; reps 15 → tomt → 7, kvar efter omladdning, tomt plus blur återställer; samma i båda redigerarna. lint, `tsc -b`, 137 tester, build gröna. Julias iPhone-prov av skärmlåset står i BACKLOG P1.
 
 **2026-10-02, CLS och brevkontrollen.** CLS på inloggningssidan rättad (`ca24259`, detaljer i BACKLOG): kortet förankrat uppifrån, 0,000 i tre lokala laddningar på 390 px. Latmask-brevet: `reminders` läst i D1 (en rad, `enabled = 1`, `last_sent` tom), och passdatumen i senaste snapshoten visar att dag fyra aldrig nåtts sedan 16 sep; P0 står kvar tills ett längre uppehåll. IndexedDB-migreringen från 2026-09-30 står nu som P3 i BACKLOG. **Fälla:** `TaskStop` på en `npx vite` i Bash stoppar inte node-barnet, porten blir kvar; stoppa via PowerShell på kommandoraden (`Win32_Process` med `vite.js* --port N`).
 
