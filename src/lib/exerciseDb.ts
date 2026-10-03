@@ -95,7 +95,17 @@ const EXERCISE_DB_MAP: Record<string, string> = {
   'Vadpress hantel': 'Standing_Dumbbell_Calf_Raise', 'Vadpress kettlebell': 'Standing_Dumbbell_Calf_Raise',
   // Startprogrammens övningar (src/data/starterPrograms.ts)
   'Kabelrodd': 'Seated_Cable_Rows', 'Face pull': 'Face_Pull', 'Hammercurl': 'Hammer_Curls',
-  'Triceps över huvudet': 'Cable_Rope_Overhead_Triceps_Extension', 'Rumänsk marklyft': 'Romanian_Deadlift', 'Benpress': 'Leg_Press'
+  'Triceps över huvudet': 'Cable_Rope_Overhead_Triceps_Extension', 'Rumänsk marklyft': 'Romanian_Deadlift', 'Benpress': 'Leg_Press',
+  // Startprogrammen 2026-10-03 (PHUL, Stopgap, GBR, Arnold)
+  'Bicepscurl skivstång': 'Barbell_Curl', 'Flyes hantel': 'Dumbbell_Flyes', 'Bicepscurl lutande bänk': 'Incline_Dumbbell_Curl',
+  'Frontböj': 'Front_Barbell_Squat', 'Utfall skivstång': 'Barbell_Lunge', 'Vadpress sittande': 'Seated_Calf_Raise',
+  'Bulgarisk utfallsböj': 'Split_Squat_with_Dumbbells', 'Golvpress hantlar': 'Dumbbell_Floor_Press',
+  'Stelbent marklyft hantlar': 'Stiff-Legged_Dumbbell_Deadlift', 'Plankan': 'Plank', 'Hantelrodd båda armar': 'Bent_Over_Two-Dumbbell_Row',
+  'Pullover hantel': 'Straight-Arm_Dumbbell_Pullover', 'Crunch': 'Crunches', 'Omvänd crunch': 'Reverse_Crunch',
+  'Frivändning med press': 'Clean_and_Press', 'Upprätt rodd': 'Upright_Barbell_Row', 'Bänk smalt grepp': 'Close-Grip_Barbell_Bench_Press',
+  'Fransk press stående': 'Standing_Overhead_Barbell_Triceps_Extension', 'Handledscurl': 'Palms-Up_Barbell_Wrist_Curl_Over_A_Bench',
+  'Omvänd handledscurl': 'Palms-Down_Wrist_Curl_Over_A_Bench', 'Stelbent marklyft': 'Stiff-Legged_Barbell_Deadlift',
+  'Good morning': 'Good_Morning'
 }
 const MAP_LOWER = new Map(Object.entries(EXERCISE_DB_MAP).map(([k, v]) => [k.toLowerCase(), v]))
 

@@ -58,7 +58,16 @@ const MUSCLE_GROUP_MAP: Record<string, string> = {
   'Leg extension': 'Ben',
   // Startprogrammens övningar som inte fanns i katalogen (src/data/starterPrograms.ts)
   'Kabelrodd': 'Rygg', 'Face pull': 'Axlar', 'Hammercurl': 'Biceps', 'Triceps över huvudet': 'Triceps',
-  'Rumänsk marklyft': 'Bakre kedjan', 'Benpress': 'Ben'
+  'Rumänsk marklyft': 'Bakre kedjan', 'Benpress': 'Ben',
+  // Fyra som hade bild men ingen grupp, och startprogrammen 2026-10-03 (PHUL, Stopgap, GBR, Arnold)
+  'Triceps dips stång': 'Triceps', 'Triceps skull crush': 'Triceps', 'Utfall bakåt': 'Ben', 'Vadpress hantel': 'Ben',
+  'Bicepscurl skivstång': 'Biceps', 'Flyes hantel': 'Bröst', 'Bicepscurl lutande bänk': 'Biceps', 'Frontböj': 'Ben',
+  'Utfall skivstång': 'Ben', 'Vadpress sittande': 'Ben', 'Bulgarisk utfallsböj': 'Ben', 'Golvpress hantlar': 'Bröst',
+  'Stelbent marklyft hantlar': 'Bakre kedjan', 'Plankan': 'Mage', 'Hantelrodd båda armar': 'Rygg',
+  'Pullover hantel': 'Bröst', 'Crunch': 'Mage', 'Omvänd crunch': 'Mage', 'Frivändning med press': 'Axlar',
+  'Upprätt rodd': 'Axlar', 'Bänk smalt grepp': 'Triceps', 'Fransk press stående': 'Triceps',
+  'Handledscurl': 'Underarmar', 'Omvänd handledscurl': 'Underarmar', 'Stelbent marklyft': 'Bakre kedjan',
+  'Good morning': 'Bakre kedjan'
 }
 
 export function muscleGroupForName(name: string): string | undefined {
@@ -70,7 +79,11 @@ export function muscleGroupForName(name: string): string | undefined {
 const EQUIPMENT_MAP: Record<string, string> = {
   'Benböj': 'skivstång', 'Bänk': 'skivstång', 'Marklyft': 'skivstång', 'Militärpress': 'skivstång',
   'Skivstångsrodd': 'skivstång', 'Snedbänk': 'skivstång', 'Vadpress skivstång': 'skivstång',
-  'Hip-thrusts': 'skivstång', 'Bicepscurl ez stång': 'ez-stång', 'Triceps stång': 'ez-stång', 'Rumänsk marklyft': 'skivstång'
+  'Hip-thrusts': 'skivstång', 'Bicepscurl ez stång': 'ez-stång', 'Triceps stång': 'ez-stång', 'Rumänsk marklyft': 'skivstång',
+  'Bicepscurl skivstång': 'skivstång', 'Frontböj': 'skivstång', 'Utfall skivstång': 'skivstång',
+  'Frivändning med press': 'skivstång', 'Upprätt rodd': 'skivstång', 'Bänk smalt grepp': 'skivstång',
+  'Fransk press stående': 'skivstång', 'Handledscurl': 'skivstång', 'Omvänd handledscurl': 'skivstång',
+  'Stelbent marklyft': 'skivstång', 'Good morning': 'skivstång'
 }
 
 // Fyll på muscleGroup och equipment där de saknas, ur namnkartorna. Additivt: ett satt värde rörs aldrig.
