@@ -168,5 +168,5 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 - npm audit: 2026-09-24, pass, 0 in production, 4 high 2 moderate in the dev chain
 - Secrets: 2026-09-24, pass, gitleaks 0 findings in 164 commits, 3 reviewed in .gitleaksignore
 - Actions: 2026-09-24, pass, zizmor 0 high, 0 medium, 0 low
-- Mutation: 2026-09-24, Stryker on 6 of 10 logic files: importValidation 85,00 % (was 66,67), streak 100 % (92,86), date 100 % (64,37), plates 98,08 % (94,23), exerciseMetrics 100 % (86,96), format 95,83 % (79,17), exerciseDb 97,04 % (86,98), timerService 49,14 % (21,55), snapshot 100 % already; tests by Antigravity, reviewed; volume lane made no changes
+- Mutation: 2026-09-24, Stryker on 6 of 10 logic files: importValidation 85,00 % (was 66,67), streak 100 % (92,86), date 100 % (64,37), plates 98,08 % (94,23), exerciseMetrics 100 % (86,96), format 95,83 % (79,17), exerciseDb 97,04 % (86,98), timerService 76,27 % (2026-10-03, was 50,85; 21,55 before the first lane), snapshot 100 % already; tests by Antigravity, reviewed; volume lane made no changes
 - WCAG 2.2 AA: 2026-09-24, warn, axe 4.13.0 0 violations on buildapp.se/beefcake (mobile, one page); manual keyboard pass not done
