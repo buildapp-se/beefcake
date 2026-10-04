@@ -60,6 +60,11 @@ export function LogSession() {
   const [draggedExerciseIndex, setDraggedExerciseIndex] = useState<number | null>(null)
   const [previousPerformances, setPreviousPerformances] = useState<Record<string, { date: string; setEntries: SetEntry[]; notes?: string }>>({})
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [activeExerciseIndex, setActiveExerciseIndex] = useState(0)
+  const [focusedSet, setFocusedSet] = useState<{ exIdx: number; setIdx: number } | null>(null)
+  const [setMenuOpen, setSetMenuOpen] = useState(false)
+  const [exerciseMenuOpen, setExerciseMenuOpen] = useState<number | null>(null)
+  const [notesOpen, setNotesOpen] = useState<number | null>(null)
   // Rekord per övning vid passets start: ett bockat set som slår dem får PR-märket på raden
   const [records, setRecords] = useState<Record<string, { maxWeight: number; maxE1RM: number }>>({})
   const [plateCalcModal, setPlateCalcModal] = useState<{ isOpen: boolean; weight: number; barWeight: number; exIdx: number; setIdx: number }>({
@@ -127,6 +132,7 @@ export function LogSession() {
       const urlParams = new URLSearchParams(window.location.search)
       const fromSessionId = urlParams.get('from')
       const templateParam = urlParams.get('template')
+      const exerciseParam = urlParams.get('exercise')
       const requestedDate = urlParams.get('date')
 
       if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
@@ -170,16 +176,31 @@ export function LogSession() {
           await loadTemplateIntoExercises(matchedTemplate, es)
         }
       }
+      // Explicit "Lägg till i pass" från övningsdatabasen. Pågående utkast behålls.
+      else if (exerciseParam) {
+        const existing = es.find(e => e.name.trim().toLocaleLowerCase('sv-SE') === exerciseParam.trim().toLocaleLowerCase('sv-SE'))
+        const added: LogFormExercise = { exerciseId: existing?.id || `new-${Date.now()}`, exerciseName: existing?.name || exerciseParam, setEntries: [] }
+        const draftExercises = activeDraft?.exercises.some(e => e.setEntries.length > 0) ? activeDraft.exercises : []
+        setExercises([...draftExercises, added])
+        setActiveExerciseIndex(draftExercises.length)
+        if (activeDraft && draftExercises.length > 0) {
+          setSelectedTemplateId(activeDraft.templateId)
+          setDate(activeDraft.date)
+          setStartTime(activeDraft.startTime)
+        }
+        if (existing) void fetchPreviousPerformances([existing.id])
+      }
       // Priority 3: ett faktiskt påbörjat utkast i IndexedDB
       else if (activeDraft && activeDraft.exercises.some(e => e.setEntries.length > 0)) {
         setSelectedTemplateId(activeDraft.templateId)
         setDate(activeDraft.date || todayISO())
         setStartTime(activeDraft.startTime || nowISO())
         setExercises(activeDraft.exercises)
+        setActiveExerciseIndex(Math.max(0, activeDraft.exercises.findIndex(e => e.setEntries.some(s => !s.completed))))
         void fetchPreviousPerformances(activeDraft.exercises.map(e => e.exerciseId))
       }
 
-      if (fromSessionId || templateParam || requestedDate) {
+      if (fromSessionId || templateParam || exerciseParam || requestedDate) {
         window.history.replaceState({}, '', window.location.pathname)
       }
     } catch (err) {
@@ -192,6 +213,7 @@ export function LogSession() {
   }
 
   async function loadTemplateIntoExercises(template: Template, allExList: Exercise[]) {
+    setActiveExerciseIndex(0)
     activeTemplateRequestRef.current = template.id
     const exMap = new Map(allExList.map(e => [e.id, e.name]))
     // Ladda förra gången först: den vikten är utgångsläget vid stången, inte mallens startvärde
@@ -276,6 +298,7 @@ export function LogSession() {
   // Template switch handler with race-condition prevention
   async function handleSelectTemplate(newTemplateId: string) {
     setSelectedTemplateId(newTemplateId)
+    setActiveExerciseIndex(0)
     activeTemplateRequestRef.current = newTemplateId
 
     const template = templates.find(t => t.id === newTemplateId)
@@ -317,6 +340,10 @@ export function LogSession() {
       // Rekordet får den långa vibrationen, samma som när passet sparas
       triggerHaptic(isRecordSet(ex.exerciseId, newSetEntries[setIdx]) ? [60, 40, 100] : 50)
       startRestTimer()
+      if (newSetEntries.every(s => s.completed)) {
+        const nextIndex = newExercises.findIndex((candidate, index) => index > exerciseIdx && (candidate.setEntries.length === 0 || candidate.setEntries.some(s => !s.completed)))
+        if (nextIndex !== -1) setActiveExerciseIndex(nextIndex)
+      }
     }
   }
 
@@ -394,6 +421,7 @@ export function LogSession() {
   }
 
   function addExercise() {
+    setActiveExerciseIndex(exercises.length)
     setExercises(prev => [
       ...prev,
       {
@@ -406,6 +434,7 @@ export function LogSession() {
 
   function removeExercise(idx: number) {
     setExercises(prev => prev.filter((_, i) => i !== idx))
+    setActiveExerciseIndex(current => current >= idx ? Math.max(0, current - 1) : current)
   }
 
   function addSet(exerciseIdx: number) {
@@ -431,6 +460,7 @@ export function LogSession() {
       setEntries: [...ex.setEntries, newSet]
     }
     setExercises(newExercises)
+    setFocusedSet({ exIdx: exerciseIdx, setIdx: ex.setEntries.length })
   }
 
   function removeSet(exerciseIdx: number, setIdx: number) {
@@ -469,6 +499,7 @@ export function LogSession() {
     const toIndex = Number(target?.dataset.exerciseIndex)
     if (!Number.isInteger(toIndex) || toIndex === fromIndex) return
     moveExercise(fromIndex, toIndex)
+    setActiveExerciseIndex(toIndex)
     draggedExerciseIndexRef.current = toIndex
     setDraggedExerciseIndex(toIndex)
   }
@@ -627,12 +658,24 @@ export function LogSession() {
 
       <div class="log-session-main">
         <div class="mb log-session-header">
-          <h1 class="page-title m-0">{exercises.length > 0 ? 'Aktivt träningspass' : 'Logga pass'}</h1>
+          <div class="log-title-row">
+            <h1 class="page-title m-0">{exercises.length > 0 ? (templates.find(t => t.id === selectedTemplateId)?.name || 'Fritt pass') : 'Logga pass'}</h1>
+            {exercises.length > 0 && <details class="log-actions-menu">
+              <summary aria-label="Fler passåtgärder">⋯</summary>
+              <div class="log-actions-list">
+                <button type="button" onClick={() => setShowSaveTemplate(v => !v)}>{showSaveTemplate ? 'Dölj programsparning' : 'Spara som nytt program'}</button>
+                <button type="button" class="text-danger" onClick={() => setCancelDialogOpen(true)}>Avbryt pass</button>
+              </div>
+            </details>}
+          </div>
           {exercises.length > 0 && (
             <span class="text-xs text-muted">
               {completedSetsCount} av {totalSetsCount} set klara • Lyft volym: {totalVolume.toLocaleString('sv-SE')} kg
             </span>
           )}
+          {exercises.length > 0 && <div class="log-progress" role="progressbar" aria-label="Klara set" aria-valuenow={completedSetsCount} aria-valuemin={0} aria-valuemax={totalSetsCount || 1}>
+            <span style={{ width: `${totalSetsCount ? completedSetsCount / totalSetsCount * 100 : 0}%` }} />
+          </div>}
           {/* Datum och program alltid synliga, som en slimmad rad utan etiketter (Patrik 2026-09-04, ersätter pennan från 2026-09-01) */}
           <div class="log-session-meta input-group">
             <input type="date" aria-label="Datum" value={date} onChange={(e: Event) => setDate((e.target as HTMLInputElement).value)} />
@@ -661,12 +704,19 @@ export function LogSession() {
                 const barWeight = barWeightFor(allExercises.find(e => e.id === ex.exerciseId)?.equipment)
                 // En plattrad per distinkt vikt bland seten, så tre set på 82,5 ger en rad, inte tre
                 const plateWeights = barWeight === null ? [] : Array.from(new Set(ex.setEntries.map(s => s.weight).filter(w => w > 0)))
+                const expanded = activeExerciseIndex === exIdx
+                const doneCount = ex.setEntries.filter(s => s.completed).length
                 return (
                   <Card
                     key={exIdx}
                     class={`exercise-live-card mb ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
                     data-exercise-index={exIdx}
                   >
+                    <button type="button" class="exercise-collapse-toggle" aria-expanded={expanded} onClick={() => setActiveExerciseIndex(exIdx)}>
+                      <span>{ex.exerciseName || 'Ny övning'}</span>
+                      <span>{doneCount} av {ex.setEntries.length} klara</span>
+                    </button>
+                    <div class={expanded ? 'exercise-live-body' : 'exercise-live-body exercise-live-body-collapsed'}>
                     <div class="exercise-live-header flex justify-between items-center mb-sm">
                       <div class="flex items-center gap-2 grow">
                         <button
@@ -689,17 +739,12 @@ export function LogSession() {
                           class="exercise-title-input"
                         />
                       </div>
-                      <button
-                        type="button"
-                        class="btn-remove"
-                        onClick={() => removeExercise(exIdx)}
-                        aria-label="Ta bort övning"
-                      >
-                        <svg width="20" height="20" viewBox="0 0 19 19">
-                          <use href={icon('trash-icon')} />
-                        </svg>
-                      </button>
+                      <button type="button" class="exercise-more-button" aria-label={`Fler val för ${ex.exerciseName}`} aria-expanded={exerciseMenuOpen === exIdx} onClick={() => setExerciseMenuOpen(exerciseMenuOpen === exIdx ? null : exIdx)}>⋯</button>
                     </div>
+                    {exerciseMenuOpen === exIdx && <div class="exercise-options">
+                      <button type="button" onClick={() => { setNotesOpen(exIdx); setExerciseMenuOpen(null) }}>Anteckning</button>
+                      <button type="button" class="text-danger" onClick={() => { removeExercise(exIdx); setExerciseMenuOpen(null) }}>Ta bort övning</button>
+                    </div>}
 
                     {prev && (prevSets.length > 0 || prev.notes) && (
                       <div class="exercise-prev-banner mb-sm">
@@ -715,7 +760,7 @@ export function LogSession() {
                       <table class="set-rows-table">
                         <thead>
                           <tr>
-                            <th class="col-type">Typ</th>
+                            <th class="col-type">Set</th>
                             <th class="col-prev"><span class="prev-full">Föregående</span><span class="prev-compact">Förra</span></th>
                             <th class="col-kg">Kg</th>
                             <th class="col-reps">Reps</th>
@@ -766,6 +811,8 @@ export function LogSession() {
                                       enterKeyHint="next"
                                       value={inputDrafts[weightKey] ?? formatWeight(set.weight)}
                                       aria-label="Kg"
+                                      placeholder={prevSet ? formatWeight(prevSet.weight) : undefined}
+                                      onFocus={() => { setFocusedSet({ exIdx, setIdx }); setSetMenuOpen(false) }}
                                       onInput={(e: Event) => {
                                         const text = (e.target as HTMLInputElement).value
                                         setInputDrafts(prev => ({ ...prev, [weightKey]: text }))
@@ -789,6 +836,8 @@ export function LogSession() {
                                       enterKeyHint="next"
                                       value={inputDrafts[repsKey] ?? String(set.reps)}
                                       aria-label="Reps"
+                                      placeholder={prevSet ? String(prevSet.reps) : undefined}
+                                      onFocus={() => { setFocusedSet({ exIdx, setIdx }); setSetMenuOpen(false) }}
                                       onInput={(e: Event) => {
                                         const text = (e.target as HTMLInputElement).value
                                         setInputDrafts(prev => ({ ...prev, [repsKey]: text }))
@@ -813,7 +862,7 @@ export function LogSession() {
                                     aria-expanded={pickerOpen}
                                     onClick={() => setRpePicker(pickerOpen ? null : { exIdx, setIdx })}
                                   >
-                                    {set.rpe ? formatWeight(set.rpe) : '–'}
+                                    {set.rpe ? formatWeight(set.rpe) : 'Saknas'}
                                   </button>
                                 </td>
                                 <td class="col-plate">
@@ -833,7 +882,7 @@ export function LogSession() {
                                   <button
                                     type="button"
                                     class={`btn-check-set ${isCompleted ? 'checked' : ''}`}
-                                    onClick={() => toggleSetCompleted(exIdx, setIdx)}
+                                    onClick={() => { setFocusedSet({ exIdx, setIdx }); toggleSetCompleted(exIdx, setIdx) }}
                                     aria-label={isCompleted ? 'Markera som ej klar' : 'Markera som klar'}
                                     title={isRecord ? 'Nytt rekord för övningen' : undefined}
                                   >
@@ -857,6 +906,22 @@ export function LogSession() {
                         </tbody>
                       </table>
                     </div>
+                    {focusedSet?.exIdx === exIdx && ex.setEntries[focusedSet.setIdx] && (
+                      <div class="mobile-set-tools" role="group" aria-label={`Ändra set ${focusedSet.setIdx + 1}`}>
+                        <button type="button" onClick={() => adjustSetValues(exIdx, focusedSet.setIdx, -2.5, 0)}>−2,5</button>
+                        <button type="button" onClick={() => adjustSetValues(exIdx, focusedSet.setIdx, 2.5, 0)}>+2,5</button>
+                        <button type="button" onClick={() => adjustSetValues(exIdx, focusedSet.setIdx, 0, -1)}>−1</button>
+                        <button type="button" onClick={() => adjustSetValues(exIdx, focusedSet.setIdx, 0, 1)}>+1</button>
+                        <button type="button" class="mobile-set-more" aria-expanded={setMenuOpen} onClick={() => setSetMenuOpen(open => !open)} aria-label="Fler setval">⋯</button>
+                        {setMenuOpen && (
+                          <div class="mobile-set-menu">
+                            <button type="button" onClick={() => { setTypePicker({ exIdx, setIdx: focusedSet.setIdx }); setSetMenuOpen(false) }}>Settyp</button>
+                            <button type="button" onClick={() => { setRpePicker({ exIdx, setIdx: focusedSet.setIdx }); setSetMenuOpen(false) }}>RPE</button>
+                            <button type="button" class="text-danger" onClick={() => { removeSet(exIdx, focusedSet.setIdx); setFocusedSet(null); setSetMenuOpen(false) }}>Ta bort set</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {typePicker?.exIdx === exIdx && ex.setEntries[typePicker.setIdx] && (
                       <div class="rpe-picker mb-sm" role="group" aria-label={`Settyp för set ${typePicker.setIdx + 1}`}>
@@ -927,7 +992,7 @@ export function LogSession() {
                           Uppvärmning
                         </Button>
                       )}
-                      <input
+                      {(ex.notes || notesOpen === exIdx) && <input
                         type="text"
                         class="exercise-notes-input grow"
                         value={ex.notes ?? ''}
@@ -938,7 +1003,8 @@ export function LogSession() {
                           newExs[exIdx] = { ...ex, notes: (e.target as HTMLInputElement).value }
                           setExercises(newExs)
                         }}
-                      />
+                      />}
+                    </div>
                     </div>
                   </Card>
                 )
@@ -965,16 +1031,6 @@ export function LogSession() {
           {totalSetsCount === 0 && !saving && (
             <p class="text-xs text-muted mt-1 m-0 log-session-hint">Lägg till minst ett set för att kunna spara passet.</p>
           )}
-          <div class="flex gap-sm mt flex-wrap">
-            {exercises.length > 0 && (
-              <Button variant="secondary" size="sm" onClick={() => setCancelDialogOpen(true)}>
-                Avbryt pass
-              </Button>
-            )}
-            <Button variant="secondary" size="sm" onClick={() => setShowSaveTemplate(v => !v)} disabled={exercises.length === 0}>
-              {showSaveTemplate ? 'Dölj programsparning' : 'Spara som nytt program'}
-            </Button>
-          </div>
           {showSaveTemplate && (
             <Card class="mt">
               <form

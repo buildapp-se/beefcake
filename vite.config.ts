@@ -9,29 +9,46 @@ export default defineConfig({
     VitePWA({
       // 'prompt': en ny version väntar tills användaren trycker Ladda om (UpdateBanner), aldrig mitt i ett pass
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: ['icons/favicon.svg', 'icons/favicon-32.png', 'icons/apple-touch-icon.png', 'og-image-1200x630.png'],
       manifest: {
-        name: 'Beefcake',
+        name: 'Beefcake träningslogg',
         short_name: 'Beefcake',
-        description: 'Träningslogg för styrketräning',
+        description: 'Logga set med en hand och se vad du lyfte förra gången.',
+        lang: 'sv',
         theme_color: '#1b2634',
         background_color: '#1b2634',
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/beefcake/',
         start_url: '/beefcake/',
+        screenshots: [
+          { src: 'icons/screenshot-log.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Logga pass' },
+          { src: 'icons/screenshot-home.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Hem' }
+        ],
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
+          },
+          {
+            src: 'icons/icon-maskable-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'icons/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },

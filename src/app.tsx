@@ -2,10 +2,13 @@
 
 import { Router, Link, Switch, Route, useLocation } from 'wouter'
 import { lazy, Suspense } from 'preact/compat'
+import { useEffect, useState } from 'preact/hooks'
 import { AccountPage, GuestSaveBanner, LoginGate, useIsGuest } from './components/LoginGate'
 import { CloudSyncStatus } from './components/CloudSyncStatus'
 import { UpdateBanner } from './components/UpdateBanner'
 import { BeefcakeBadge, BeefcakeAvatar, useBeefcakeStreak } from './components/BeefcakeBadge'
+import { BrandMark } from './components/BrandMark'
+import { isCloudSyncConfigured } from './services/cloudSyncService'
 import { Card } from './components/Card'
 import { Home } from './pages/Home'
 import { LogSession } from './pages/LogSession'
@@ -60,7 +63,7 @@ function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
     <aside class="sidebar">
       <div class="sidebar-header">
         <Link href="/" class="brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
-          {avatar && <BeefcakeAvatar streak={avatar} />}
+          {avatar ? <BeefcakeAvatar streak={avatar} /> : <BrandMark />}
           <span class="sidebar-wordmark">Beefcake</span>
         </Link>
       </div>
@@ -82,11 +85,7 @@ function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
     <aside class="rail">
       <div class="rail-header">
         <Link href="/" class="brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
-          {avatar ? <BeefcakeAvatar streak={avatar} /> : (
-            <svg class="rail-wordmark" width="24" height="24" viewBox="0 0 24 24">
-              <use href={icon('home-icon')} />
-            </svg>
-          )}
+          {avatar ? <BeefcakeAvatar streak={avatar} /> : <BrandMark />}
         </Link>
       </div>
       <nav class="rail-nav">
@@ -102,15 +101,31 @@ function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
 }
 
 function BottomNav() {
-  // Hem, Logga pass, Program, Historik, Statistik: Övningar och Inställningar nås via headern.
-  // Program flyttade hit 2026-09-30: bokmärket i headern var ingen ikon folk känner igen (UX-granskning, Jakob)
-  const mobileNavItems = [navItems[0], navItems[1], navItems[2], navItems[4], navItems[5]]
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [location] = useLocation()
+  const guest = useIsGuest()
+  useEffect(() => setMoreOpen(false), [location])
+  const mobileNavItems = [navItems[0], navItems[1], navItems[4], navItems[5]]
   return (
+    <>
+    {moreOpen && (
+      <div class="mobile-more-menu" role="menu" aria-label="Mer">
+        {navItems.filter(item => ['/templates', '/ovningar', '/settings'].includes(item.href)).map(item => (
+          <Link key={item.href} href={item.href} role="menuitem" onClick={() => setMoreOpen(false)}>{item.label}</Link>
+        ))}
+        {guest && <Link href="/konto" role="menuitem" onClick={() => setMoreOpen(false)}>Konto</Link>}
+      </div>
+    )}
     <nav class="bottom-nav">
       {mobileNavItems.map(item => (
         <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} showLabel />
       ))}
+      <button type="button" class={`nav-link mobile-more-button ${moreOpen || ['/templates', '/ovningar', '/settings', '/konto'].includes(location) ? 'active' : ''}`} aria-expanded={moreOpen} aria-label="Mer" onClick={() => setMoreOpen(open => !open)}>
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
+        <span class="nav-text">Mer</span>
+      </button>
     </nav>
+    </>
   )
 }
 
@@ -118,11 +133,6 @@ function HeaderNav() {
   return (
     <div class="header-nav-right flex gap-sm">
       {useIsGuest() && <Link href="/konto" class="header-settings header-login">Logga in</Link>}
-      <Link href="/ovningar" class="header-settings" aria-label="Övningar">
-        <svg width="24" height="24" viewBox="0 0 24 24">
-          <use href={icon('barbell-icon')} />
-        </svg>
-      </Link>
       <Link href="/settings" class="header-settings" aria-label="Inställningar">
         <svg width="24" height="24" viewBox="0 0 24 24">
           <use href={icon('settings-icon')} />
@@ -135,18 +145,19 @@ function HeaderNav() {
 function Shell() {
   const [location] = useLocation()
   const streak = useBeefcakeStreak()
-  // Cartman är bara för inloggade (beslut 2026-10-03): den öppna sajten visar en känd figur annars
+  // Cartman visas bara när inloggning finns och användaren passerat LoginGate.
   const guest = useIsGuest()
+  const showCartman = isCloudSyncConfigured() && !guest
   // Hem har märket i full storlek, alla andra sidor får 40 px avatar i navigeringen
   const isHome = location === '/'
-  const avatar = isHome || guest ? null : streak
+  const avatar = isHome || !showCartman ? null : streak
   return (
     <div class="app">
       <SidebarNav avatar={avatar} />
       <RailNav avatar={avatar} />
       <header class="header">
         <Link href="/" class="header-brand brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
-          {avatar && <BeefcakeAvatar streak={avatar} />}
+          {avatar ? <BeefcakeAvatar streak={avatar} /> : <BrandMark />}
           <h1>Beefcake</h1>
         </Link>
         <HeaderNav />
@@ -155,7 +166,7 @@ function Shell() {
         <UpdateBanner />
         <CloudSyncStatus />
         <GuestSaveBanner />
-        {isHome && !guest && <BeefcakeBadge streak={streak} />}
+        {isHome && showCartman && <BeefcakeBadge streak={streak} />}
         <Switch>
             <Route path="/" component={Home} />
             <Route path="/log" component={LogSession} />

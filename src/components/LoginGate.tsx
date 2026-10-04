@@ -9,6 +9,7 @@ import {
   sendPasswordReset, signInWithEmail, signInWithGoogle, signOutUser, subscribeToAuth, type AuthUser
 } from '../services/authService'
 import { Button } from './Button'
+import { BrandMark } from './BrandMark'
 
 /** Sant när appen körs utan konto: passen sparas bara på enheten (beslut 2026-10-03). */
 export const GuestContext = createContext(false)
@@ -72,6 +73,7 @@ function Shell({ children }: { children: ComponentChildren }) {
   return (
     <main class="login-gate-container">
       <div class="login-gate-form">
+        <BrandMark class="login-brand-mark" />
         <h1 class="login-gate-title">Beefcake</h1>
         <p class="login-subtitle">Träningslogg</p>
         {children}
@@ -147,6 +149,10 @@ function LoginForm({ initialMode = 'login' }: { initialMode?: Mode }) {
   function submit(e: Event) {
     e.preventDefault()
     const address = email.trim()
+    if (!address || (mode !== 'reset' && !password)) {
+      setError(mode === 'reset' ? 'Ange din e-postadress.' : 'Ange e-postadress och lösenord.')
+      return
+    }
     if (mode === 'reset') return void run(() => sendPasswordReset(address), 'Ett mejl med återställningslänk är skickat.')
     if (mode === 'register') return void run(() => registerWithEmail(address, password))
     void run(() => signInWithEmail(address, password))
@@ -182,7 +188,7 @@ function LoginForm({ initialMode = 'login' }: { initialMode?: Mode }) {
       )}
       {error && <p class="login-error" role="alert">{error}</p>}
       {info && <p class="login-subtitle" role="status">{info}</p>}
-      <Button type="submit" class="btn-block" disabled={busy || !email.trim() || (mode !== 'reset' && !password)}>
+      <Button type="submit" class="btn-block" disabled={busy}>
         {mode === 'register' ? 'Skapa konto' : mode === 'reset' ? 'Skicka återställningslänk' : 'Logga in'}
       </Button>
       <div class="login-links">

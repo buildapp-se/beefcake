@@ -158,30 +158,6 @@ export function RestTimer() {
     return () => window.removeEventListener('beefcake-start-timer', handleStart)
   }, [presets, selectedPreset])
 
-  // Lämna sidan med timern igång: fråga först. beforeunload täcker flik och omladdning,
-  // klickfångaren täcker appens egna länkar (wouter har ingen egen spärr).
-  useEffect(() => {
-    if (status !== 'running') return
-    const question = 'Vilotimern är igång. Vill du lämna sidan ändå?'
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    const guardLinks = (event: MouseEvent) => {
-      const link = (event.target as Element | null)?.closest('a[href]')
-      if (link && !window.confirm(question)) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-    }
-    window.addEventListener('beforeunload', beforeUnload)
-    document.addEventListener('click', guardLinks, true)
-    return () => {
-      window.removeEventListener('beforeunload', beforeUnload)
-      document.removeEventListener('click', guardLinks, true)
-    }
-  }, [status])
-
   function adjustTime(deltaSeconds: number) {
     if (deadlineRef.current) {
       deadlineRef.current += deltaSeconds * 1000
@@ -257,6 +233,7 @@ export function RestTimer() {
       </div>
 
       <div class="rest-timer-display" aria-live="polite">
+        <span class="rest-timer-mobile-label">Vila</span>
         <span>{formatTime(remaining)}</span>
         {isActive && (
           <div class="rest-timer-adjust-group flex gap-sm justify-center mt-1">
@@ -265,6 +242,12 @@ export function RestTimer() {
           </div>
         )}
       </div>
+      {(isActive || status === 'finished') && (
+        <div class="rest-timer-mobile-actions">
+          <button type="button" onClick={() => adjustTime(30)}>+30 s</button>
+          <button type="button" onClick={status === 'paused' ? startOrResume : reset}>{status === 'paused' ? 'Fortsätt' : 'Hoppa över'}</button>
+        </div>
+      )}
 
       <div class="rest-timer-presets" role="group" aria-label="Snabbval för vilotid">
         {presets.map((preset, index) => (

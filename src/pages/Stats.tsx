@@ -3,7 +3,7 @@ import { Link } from 'wouter'
 import { getAllExercises, getVolumeOverTime, getFrequencyPerTemplate, getPRs, getAllSessions, getEstimated1RM, getVolumeByMuscleGroup, getWeeklyHardSetsPerMuscleGroup, getExerciseTrainingCounts, getSessionYears, getBodyWeights } from '../services/dataService'
 import { classifyWeeklySets, SET_LOAD_LABELS } from '../lib/hypertrophy'
 import { formatWeight } from '../lib/format'
-import { formatDateShort, localDateISO, todayISO, parseLocalDate, mondayISO, isoWeek } from '../lib/date'
+import { formatDateShort, formatDateCompact, localDateISO, todayISO, parseLocalDate, mondayISO, isoWeek } from '../lib/date'
 import { exercisesVolume } from '../lib/volume'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
@@ -12,6 +12,7 @@ import { Field } from '../components/Field'
 import { Stat } from '../components/Stat'
 import type { Exercise, BodyWeight } from '../models'
 import type { Chart } from 'chart.js'
+import { sv } from 'date-fns/locale'
 
 // Lazy load Chart.js
 let chartModule: typeof import('chart.js') | null = null
@@ -143,8 +144,12 @@ export function Stats() {
   // och i PR-listan så det du faktiskt tränar ligger överst.
   const [recentCounts, setRecentCounts] = useState<Map<string, number>>(new Map())
   const [prs, setPRs] = useState<PR[]>([])
+  const [prQuery, setPrQuery] = useState('')
+  const [showAllPRs, setShowAllPRs] = useState(false)
+  const [volumeAvailable, setVolumeAvailable] = useState(false)
   const [muscleGroupStats, setMuscleGroupStats] = useState<{ muscleGroup: string; volume: number; sessions: number }[]>([])
   const [last30, setLast30] = useState<Last30>({ sessions: 0, volume: 0, newPRs: 0 })
+  const [latestSessionDate, setLatestSessionDate] = useState<string | null>(null)
   // Set per muskelgrupp per vecka, nyaste veckan först. Tom lista för en vilovecka.
   const [weeklySets, setWeeklySets] = useState<{ weekStart: string; groups: { muscleGroup: string; sets: number }[] }[]>([])
   // Pass per vecka, nyaste veckan först, tolv veckor bakåt. Staplarna skalas mot veckan med flest pass.
@@ -174,7 +179,7 @@ export function Stats() {
         volumeChartRef.current = null
       }
     }
-  }, [selectedExerciseId, period, loading])
+  }, [selectedExerciseId, period, loading, volumeAvailable])
 
   // Egen effekt och egen instans: kurvan delar varken period eller Chart-objekt med volymkurvan
   useEffect(() => {
@@ -209,11 +214,12 @@ export function Stats() {
         }]
       },
       options: {
+        locale: 'sv-SE',
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { type: 'time', ticks: { maxTicksLimit: 8, color: theme.text }, grid: { color: theme.grid } },
+          x: { type: 'time', adapters: { date: { locale: sv } }, ticks: { maxTicksLimit: 8, color: theme.text }, grid: { color: theme.grid } },
           y: { ticks: { color: theme.text }, grid: { color: theme.grid } }
         }
       }
@@ -250,6 +256,7 @@ export function Stats() {
       setMuscleGroupStats(muscleStats)
       setWeeklySets(weeks)
       setBodyWeights(bws)
+      setLatestSessionDate(sessions[0]?.date ?? null)
       setWeeklyCounts(Array.from({ length: COUNT_WEEKS_BACK }, (_, i) => {
         const weekStart = mondayISO(i)
         const weekEnd = mondayISO(i - 1)
@@ -312,9 +319,14 @@ export function Stats() {
     const periodStart = getPeriodStartDate(period)
 
     const filteredData = allData.filter(d => d.date >= periodStart)
+    setVolumeAvailable(filteredData.length > 0)
 
     const ctx = volumeCanvasRef.current
-    if (!ctx) return
+    if (!ctx || filteredData.length === 0) {
+      volumeChartRef.current?.destroy()
+      volumeChartRef.current = null
+      return
+    }
 
     const Chart = (await getChartModule()).Chart
     Chart.defaults.font.family = getCSSVar('--font-sans', 'Geist, system-ui, sans-serif')
@@ -342,13 +354,14 @@ export function Stats() {
           }]
         },
         options: {
+          locale: 'sv-SE',
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false }
           },
           scales: {
-            x: { type: 'time', ticks: { maxTicksLimit: 10, color: theme.text }, grid: { color: theme.grid } },
+            x: { type: 'time', adapters: { date: { locale: sv } }, ticks: { maxTicksLimit: 10, color: theme.text }, grid: { color: theme.grid } },
             y: { beginAtZero: true, ticks: { color: theme.text }, grid: { color: theme.grid } }
           }
         }
@@ -389,6 +402,8 @@ export function Stats() {
   }
 
   const sortedPRs = sortByRecentUse(prs, recentCounts)
+  const matchingPRs = sortedPRs.filter(pr => pr.exerciseName.toLocaleLowerCase('sv-SE').includes(prQuery.toLocaleLowerCase('sv-SE')))
+  const visiblePRs = showAllPRs || prQuery ? matchingPRs : matchingPRs.slice(0, 10)
   const maxFrequency = frequencyData[0]?.count || 1
   const maxWeeklyCount = Math.max(0, ...weeklyCounts.map(w => w.count))
   // Senaste värdet mot det senaste som är minst 30 dagar gammalt
@@ -402,7 +417,11 @@ export function Stats() {
 
       {/* Senaste 30 dagar i tal. Ersätter streak, veckovolym och aktivitetsstapeln med 0 eller 1 per dag:
           kalendern på Historik är bilden, det här är räkningen. */}
-      <div class="grid grid-4 stat-grid mb">
+      {last30.sessions === 0 ? (
+        <Card class="mb">
+          <p class="m-0 text-muted">Inga pass de senaste 30 dagarna.{latestSessionDate ? ` Senaste passet var ${formatDateCompact(latestSessionDate)}.` : ' Logga ett pass för att se din utveckling.'}</p>
+        </Card>
+      ) : <div class="grid grid-4 stat-grid mb">
         <Card padding="sm">
           <Stat label="Pass" value={last30.sessions} sub="senaste 30 dagarna" />
         </Card>
@@ -415,15 +434,18 @@ export function Stats() {
         <Card padding="sm">
           <Stat
             label="Est. 1RM"
-            value={topOneRM.estimated1RM !== null ? `${Math.round(topOneRM.estimated1RM).toLocaleString('sv-SE')} kg` : '–'}
+            value={topOneRM.estimated1RM !== null ? `${Math.round(topOneRM.estimated1RM).toLocaleString('sv-SE')} kg` : 'Saknas'}
             sub={topOneRM.exerciseName ? (topOneRM.estimated1RM !== null ? topOneRM.exerciseName : `${topOneRM.exerciseName}: inga set på 10 reps eller färre`) : 'Ingen övning'}
           />
         </Card>
-      </div>
+      </div>}
 
       <div class="grid grid-2 mb">
         {/* Vänsterkolumnen har två kort: pass per vecka ligger direkt under set per muskelgrupp */}
         <div>
+        {maxWeeklyCount === 0 && weeklySets.every(w => w.groups.length === 0) ? (
+          <Card title="Träning per vecka"><p class="text-sm text-muted m-0">Inga pass de senaste {COUNT_WEEKS_BACK} veckorna.</p></Card>
+        ) : <>
         <Card title={`Set per muskelgrupp, senaste ${WEEKS_BACK} veckorna`}>
           {weeklySets.every(w => w.groups.length === 0) ? (
             <EmptyState
@@ -473,6 +495,7 @@ export function Stats() {
             </div>
           )}
         </Card>
+        </>}
         </div>
         <Card title="Volym över tid">
           <div class="grid grid-2 gap-sm mb-sm">
@@ -500,7 +523,8 @@ export function Stats() {
               <Link href={`/exercises/${selectedExerciseId}`} class="exercise-link">Öppna övningssidan</Link>
             </p>
           )}
-          <div class="h-300">
+          {!volumeAvailable && <p class="text-sm text-muted m-0">Inga pass för den här övningen under vald period.</p>}
+          <div class="h-300" style={volumeAvailable ? undefined : { height: 1, overflow: 'hidden' }}>
             <canvas ref={volumeCanvasRef} id="volume-chart"></canvas>
           </div>
         </Card>
@@ -588,9 +612,13 @@ export function Stats() {
           />
         ) : (
           <>
+            <div class="pr-list-toolbar">
+              <input type="search" value={prQuery} placeholder="Sök övning" aria-label="Sök bland personliga rekord" onInput={event => setPrQuery((event.target as HTMLInputElement).value)} />
+              {!showAllPRs && matchingPRs.length > 10 && <Button variant="secondary" size="sm" onClick={() => setShowAllPRs(true)}>Visa alla ({matchingPRs.length})</Button>}
+            </div>
             {/* Telefon: ett kort per övning. Tabellen klippte kolumnen Max volym utanför kortet. */}
             <div class="history-list-cards">
-              {sortedPRs.map(pr => (
+              {visiblePRs.map(pr => (
                 <div class="history-card session-detail-card" key={pr.exerciseId}>
                   <div class="history-card-header">
                     <span class="history-card-date"><Link href={`/exercises/${pr.exerciseId}`} class="exercise-link">{pr.exerciseName}</Link></span>
@@ -614,7 +642,7 @@ export function Stats() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedPRs.map((pr) => (
+                  {visiblePRs.map((pr) => (
                     <tr key={pr.exerciseId}>
                       <td><Link href={`/exercises/${pr.exerciseId}`} class="exercise-link">{pr.exerciseName}</Link></td>
                       <td class="tabular-nums">{formatWeight(pr.maxWeight)} kg <span class="nowrap text-muted">({formatDateShort(pr.maxWeightDate)})</span></td>

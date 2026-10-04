@@ -59,6 +59,7 @@ Versalerna är ett krav: cockpiten (`cockpit.buildapp.se`) hämtar exakt `HANDOF
 - **Playwright-MCP:n sparar bara skärmbilder inne i repot** (tillåtna rötter: repot och `.playwright-mcp/`). Ge filnamnet `.playwright-mcp/x.png`, som är gitignorerat; ett bart filnamn hamnar i repots rot och riskerar att committas, scratchpad-sökvägar nekas.
 - **`src/data/exerciseDb.json` är genererad**, aldrig handredigerad. Bygg om med `python scripts/generate-exercise-db.py` och uppdatera `EXERCISE_DB_COMMIT` i `src/lib/exerciseDb.ts` till samma commit, annars pekar bilderna på en annan version än texten.
 - **Direktnavigering till `/log` ska vara tom.** Ladda bara program via ett uttryckligt `?template=`, tidigare pass via `?from=` eller ett sparat utkast med minst ett set. "Nästa pass" är ett förslag på Hem, inte ett automatiskt startat pass.
+- **Lokalt läge utan moln är inte inloggat.** `useIsGuest()` är falsk där, eftersom gästkontexten bara sätts med moln. Villkor för Cartman måste också kräva `isCloudSyncConfigured()`, annars visas figuren lokalt för oinloggade.
 
 ## Flera agenter i samma repo
 

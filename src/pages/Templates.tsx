@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'preact/hooks'
-import { getAllTemplates, getAllExercises, createTemplate, updateTemplate, deleteTemplate, getOrCreateExercise } from '../services/dataService'
+import { getAllTemplates, getAllExercises, getAllSessions, createTemplate, updateTemplate, deleteTemplate, getOrCreateExercise } from '../services/dataService'
+import { formatDateCompact } from '../lib/date'
 import { formatWeight, parseDecimal, restoreIfEmpty } from '../lib/format'
 import { icon } from '../icons'
 import { Card } from '../components/Card'
@@ -70,6 +71,7 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
 export function Templates() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [allExercises, setAllExercises] = useState<Exercise[]>([])
+  const [lastRuns, setLastRuns] = useState<Record<string, string>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formName, setFormName] = useState('')
   const [formExercises, setFormExercises] = useState<FormExercise[]>([])
@@ -91,9 +93,15 @@ export function Templates() {
     try {
       setLoading(true)
       setError(null)
-      const [ts, es] = await Promise.all([getAllTemplates(), getAllExercises()])
+      const [ts, es, sessions] = await Promise.all([getAllTemplates(), getAllExercises(), getAllSessions()])
       setTemplates(ts)
       setAllExercises(es)
+      const latest: Record<string, string> = {}
+      for (const session of sessions) {
+        const key = session.templateName.trim().toLocaleLowerCase('sv-SE')
+        if (!latest[key] || latest[key] < session.date) latest[key] = session.date
+      }
+      setLastRuns(latest)
     } catch (err) {
       setError('Kunde inte ladda program. Försök igen.')
       console.error('Fel vid laddning av mallar:', err)
@@ -354,6 +362,7 @@ export function Templates() {
             <Button onClick={handleSave}>Spara</Button>
             <Button variant="secondary" onClick={cancelEdit}>Avbryt</Button>
           </div>
+          {editingId && <button type="button" class="template-delete-link" onClick={() => handleDelete(editingId)}>Radera program</button>}
         </Card>
       )}
 
@@ -385,23 +394,10 @@ export function Templates() {
               >
                 <div class="history-card-header">
                   <span class="history-card-date">{t.name}</span>
-                  <button
-                    type="button"
-                    class="btn-remove"
-                    onClick={event => {
-                      event.stopPropagation()
-                      handleDelete(t.id)
-                    }}
-                    aria-label={`Radera program ${t.name}`}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 19 19">
-                      <use href={icon('trash-icon')} />
-                    </svg>
-                  </button>
                 </div>
                 <div class="history-card-body">
-                  <span>{t.exercises.length} övningar</span>
-                  <span class="tabular-nums">{new Date(t.updatedAt).toLocaleDateString('sv-SE')}</span>
+                  <span>{t.exercises.length} {t.exercises.length === 1 ? 'övning' : 'övningar'}</span>
+                  <span class="tabular-nums">{lastRuns[t.name.trim().toLocaleLowerCase('sv-SE')] ? `Senast kört ${formatDateCompact(lastRuns[t.name.trim().toLocaleLowerCase('sv-SE')])}` : 'Inte kört än'}</span>
                 </div>
               </div>
             ))}
@@ -412,8 +408,7 @@ export function Templates() {
                 <tr>
                   <th>Namn</th>
                   <th>Övningar</th>
-                  <th>Uppdaterad</th>
-                  <th class="text-right">Åtgärder</th>
+                  <th>Senast kört</th>
                 </tr>
               </thead>
               <tbody>
@@ -432,25 +427,8 @@ export function Templates() {
                     aria-label={`Redigera program ${t.name}`}
                   >
                     <td><strong>{t.name}</strong></td>
-                    <td>{t.exercises.length}</td>
-                    <td>{new Date(t.updatedAt).toLocaleDateString('sv-SE')}</td>
-                    <td class="text-right">
-                      <div class="flex gap-sm justify-end">
-                        <button
-                          type="button"
-                          class="btn-remove"
-                          onClick={event => {
-                            event.stopPropagation()
-                            handleDelete(t.id)
-                          }}
-                          aria-label={`Radera program ${t.name}`}
-                        >
-                          <svg width="20" height="20" viewBox="0 0 19 19">
-                            <use href={icon('trash-icon')} />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+                    <td>{t.exercises.length} {t.exercises.length === 1 ? 'övning' : 'övningar'}</td>
+                    <td>{lastRuns[t.name.trim().toLocaleLowerCase('sv-SE')] ? formatDateCompact(lastRuns[t.name.trim().toLocaleLowerCase('sv-SE')]) : 'Inte kört än'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -462,14 +440,14 @@ export function Templates() {
 
       {/* Startprogram: etablerade upplägg med källa, blir vanliga program med ett tryck */}
       <Card title="Startprogram" class="mt">
-        <p class="text-sm text-muted m-0 mb">Färdiga nybörjarupplägg med källa. Vikten är 0 tills du sätter den, loggvyn förifyller sedan från förra passet.</p>
+        <p class="text-sm text-muted m-0 mb">Appen föreslår inte vikter, du lägger på själv. Vikten är 0 tills du sätter den, sedan visas förra passets vikt.</p>
         <div class="starter-list" role="list" aria-label="Startprogram">
           {STARTER_PROGRAMS.map(p => (
             <div key={p.id} class="starter-item" role="listitem">
               <div class="starter-text">
                 <h4 class="m-0">{p.name}</h4>
                 <p class="text-sm m-0 mt-1">{p.description}</p>
-                <p class="text-sm text-muted m-0 mt-1"><strong>Progression:</strong> {p.progression}</p>
+                <details class="starter-progression"><summary>Så ökar du över tid</summary><p class="text-sm text-muted m-0 mt-1">{p.progression}</p></details>
                 <p class="text-xs text-muted m-0 mt-1">
                   {p.author} · <a href={p.source.url} target="_blank" rel="noopener noreferrer" class="exercise-link">{p.source.label}</a>
                   {' · '}{p.templates.map(t => t.name).join(', ')}

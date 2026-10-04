@@ -1,14 +1,16 @@
 ---
 schemaVersion: 1
 status: active
-currentGoal: "Buggfixar från Patriks och Julias användning: flytta övning, reps-fältet på mobil, vilotimern under railen (2026-09-30 till 2026-10-03)"
-nextAction: "Patriks beslut om webb-push för vilotimern (Julias iPhone-prov 2026-10-03: ingen signal med annan app i förgrunden), kräver ny VAPID-hemlighet och DO-alarm, förslaget står i BACKLOG P1. Latmask-brevet bevisas först vid ett glapp på fyra dagar (`last_sent` i `reminders`). Firebase sign-up-kontrollen"
+currentGoal: "Designgranskningen implementerad lokalt: mobilpass, navigering, tomlägen och offentlig identitet (2026-10-04)"
+nextAction: "Kontrollera inloggat flöde och gästläge på iPhone efter publicering. Separata öppna punkter: webb-push för vilotimer, latmask-brevets första utskick och Firebase sign-up-kontrollen."
 blockers:
   - "Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt"
-reviewedAt: 2026-10-03
+reviewedAt: 2026-10-04
 ---
 
 ## Recent work
+
+**2026-10-04, designgranskning från fristående HTML.** Implementerad i appen med Patriks precisering att Cartman endast visas efter inloggning; i lokalt läge utan moln visas den nya symbolen och hälsningstexten. Datum och programval i loggvyn behölls synliga enligt tidigare beslut, och en ren `/log` är fortfarande tom. Mobilt pass: fyra kolumner, 56 px Klar, viktjustering, ihopfällda övningar, åtgärdsmeny och fast timer. Hem, Historik, Program, Statistik, Övningar, Passdetalj och Inställningar fick granskningens kompakta rader och tydligare tomlägen. Ikon, og-bild, metadata, PWA-skärmbilder och 404-sida lades till. Verifierat lokalt: typkontroll, lint, 157 tester, build, Chromium 390/768/1200/1600 på fem huvudvyer utan sidleds-scroll eller skriptfel; riktade gäst-, meny-, statistik- och databas-till-passflöden gröna. Inloggat flöde och iPhone är ännu inte provade efter dessa ändringar.
 
 **2026-10-03 kväll, gästläge.** Patrik: sajten öppen utan inloggning, Cartman bakom inloggningen, varning efter varje pass utan konto, smidig övergång till konto. Byggt i `e9e9d03`, beteendet i CONTEXT §Inloggning och säkerhet, verifieringen i BACKLOG under Byggt. Tolkning gjord åt Patrik: gästens pass flyttas utan fråga, och har kontot redan data slås de ihop i stället för att sparas som fil (en nedladdning utan tryck blockeras på iPhone, passen kunde ha försvunnit tyst). **Kolla efter deploy:** logga in på telefonen som vanligt, inget ska ha ändrats för ett inloggat konto. Samtidigt: designprompt till Claude Design med 36 skärmbilder i vaulten (`Beefcake Designgenomlysning/granskning-2026-10/`), och en research-agent på standardprogram (resultatet kommer i chatten).
 

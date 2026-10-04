@@ -444,8 +444,8 @@ export function Settings() {
 
       <Card title="Export / Import">
         <div class="flex gap mb">
-          <Button variant="secondary" onClick={handleExportJSON}>Export JSON (hela DB)</Button>
-          <Button variant="secondary" onClick={handleExportCSV}>Export CSV (passlista)</Button>
+          <Button variant="secondary" onClick={handleExportJSON}>Exportera alla träningsdata</Button>
+          <Button variant="secondary" onClick={handleExportCSV}>Exportera passlista</Button>
         </div>
         <div class="flex gap mb">
           <Button variant="secondary" onClick={handleBackup}>Spara manuell backup</Button>
@@ -454,11 +454,14 @@ export function Settings() {
           {lastBackupAt ? `Senaste manuella backup: ${formatDateTime(lastBackupAt)}` : 'Ingen manuell backup sparad än'}
         </p>
         <p class="mb text-muted">
-          Export och import är en manuell nödräddning. D1 är appens ordinarie lagring.
+          Export och import hjälper dig att spara en egen kopia av dina pass.
         </p>
-        <Field label="Import JSON" class="m-0">
+        <Field label="Importera sparad kopia" class="m-0">
+          <label for="import-file" class="btn btn-secondary import-file-button">Välj fil</label>
           <input
+            id="import-file"
             type="file"
+            class="visually-hidden"
             accept=".json"
             onChange={handleFileImport}
             disabled={importing}
@@ -475,7 +478,7 @@ export function Settings() {
 
       {authUser && (
         <Card title="Konto">
-          <p class="mb text-muted">Inloggad som <strong>{authUser.email}</strong>. Passen sparas i D1 under den adressen.</p>
+          <p class="mb text-muted">Inloggad som <strong>{authUser.email}</strong>. Dina pass sparas på kontot och på den här enheten.</p>
           <label class="toggle-row mb">
             <input
               type="checkbox"
@@ -491,16 +494,14 @@ export function Settings() {
 
       <Card title="Data">
         <p class="mb text-muted">
-          D1 är sanningskällan. IndexedDB är lokal cache och serverkopplingen kräver inloggning.
+          Dina pass sparas på kontot och på den här enheten. Som gäst sparas de bara här.
         </p>
-        <Button variant="danger" onClick={handleClearAll}>Radera ALL data</Button>
+        <Button variant="danger" onClick={handleClearAll}>Radera all data</Button>
       </Card>
 
       <Card title="Om">
         <p>Beefcake, träningslogg för styrketräning</p>
-        <p class="text-sm text-muted m-0">
-          Byggd med Preact, TypeScript, IndexedDB, Chart.js, Workbox PWA.
-        </p>
+        <p class="text-sm text-muted m-0">Logga set, jämför med förra gången och följ dina rekord.</p>
       </Card>
 
       {/* Import confirmation dialog */}
@@ -517,12 +518,12 @@ export function Settings() {
         <div class="dialog-overlay" onClick={dismissClearDialog}>
           <div class="dialog" onClick={e => e.stopPropagation()}>
             <div class="flex justify-between items-center mb">
-              <h3 class="m-0">Radera ALL data</h3>
+              <h3 class="m-0">Radera all data</h3>
               <button class="banner-dismiss" onClick={dismissClearDialog} aria-label="Stäng">
                 <svg width="16" height="16" viewBox="0 0 19 19"><use href={icon('x-icon')} /></svg>
               </button>
             </div>
-            <p>VARNING: Detta raderar ALL data permanent. Är du helt säker?</p>
+            <p>Detta raderar alla pass {guest ? 'på den här enheten' : 'på ditt konto och den här enheten'}. Är du säker?</p>
             <p class="mt">Skriv "RADERA" för att bekräfta:</p>
             <div class="input-group mt">
               <input

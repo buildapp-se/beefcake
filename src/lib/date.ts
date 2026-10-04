@@ -41,6 +41,14 @@ export function formatDateWithWeekday(isoDate: string): string {
   return `${weekdayShortNames[date.getDay()]} ${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`
 }
 
+/** Korta listdatum: "tis 28 jul" i år, "28 jul 2025" för äldre pass. */
+export function formatDateCompact(isoDate: string): string {
+  const date = parseLocalDate(isoDate)
+  const thisYear = parseLocalDate(todayISO()).getFullYear()
+  const short = `${date.getDate()} ${monthNames[date.getMonth()]}`
+  return date.getFullYear() === thisYear ? `${weekdayShortNames[date.getDay()].toLocaleLowerCase('sv-SE')} ${short}` : `${short} ${date.getFullYear()}`
+}
+
 /**
  * Formatera datum som "Veckodag D Mmm YYYY" (t.ex. "Lördag 9 aug 2025")
  */

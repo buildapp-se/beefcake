@@ -6,7 +6,7 @@ import {
   getEstimated1RM,
   getAllSessions
 } from '../services/dataService'
-import { formatDateShort, formatDateWithWeekday } from '../lib/date'
+import { formatDateShort, formatDateCompact } from '../lib/date'
 import { formatSets, formatWeight } from '../lib/format'
 import { EXERCISE_METRIC_LABELS, repRecords, sessionMetric, type ExerciseMetric } from '../lib/exerciseMetrics'
 import { Field } from '../components/Field'
@@ -96,8 +96,9 @@ export function ExerciseDetail() {
 
     const chronological = [...history].sort((a, b) => a.date.localeCompare(b.date))
     const labels = chronological.map(h => h.date)
-    const values = chronological.map(h => sessionMetric(h, metric))
-    const unit = 'kg'
+    const bodyweight = chronological.every(h => h.setEntries.every(s => s.weight === 0))
+    const values = chronological.map(h => bodyweight ? h.setEntries.reduce((total, s) => total + s.reps * s.sets, 0) : sessionMetric(h, metric))
+    const unit = bodyweight ? 'reps' : 'kg'
 
     let isMounted = true
 
@@ -120,7 +121,7 @@ export function ExerciseDetail() {
           labels,
           datasets: [
             {
-              label: `${EXERCISE_METRIC_LABELS[metric]} (${unit})`,
+              label: `${bodyweight ? 'Utförda reps' : EXERCISE_METRIC_LABELS[metric]} (${unit})`,
               data: values,
               borderColor: accentColor,
               backgroundColor: 'transparent',
@@ -164,7 +165,7 @@ export function ExerciseDetail() {
               beginAtZero: true,
               grid: { color: borderColor },
               ticks: { color: textColor },
-              title: { display: true, text: `${EXERCISE_METRIC_LABELS[metric]} (${unit})`, color: textColor }
+              title: { display: true, text: `${bodyweight ? 'Utförda reps' : EXERCISE_METRIC_LABELS[metric]} (${unit})`, color: textColor }
             }
           }
         }
@@ -205,6 +206,8 @@ export function ExerciseDetail() {
     0
   )
   const records = repRecords(history)
+  const bodyweight = history.length > 0 && history.every(h => h.setEntries.every(s => s.weight === 0))
+  const bestReps = history.flatMap(h => h.setEntries.map(s => s.reps)).reduce((best, reps) => Math.max(best, reps), 0)
   const sessionIdForDate = (date: string) => history.find(h => h.date === date)?.sessionId ?? ''
   const dbId = dbIdForName(exercise.name)
 
@@ -233,17 +236,17 @@ export function ExerciseDetail() {
         )}
       </div>
 
-      <div class="grid grid-3 mb">
+      <div class="grid grid-3 mb exercise-kpi">
         <Card padding="sm">
           <Stat
             label="Estimerat 1RM"
-            value={estimated1RM ? `${Math.round(estimated1RM.estimated1RM)} kg` : '-'}
+            value={bodyweight ? 'Saknas' : estimated1RM ? `${Math.round(estimated1RM.estimated1RM)} kg` : 'Saknas'}
           />
         </Card>
         <Card padding="sm">
           <Stat
-            label="Tyngsta lyft"
-            value={maxWeightEver > 0 ? `${formatWeight(maxWeightEver)} kg` : '-'}
+            label={bodyweight ? 'Flest reps i ett set' : 'Tyngsta lyft'}
+            value={bodyweight ? bestReps : maxWeightEver > 0 ? `${formatWeight(maxWeightEver)} kg` : 'Saknas'}
           />
         </Card>
         <Card padding="sm">
@@ -271,13 +274,13 @@ export function ExerciseDetail() {
 
       {/* Progressionsdiagram med valbart mått */}
       <Card title="Progression över tid" class="mb">
-        <Field label="Mått" class="mb-sm">
+        {!bodyweight && <Field label="Mått" class="mb-sm">
           <select value={metric} onChange={(e: Event) => setMetric((e.target as HTMLSelectElement).value as ExerciseMetric)}>
             {(Object.keys(EXERCISE_METRIC_LABELS) as ExerciseMetric[]).map(key => (
               <option key={key} value={key}>{EXERCISE_METRIC_LABELS[key]}</option>
             ))}
           </select>
-        </Field>
+        </Field>}
         {history.length <= 1 ? (
           <p class="text-sm text-muted m-0">Kör övningen i fler pass för att rita en progressionskurva.</p>
         ) : (
@@ -288,7 +291,7 @@ export function ExerciseDetail() {
       </Card>
 
       {/* Rekord per repsantal: ett 8-repsrekord syns inte i PR-listan, som bara räknar maxvikt och maxvolym */}
-      {records.length > 0 && (
+      {!bodyweight && records.length > 0 && (
         <Card title="Rekord per repsantal" class="mb">
           <div class="table-wrap table-rows">
             <table>
@@ -304,7 +307,7 @@ export function ExerciseDetail() {
                   <tr key={r.reps} onClick={() => navigate(`/history/${sessionIdForDate(r.date)}`)} style="cursor: pointer;">
                     <td class="tabular-nums">{r.reps}</td>
                     <td class="volume-hero tabular-nums">{formatWeight(r.weight)} kg</td>
-                    <td>{formatDateShort(r.date)}</td>
+                    <td>{formatDateCompact(r.date)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -316,7 +319,16 @@ export function ExerciseDetail() {
 
       {/* Historiklista */}
       <Card title="Tidigare genomföranden" padding="none">
-        <div class="table-wrap table-rows" style="padding: 0 var(--space-6) var(--space-6) var(--space-6)">
+        <div class="exercise-history-list">
+          {history.map(item => {
+            const session = allSessions.find(s => s.id === item.sessionId)
+            return <button type="button" class="session-summary-row" key={item.id} onClick={() => navigate(`/history/${item.sessionId}`)}>
+              <span><strong>{session?.templateName || 'Pass'}</strong><small>{formatDateCompact(item.date)} · {item.setEntries.length} set</small></span>
+              <strong>{item.volume.toLocaleString('sv-SE')} kg</strong>
+            </button>
+          })}
+        </div>
+        <div class="table-wrap table-rows exercise-history-table" style="padding: 0 var(--space-6) var(--space-6) var(--space-6)">
           <table>
             <thead>
               <tr>
@@ -335,7 +347,7 @@ export function ExerciseDetail() {
                     onClick={() => navigate(`/history/${item.sessionId}`)}
                     style="cursor: pointer;"
                   >
-                    <td>{formatDateWithWeekday(item.date)}</td>
+                    <td>{formatDateCompact(item.date)}</td>
                     <td>
                       <span class="badge badge-primary">{session?.templateName || 'Pass'}</span>
                     </td>

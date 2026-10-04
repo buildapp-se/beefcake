@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'preact/hooks'
 import { useLocation } from 'wouter'
 import { getAllSessions, getAllTemplates, deleteSession } from '../services/dataService'
 import { icon } from '../icons'
-import { formatDateShort, formatDateWithWeekday, formatDateFull, getMonthKey, monthNames, todayISO, parseLocalDate, localDateISO, isoWeek } from '../lib/date'
+import { formatDateShort, formatDateCompact, formatDateFull, getMonthKey, monthNames, todayISO, parseLocalDate, localDateISO, isoWeek } from '../lib/date'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -552,7 +552,7 @@ export function History() {
                   <tbody>
                     {monthSessions.map(session => (
                       <tr key={session.id} onClick={() => goToDetail(session.id)}>
-                        <td class="nowrap">{formatDateWithWeekday(session.date)}</td>
+                        <td class="nowrap">{formatDateCompact(session.date)}</td>
                         <td><span class="badge badge-primary">{session.templateName}</span></td>
                         <td>{session.exercises.length}</td>
                         <td class="volume-hero">{calculateTotalVolume(session).toLocaleString('sv-SE')} kg</td>
@@ -601,7 +601,7 @@ export function History() {
                     onClick={() => goToDetail(session.id)}
                   >
                     <div class="history-card-header">
-                      <span class="history-card-date">{formatDateWithWeekday(session.date)}</span>
+                      <span class="history-card-date">{formatDateCompact(session.date)}</span>
                       <span class="badge badge-primary">{session.templateName}</span>
                     </div>
                     <div class="history-card-body">

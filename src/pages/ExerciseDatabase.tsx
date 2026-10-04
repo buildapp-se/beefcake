@@ -85,6 +85,11 @@ function DbExerciseDetail({ id, all }: { id: string; all: DbExercise[] }) {
         </Card>
       </div>
 
+      <div class="exdb-detail-actions mb">
+        {own[0] && <Button variant="secondary" href={`/exercises/${encodeURIComponent(own[0].id)}`}>Min progression</Button>}
+        <Button href={`/log?exercise=${encodeURIComponent(own[0]?.name || ex.name)}`}>Lägg till i pass</Button>
+      </div>
+
       <Card title="Så gör du" class="mb">
         <ol class="exdb-steps">
           {ex.instructions.map((step, i) => <li key={i}>{step}</li>)}
@@ -102,6 +107,7 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
   const [equipment, setEquipment] = useState('')
   const [category, setCategory] = useState('')
   const [shown, setShown] = useState(PAGE)
+  const [filterOpen, setFilterOpen] = useState(false)
 
   useEffect(() => {
     getDB().then(db => db.get('settings', CATEGORY_KEY)).then(s => {
@@ -121,12 +127,15 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
   return (
     <div>
       <h1 class="page-title">Övningar</h1>
-      <Card class="mb">
-        <div class="exdb-filters">
+      <div class="exdb-search-filter">
           <Field label="Sök">
             <input type="search" value={q} placeholder="Namn, svenska eller engelska" enterKeyHint="search"
               onInput={(e: Event) => setQ((e.target as HTMLInputElement).value)} />
           </Field>
+          <button type="button" class="exdb-filter-toggle" aria-expanded={filterOpen} onClick={() => setFilterOpen(open => !open)}>Filter{[muscle,equipment,category].filter(Boolean).length ? ` (${[muscle,equipment,category].filter(Boolean).length})` : ''}</button>
+      </div>
+      <Card class={`mb exdb-filter-card ${filterOpen ? 'exdb-filter-card-open' : ''}`}>
+        <div class={`exdb-filters ${filterOpen ? 'exdb-filters-open' : ''}`}>
           <Field label="Muskel">
             <select value={muscle} onChange={(e: Event) => setMuscle((e.target as HTMLSelectElement).value)}>
               <option value="">Alla</option>
@@ -156,7 +165,7 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
         <div class="exdb-grid" role="list" aria-label="Övningar">
           {hits.slice(0, shown).map(e => (
             <Link key={e.id} href={`/ovningar/${e.id}`} class="exdb-card" role="listitem">
-              <ExerciseAnimation id={e.id} name="" still />
+              <ExerciseAnimation id={e.id} name="" fallbackLabel={e.primaryMuscles.map(muscleLabel).join(', ')} still />
               <span class="exdb-card-name">{e.name}</span>
               <span class="exdb-card-meta">{e.primaryMuscles.map(muscleLabel).join(', ')} · {equipmentLabel(e.equipment)}</span>
             </Link>

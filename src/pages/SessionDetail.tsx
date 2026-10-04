@@ -11,7 +11,7 @@ import {
   updateTemplate
 } from '../services/dataService'
 import { icon } from '../icons'
-import { formatDateFull, formatDateShort } from '../lib/date'
+import { formatDateCompact, formatDateShort } from '../lib/date'
 import { formatSets, restoreIfEmpty } from '../lib/format'
 import { setsVolume, exercisesVolume } from '../lib/volume'
 import { Card } from '../components/Card'
@@ -461,18 +461,18 @@ export function SessionDetail() {
   if (!editing) {
     return (
       <div>
+        <Button href="/history" variant="secondary" size="sm">‹ Historik</Button>
         <h1 class="page-title">Passdetaljer</h1>
 
         <Card>
           <div class="flex justify-between items-center mb session-detail-head">
             <div>
               <h2 class="mb-1">{session.templateName}</h2>
-              <p class="m-0 text-muted">{formatDateFull(session.date)}</p>
+              <p class="m-0 text-muted">{formatDateCompact(session.date)}</p>
             </div>
-            <div class="flex gap-sm flex-wrap">
+            <div class="flex gap-sm flex-wrap session-detail-actions">
               <Button size="sm" onClick={handleRunAgain}>Kör igen</Button>
               <Button variant="secondary" size="sm" onClick={toggleEdit}>Redigera</Button>
-              <Button variant="danger" size="sm" onClick={() => setDeleteDialogOpen(true)}>Radera</Button>
             </div>
           </div>
         </Card>
@@ -499,7 +499,7 @@ export function SessionDetail() {
               </div>
             ))}
             <div class="flex justify-between items-center mt-sm">
-              <span class="font-semibold">Total:</span>
+              <span class="font-semibold">Totalt</span>
               <span class="volume-hero">{calculateTotalVolume(session.exercises).toLocaleString('sv-SE')} kg</span>
             </div>
           </div>
@@ -533,17 +533,16 @@ export function SessionDetail() {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={3} class="text-right font-semibold">Total:</td>
+                    <td colSpan={3} class="text-right font-semibold">Totalt</td>
                     <td class="tabular-nums font-semibold">{calculateTotalVolume(session.exercises).toLocaleString('sv-SE')} kg</td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           </div>
-          <p class="mt-sm text-right text-muted">
-            <Button variant="secondary" size="sm" href="/history">Tillbaka till historik</Button>
-          </p>
         </Card>
+
+        <button type="button" class="template-delete-link" onClick={() => setDeleteDialogOpen(true)}>Radera pass</button>
 
         {/* Delete dialog */}
         <DeleteDialog
@@ -615,7 +614,7 @@ export function SessionDetail() {
                   type="text"
                   value={newTemplateName}
                   onInput={(e: Event) => setNewTemplateName((e.target as HTMLInputElement).value)}
-                  placeholder="t.ex. Bröst, axlar & triceps – lång"
+                  placeholder="t.ex. Bröst, axlar & triceps lång"
                   autoFocus
                 />
               </Field>
