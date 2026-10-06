@@ -27,11 +27,14 @@ const DEFAULT_STEP = 2.5
 
 interface SetLike { weight: number; reps: number }
 
-/** Bästa arbetssetet: tyngsta vikten, sedan flest reps på den. Uppvärmning är lättare och faller bort. */
-export function topSet(sets: readonly SetLike[]): SetLike | null {
+/**
+ * Bästa arbetssetet: tyngsta vikten, sedan flest reps på den. Uppvärmning är lättare och faller bort.
+ * För kroppsviktsövningar är vikten det man hänger på sig, så 0 (bara kroppen) räknas.
+ */
+export function topSet(sets: readonly SetLike[], bodyweight = false): SetLike | null {
   let best: SetLike | null = null
   for (const s of sets) {
-    if (s.weight <= 0) continue
+    if (bodyweight ? s.weight < 0 || s.reps <= 0 : s.weight <= 0) continue
     if (!best || s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) best = { weight: s.weight, reps: s.reps }
   }
   return best
@@ -41,8 +44,8 @@ export function topSet(sets: readonly SetLike[]): SetLike | null {
  * Antal pass i rad, räknat bakifrån, med samma toppvikt och utan fler reps än passet före.
  * Fler reps på samma vikt (dubbel progression) är framsteg och bryter raden. Historiken i tidsordning.
  */
-export function plateauLength(history: readonly { setEntries: readonly SetLike[] }[]): number {
-  const tops = history.map(h => topSet(h.setEntries))
+export function plateauLength(history: readonly { setEntries: readonly SetLike[] }[], bodyweight = false): number {
+  const tops = history.map(h => topSet(h.setEntries, bodyweight))
   if (!tops[tops.length - 1]) return 0
   let run = 1
   for (let i = tops.length - 1; i > 0; i--) {
@@ -55,17 +58,34 @@ export function plateauLength(history: readonly { setEntries: readonly SetLike[]
 }
 
 /**
- * Platå: PLATEAU_SESSIONS pass i rad utan framsteg. Kroppsvikt, tid och kondition (kind eller
- * vikt 0) undantas, och "Håll vikten med flit" tystar tills toppvikten ändras.
+ * Platå: PLATEAU_SESSIONS pass i rad utan framsteg. Tid och distans undantas, liksom vikt 0 på
+ * en vanlig viktövning. Kroppsviktsövningar räknas med (Patrik 2026-10-06): där är framsteg fler
+ * reps eller mer hängvikt. "Håll vikten med flit" tystar tills toppvikten ändras.
  */
 export function isPlateau(
   history: readonly { setEntries: readonly SetLike[] }[],
   exercise: { kind?: ExerciseKind; holdAt?: number } = {}
 ): boolean {
-  if (exercise.kind && exercise.kind !== 'weight') return false
-  const top = topSet(history[history.length - 1]?.setEntries ?? [])
+  if (exercise.kind === 'time' || exercise.kind === 'distance') return false
+  const bodyweight = exercise.kind === 'bodyweight'
+  const top = topSet(history[history.length - 1]?.setEntries ?? [], bodyweight)
   if (!top || top.weight === exercise.holdAt) return false
-  return plateauLength(history) >= PLATEAU_SESSIONS
+  return plateauLength(history, bodyweight) >= PLATEAU_SESSIONS
+}
+
+/**
+ * "Höj bara ett steg". Med vikt: ett steg till på samma reps. Utan vikt (kroppsviktsövning med
+ * bara kroppen) finns inget att lägga på, då är steget en rep till.
+ * ponytail: +1 rep är ett eget val utan källa, försiktigt med flit. Byt här om det ska vara mer.
+ */
+export function nextStep(top: SetLike, step: number): SetLike {
+  if (top.weight === 0) return { weight: 0, reps: top.reps + 1 }
+  return { weight: Math.round((top.weight + step) * 100) / 100, reps: top.reps }
+}
+
+/** Har förra passets toppset redan nått förslaget? Då är förslaget inaktuellt. */
+export function reachedTarget(top: SetLike, target: SetLike): boolean {
+  return top.weight > target.weight || (top.weight === target.weight && top.reps >= target.reps)
 }
 
 /**
@@ -92,4 +112,18 @@ export function calibratedWeight(weight: number, amrapReps: number, usualReps: n
   const target = e1rm / (1 + Math.min(usualReps, EPLEY_MAX_REPS) / 30)
   const steps = Math.max(Math.floor((target - weight) / step + 1e-9), amrapReps > usualReps ? 1 : 0)
   return Math.round((weight + steps * step) * 100) / 100
+}
+
+/**
+ * Testsetets besked: nästa vikt och reps, och om testet klarades. Med vikt räknar
+ * calibratedWeight. Utan vikt säger Epley ingenting (vikten är 0): fler reps än de vanliga
+ * ger en rep till, samma steg som nextStep.
+ */
+export function calibrationTarget(weight: number, amrapReps: number, usualReps: number, step: number): SetLike & { passed: boolean } {
+  if (weight === 0) {
+    const passed = amrapReps > usualReps
+    return { weight: 0, reps: passed ? usualReps + 1 : usualReps, passed }
+  }
+  const next = calibratedWeight(weight, amrapReps, usualReps, step)
+  return { weight: next, reps: usualReps, passed: next > weight }
 }

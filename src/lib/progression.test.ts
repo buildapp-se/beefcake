@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calibratedWeight, isPlateau, plateauLength, stepFor, topSet } from './progression'
+import { calibratedWeight, calibrationTarget, isPlateau, nextStep, plateauLength, reachedTarget, stepFor, topSet } from './progression'
 
 const pass = (...sets: [number, number][]) => ({ setEntries: sets.map(([weight, reps]) => ({ weight, reps })) })
 
@@ -32,9 +32,22 @@ describe('platå', () => {
   it('uppvärmningsset räknas inte: bara toppsetet jämförs', () => {
     expect(isPlateau([pass([20, 8], [60, 8]), pass([30, 5], [60, 8]), pass([40, 10], [60, 8])])).toBe(true)
   })
-  it('kroppsvikt undantas, både på vikt 0 och på kind', () => {
-    expect(isPlateau([pass([0, 12]), pass([0, 12]), pass([0, 12])])).toBe(false)
-    expect(isPlateau([pass([70, 10]), pass([70, 10]), pass([70, 10])], { kind: 'bodyweight' })).toBe(false)
+  it('vikt 0 på en vanlig viktövning, tid och distans undantas', () => {
+    const flat = [pass([0, 12]), pass([0, 12]), pass([0, 12])]
+    expect(isPlateau(flat)).toBe(false)
+    expect(isPlateau(flat, { kind: 'time' })).toBe(false)
+    expect(isPlateau([pass([70, 10]), pass([70, 10]), pass([70, 10])], { kind: 'distance' })).toBe(false)
+  })
+  it('kroppsviktsövning räknas med: bara kroppen tre pass i rad är platå', () => {
+    expect(isPlateau([pass([0, 10]), pass([0, 10]), pass([0, 10])], { kind: 'bodyweight' })).toBe(true)
+    expect(topSet(pass([0, 8], [0, 10]).setEntries, true)).toEqual({ weight: 0, reps: 10 })
+  })
+  it('kroppsviktsövning: fler reps eller mer hängvikt bryter platån', () => {
+    expect(isPlateau([pass([0, 10]), pass([0, 10]), pass([0, 11])], { kind: 'bodyweight' })).toBe(false)
+    expect(isPlateau([pass([0, 10]), pass([0, 10]), pass([2.5, 8])], { kind: 'bodyweight' })).toBe(false)
+  })
+  it('kroppsviktsövning: Håll vikten fungerar även på 0', () => {
+    expect(isPlateau([pass([0, 10]), pass([0, 10]), pass([0, 10])], { kind: 'bodyweight', holdAt: 0 })).toBe(false)
   })
   it('Håll vikten tystar tills toppvikten ändras', () => {
     const history = [pass([60, 8]), pass([60, 8]), pass([60, 8])]
@@ -60,6 +73,33 @@ describe('stepFor', () => {
   it('allt annat går på 2,5 kg', () => {
     expect(stepFor(undefined, 'Triceps pushdown')).toBe(2.5)
     expect(stepFor(undefined, 'Chins')).toBe(2.5)
+  })
+})
+
+describe('nextStep och reachedTarget', () => {
+  it('med vikt: ett steg till på samma reps', () => {
+    expect(nextStep({ weight: 60, reps: 10 }, 2.5)).toEqual({ weight: 62.5, reps: 10 })
+    expect(nextStep({ weight: 18.75, reps: 12 }, 1)).toEqual({ weight: 19.75, reps: 12 })
+  })
+  it('bara kroppen: en rep till', () => {
+    expect(nextStep({ weight: 0, reps: 10 }, 2.5)).toEqual({ weight: 0, reps: 11 })
+  })
+  it('förslaget är nått när toppsetet är minst lika bra', () => {
+    expect(reachedTarget({ weight: 62.5, reps: 10 }, { weight: 62.5, reps: 10 })).toBe(true)
+    expect(reachedTarget({ weight: 65, reps: 6 }, { weight: 62.5, reps: 10 })).toBe(true)
+    expect(reachedTarget({ weight: 60, reps: 13 }, { weight: 62.5, reps: 10 })).toBe(false)
+    expect(reachedTarget({ weight: 0, reps: 10 }, { weight: 0, reps: 11 })).toBe(false)
+  })
+})
+
+describe('calibrationTarget', () => {
+  it('med vikt: klarat när vikten höjs', () => {
+    expect(calibrationTarget(60, 11, 8, 2.5)).toEqual({ weight: 62.5, reps: 8, passed: true })
+    expect(calibrationTarget(60, 8, 8, 2.5)).toEqual({ weight: 60, reps: 8, passed: false })
+  })
+  it('bara kroppen: fler reps än de vanliga ger en rep till', () => {
+    expect(calibrationTarget(0, 14, 10, 2.5)).toEqual({ weight: 0, reps: 11, passed: true })
+    expect(calibrationTarget(0, 10, 10, 2.5)).toEqual({ weight: 0, reps: 10, passed: false })
   })
 })
 

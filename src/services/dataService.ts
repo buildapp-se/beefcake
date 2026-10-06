@@ -3,6 +3,7 @@ import type {
   Template,
   TemplateExercise,
   Exercise,
+  ExerciseKind,
   ExerciseProgression,
   Session,
   SessionExercise,
@@ -87,7 +88,13 @@ const EQUIPMENT_MAP: Record<string, string> = {
   'Stelbent marklyft': 'skivstång', 'Good morning': 'skivstång'
 }
 
-// Fyll på muscleGroup och equipment där de saknas, ur namnkartorna. Additivt: ett satt värde rörs aldrig.
+// Kroppsviktsövningar: kg-fältet är det man hänger på sig, 0 är bara kroppen (Patrik 2026-10-06).
+// Excel-historiken har kroppsvikten (70) inskriven som vikt på dem; den står kvar, inget skrivs om.
+const KIND_MAP: Record<string, ExerciseKind> = {
+  'Chins': 'bodyweight', 'Armhävningar': 'bodyweight', 'Triceps dips stång': 'bodyweight'
+}
+
+// Fyll på muscleGroup, equipment och kind där de saknas, ur namnkartorna. Additivt: ett satt värde rörs aldrig.
 export async function backfillExerciseMeta(): Promise<number> {
   const db = await getDB()
   const exercises = await db.getAll('exercises')
@@ -96,8 +103,9 @@ export async function backfillExerciseMeta(): Promise<number> {
   for (const e of exercises) {
     const mg = e.muscleGroup ? undefined : MUSCLE_GROUP_MAP[e.name]
     const eq = e.equipment ? undefined : EQUIPMENT_MAP[e.name]
-    if (mg || eq) {
-      await tx.objectStore('exercises').put({ ...e, ...(mg ? { muscleGroup: mg } : {}), ...(eq ? { equipment: eq } : {}) })
+    const kind = e.kind ? undefined : KIND_MAP[e.name]
+    if (mg || eq || kind) {
+      await tx.objectStore('exercises').put({ ...e, ...(mg ? { muscleGroup: mg } : {}), ...(eq ? { equipment: eq } : {}), ...(kind ? { kind } : {}) })
       updated++
     }
   }
@@ -164,11 +172,13 @@ export async function getOrCreateExercise(name: string, muscleGroup?: string): P
     return existing
   }
   const equipment = EQUIPMENT_MAP[name]
+  const kind = KIND_MAP[name]
   const exercise: Exercise = {
     id: generateId(),
     name,
     muscleGroup: muscleGroup ?? MUSCLE_GROUP_MAP[name],
     ...(equipment ? { equipment } : {}),
+    ...(kind ? { kind } : {}),
     createdAt: nowISO()
   }
   await db.put('exercises', exercise)
@@ -582,7 +592,8 @@ export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ 
     exerciseIdByName.set(exerciseKey(e.name), e.id)
     const mg = MUSCLE_GROUP_MAP[e.name]
     const eq = EQUIPMENT_MAP[e.name]
-    newExercises.push({ ...e, ...(mg ? { muscleGroup: mg } : {}), ...(eq ? { equipment: eq } : {}) })
+    const kind = KIND_MAP[e.name]
+    newExercises.push({ ...e, ...(mg ? { muscleGroup: mg } : {}), ...(eq ? { equipment: eq } : {}), ...(kind ? { kind } : {}) })
   }
 
   const newTemplates: Template[] = []

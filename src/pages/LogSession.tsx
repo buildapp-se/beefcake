@@ -20,7 +20,7 @@ import { formatSet, formatSetCompact, formatSets, formatWeight, parseDecimal } f
 import { barWeightFor, formatPlatesPerSide } from '../lib/plates'
 import { epley1RM } from '../lib/exerciseMetrics'
 import { warmupSets } from '../lib/warmup'
-import { calibratedWeight, isPlateau, plateauLength, stepFor, topSet } from '../lib/progression'
+import { calibrationTarget, isPlateau, nextStep, plateauLength, reachedTarget, stepFor, topSet } from '../lib/progression'
 import { setsVolume } from '../lib/volume'
 import { getDB, todayISO, nowISO } from '../models'
 import { icon } from '../icons'
@@ -37,6 +37,11 @@ import { beefcakeImage, useBeefcakeStreak } from '../components/BeefcakeBadge'
 import { isCloudSyncConfigured } from '../services/cloudSyncService'
 import { announceGuestSave, useIsGuest } from '../components/LoginGate'
 import type { Template, Exercise, ExerciseProgression, TemplateExercise, SetEntry, ActiveSetEntry, SetType } from '../models'
+
+// Knapptext för ett förslag: vikten, eller repsen när det är bara kroppen
+function targetLabel(target: { weight: number; reps: number }): string {
+  return target.weight > 0 ? `${formatWeight(target.weight)} kg` : `${target.reps} reps`
+}
 
 // Höjningsfrågan ställs en gång per pass: datum och program, sparat per enhet så en omladdning inte frågar igen
 const PLATEAU_ASKED_KEY = 'plateau-asked'
@@ -309,9 +314,10 @@ export function LogSession() {
       for (const id of knownExerciseIds.split(',')) {
         const meta = allExercises.find(e => e.id === id)
         const history = await getExerciseHistory(id)
-        const top = topSet(history[history.length - 1]?.setEntries ?? [])
+        const bodyweight = meta?.kind === 'bodyweight'
+        const top = topSet(history[history.length - 1]?.setEntries ?? [], bodyweight)
         if (!meta || !top || meta.progression?.next || !isPlateau(history, { kind: meta.kind, holdAt: meta.progression?.holdAt })) continue
-        items.push({ exerciseId: id, name: meta.name, weight: top.weight, reps: top.reps, run: plateauLength(history), step: stepFor(meta.equipment, meta.name) })
+        items.push({ exerciseId: id, name: meta.name, weight: top.weight, reps: top.reps, run: plateauLength(history, bodyweight), step: stepFor(meta.equipment, meta.name) })
       }
       if (!cancelled && items.length > 0) setPlateauItems(items)
     })().catch(err => console.error('Kunde inte läsa platåer:', err))
@@ -337,7 +343,7 @@ export function LogSession() {
     for (const item of items.filter(i => heldIds.includes(i.exerciseId))) setProgression(item.exerciseId, { holdAt: item.weight })
     const chosen = items.filter(i => !heldIds.includes(i.exerciseId))
     if (choice === 'step') {
-      for (const item of chosen) setProgression(item.exerciseId, { next: { weight: Math.round((item.weight + item.step) * 100) / 100, reps: item.reps } })
+      for (const item of chosen) setProgression(item.exerciseId, { next: nextStep(item, item.step) })
     }
     if (choice === 'test') {
       // AMRAP-setet först bland arbetsseten, efter eventuell uppvärmning, på samma vikt som nu
@@ -354,18 +360,29 @@ export function LogSession() {
     }
   }
 
+  // Förra passets toppset. Kroppsviktsövningar räknar även 0 kg (bara kroppen).
+  function previousTop(exerciseId: string) {
+    const bodyweight = allExercises.find(e => e.id === exerciseId)?.kind === 'bodyweight'
+    return topSet(previousPerformances[exerciseId]?.setEntries ?? [], bodyweight)
+  }
+
   // Övningens vanliga reps och steg: det AMRAP-setet räknas mot
-  function calibrationResult(ex: LogFormExercise, set: ActiveSetEntry): { weight: number; reps: number } {
+  function calibrationResult(ex: LogFormExercise, set: ActiveSetEntry) {
     const meta = allExercises.find(e => e.id === ex.exerciseId)
-    const usualReps = topSet(previousPerformances[ex.exerciseId]?.setEntries ?? [])?.reps ?? set.reps
-    return { weight: calibratedWeight(set.weight, set.reps, usualReps, stepFor(meta?.equipment, ex.exerciseName)), reps: usualReps }
+    const usualReps = previousTop(ex.exerciseId)?.reps ?? set.reps
+    return calibrationTarget(set.weight, set.reps, usualReps, stepFor(meta?.equipment, ex.exerciseName))
   }
 
   // Antal arbetsset förra gången: raderna på toppvikten. Pass ur Excel-seeden har en rad med sets: 3.
   function previousWorkSetCount(exerciseId: string): number {
     const prevSets = previousPerformances[exerciseId]?.setEntries ?? []
-    const prevTop = topSet(prevSets)
+    const prevTop = previousTop(exerciseId)
     return prevSets.filter(s => s.weight === prevTop?.weight).reduce((sum, s) => sum + (s.sets || 1), 0)
+  }
+
+  // Ett förslag på ett obockat set: vikten byts, och utan vikt (bara kroppen) är det repsen som höjs
+  function applyTarget(s: ActiveSetEntry, target: { weight: number; reps: number }): ActiveSetEntry {
+    return target.weight === 0 ? { ...s, weight: 0, reps: target.reps } : { ...s, weight: target.weight }
   }
 
   // Obockade arbetsset: det som "Ta förslaget" och "Resten på" får byta vikt på
@@ -382,13 +399,13 @@ export function LogSession() {
     if (!test) return
     const result = calibrationResult(ex, test)
     const setEntries: ActiveSetEntry[] = ex.setEntries.some(isOpenWorkSet)
-      ? ex.setEntries.map(s => isOpenWorkSet(s) ? { ...s, weight: result.weight } : s)
+      ? ex.setEntries.map(s => isOpenWorkSet(s) ? applyTarget(s, result) : s)
       : [...ex.setEntries, ...Array.from({ length: Math.max(1, previousWorkSetCount(ex.exerciseId) - 1) }, () => ({ sets: 1, reps: result.reps, weight: result.weight, completed: false, type: 'normal' as const }))]
     const newExercises = [...exercises]
     newExercises[exerciseIdx] = { ...ex, setEntries }
     setExercises(newExercises)
     setInputDrafts({})
-    if (meta && result.weight > test.weight) setProgression(meta.id, { holdAt: meta.progression?.holdAt })
+    if (meta && result.passed) setProgression(meta.id, { holdAt: meta.progression?.holdAt })
     triggerHaptic(20)
   }
 
@@ -400,7 +417,7 @@ export function LogSession() {
     if (!meta || !next) return
     const setEntries: ActiveSetEntry[] = ex.setEntries.length === 0
       ? Array.from({ length: Math.max(1, previousWorkSetCount(ex.exerciseId)) }, () => ({ sets: 1, reps: next.reps, weight: next.weight, completed: false, type: 'normal' as const }))
-      : ex.setEntries.map(s => isOpenWorkSet(s) ? { ...s, weight: next.weight } : s)
+      : ex.setEntries.map(s => isOpenWorkSet(s) ? applyTarget(s, next) : s)
     const newExercises = [...exercises]
     newExercises[exerciseIdx] = { ...ex, setEntries }
     setExercises(newExercises)
@@ -473,8 +490,8 @@ export function LogSession() {
     const meta = allExercises.find(e => e.id === ex.exerciseId)
     if (currentSet.calibration && meta) {
       const result = calibrationResult(ex, currentSet)
-      const passed = nextCompleted && result.weight > currentSet.weight
-      setProgression(meta.id, passed ? { next: result } : {})
+      const passed = nextCompleted && result.passed
+      setProgression(meta.id, passed ? { next: { weight: result.weight, reps: result.reps } } : {})
       if (passed) setCelebrating(true)
     }
 
@@ -847,7 +864,8 @@ export function LogSession() {
                 const prevSets = prev?.setEntries ?? []
                 const exerciseMeta = allExercises.find(e => e.id === ex.exerciseId)
                 const barWeight = barWeightFor(exerciseMeta?.equipment)
-                const prevTop = topSet(prevSets)
+                const prevTop = previousTop(ex.exerciseId)
+                const bodyweight = exerciseMeta?.kind === 'bodyweight'
                 const suggestion = exerciseMeta?.progression?.next
                 const calibrationSet = ex.setEntries.find(s => s.calibration)
                 const calibrated = calibrationSet?.completed ? calibrationResult(ex, calibrationSet) : null
@@ -905,10 +923,11 @@ export function LogSession() {
                       </div>
                     )}
 
-                    {suggestion && !calibrationSet && (!prevTop || suggestion.weight > prevTop.weight) && (
+                    {bodyweight && <p class="text-xs text-muted m-0 mb-sm">Kg är extra vikt, 0 är bara kroppen.</p>}
+                    {suggestion && !calibrationSet && (!prevTop || !reachedTarget(prevTop, suggestion)) && (
                       <div class="progression-line mb-sm">
-                        <span>Förslag: <strong class="tabular-nums">{formatWeight(suggestion.weight)} kg × {suggestion.reps}</strong></span>
-                        <Button size="sm" onClick={() => takeSuggestion(exIdx)}>Ta {formatWeight(suggestion.weight)} kg</Button>
+                        <span>Förslag: <strong class="tabular-nums">{formatSet(suggestion)}</strong></span>
+                        <Button size="sm" onClick={() => takeSuggestion(exIdx)}>Ta {targetLabel(suggestion)}</Button>
                         <Button size="sm" variant="secondary" onClick={() => setProgression(ex.exerciseId, { holdAt: exerciseMeta?.progression?.holdAt })}>Nej tack</Button>
                       </div>
                     )}
@@ -916,11 +935,11 @@ export function LogSession() {
                       <div class="progression-line mb-sm" role="status">
                         {!calibrationSet.completed
                           ? <span>Testset: så många reps du klarar med god form. På stång: stanna när nästa rep känns osäker. Skriv antalet och bocka av.</span>
-                          : calibrated && calibrated.weight > calibrationSet.weight
-                            ? <span><strong>{calibrationSet.reps} reps! Du klarade det.</strong> Ny vikt: <strong class="tabular-nums">{formatWeight(calibrated.weight)} kg × {calibrated.reps}</strong></span>
-                            : <span><strong>{calibrationSet.reps} reps.</strong> Du ligger rätt: stanna på {formatWeight(calibrationSet.weight)} kg en gång till.</span>}
-                        {calibrated && (!ex.setEntries.some(s => !s.calibration && s.type !== 'warmup') || ex.setEntries.some(s => isOpenWorkSet(s) && s.weight !== calibrated.weight)) && (
-                          <Button size="sm" onClick={() => fillAfterTest(exIdx)}>Resten på {formatWeight(calibrated.weight)} kg</Button>
+                          : calibrated?.passed
+                            ? <span><strong>{calibrationSet.reps} reps! Du klarade det.</strong> Nytt mål: <strong class="tabular-nums">{formatSet(calibrated)}</strong></span>
+                            : <span><strong>{calibrationSet.reps} reps.</strong> Du ligger rätt: stanna på {calibrated ? formatSet(calibrated) : ''} en gång till.</span>}
+                        {calibrated && (!ex.setEntries.some(s => !s.calibration && s.type !== 'warmup') || ex.setEntries.some(s => isOpenWorkSet(s) && (s.weight !== calibrated.weight || (calibrated.weight === 0 && s.reps !== calibrated.reps)))) && (
+                          <Button size="sm" onClick={() => fillAfterTest(exIdx)}>Resten på {targetLabel(calibrated)}</Button>
                         )}
                       </div>
                     )}

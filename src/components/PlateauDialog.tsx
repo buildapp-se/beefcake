@@ -53,7 +53,8 @@ export function PlateauDialog({ items, image, onChoose }: {
   }
 
   const steps = new Set(items.map(i => i.step))
-  const stepText = steps.size === 1 ? `+${formatWeight(items[0].step)} kg` : 'ett steg upp'
+  // Bara kroppen (0 kg) höjs med en rep, inte med kilon: då skrivs steget inte ut som ett tal
+  const stepText = steps.size === 1 && items.every(i => i.weight > 0) ? `+${formatWeight(items[0].step)} kg` : 'ett steg upp'
 
   return (
     <div class="dialog-overlay" onClick={() => onChoose('no', held)}>
@@ -73,7 +74,7 @@ export function PlateauDialog({ items, image, onChoose }: {
             <li key={item.exerciseId}>
               <span>
                 <strong>{item.name}</strong>: samma vikt och reps {item.run} pass i rad
-                <span class="text-muted tabular-nums"> ({formatWeight(item.weight)} kg × {item.reps})</span>
+                <span class="text-muted tabular-nums"> ({item.weight > 0 ? `${formatWeight(item.weight)} kg × ${item.reps}` : `kroppsvikt × ${item.reps}`})</span>
               </span>
               <label class="plateau-hold">
                 <input
