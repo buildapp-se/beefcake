@@ -144,7 +144,7 @@ server/migrations/          D1-schema för versionsnumrerade snapshots och remin
 src/pages/                Home, LogSession, Templates, History, SessionDetail, ExerciseDetail, ExerciseDatabase (/ovningar), Stats, Settings (export, import, kroppsvikt)
 ```
 
-Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?date=<YYYY-MM-DD>`) · `/templates` · `/history` · `/history/:id` · `/exercises/:id` (egen övning, statistik) · `/ovningar` (databasen, stödjer `?q=`) · `/ovningar/:id` · `/stats` · `/settings`.
+Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?date=<YYYY-MM-DD>`) · `/templates` · `/history` · `/history/:id` · `/exercises/:id` (egen övning, statistik) · `/ovningar` (databasen, stödjer `?q=`) · `/ovningar/:id` · `/stats` · `/settings`. GitHub Pages saknar SPA-fallback, så `scripts/spa-routes.mjs` (sist i `npm run build`) kopierar `index.html` till en `.html` per fast rutt: en ny fast rutt ska in i listan där.
 
 Loggvyn startar timern genom att skicka `beefcake-start-timer` på `window`; `RestTimer` lyssnar. Det håller avbockning och timer i olika komponenter utan delad state. Alarmtiden lagras lokalt per enhet i IndexedDB-inställningarna: standard är 19 sekunder, användaren kan välja 1 till 3 600 sekunder eller låta ljudet fortsätta tills det tystas manuellt.
 

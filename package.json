@@ -7,7 +7,7 @@
     "dev": "vite",
     "test": "vitest run",
     "lint": "eslint .",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/spa-routes.mjs",
     "preview": "vite preview",
     "server:dev": "wrangler dev --local",
     "server:types": "wrangler types server/worker-configuration.d.ts",
