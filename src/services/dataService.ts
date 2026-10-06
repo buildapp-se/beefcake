@@ -3,6 +3,7 @@ import type {
   Template,
   TemplateExercise,
   Exercise,
+  ExerciseProgression,
   Session,
   SessionExercise,
   ExerciseHistory,
@@ -172,6 +173,18 @@ export async function getOrCreateExercise(name: string, muscleGroup?: string): P
   }
   await db.put('exercises', exercise)
   return exercise
+}
+
+/** Höjningsförslagets val per övning. Tomt värde tar bort fältet. Synkas, så valet följer med kontot. */
+export async function saveExerciseProgression(id: string, progression: ExerciseProgression): Promise<void> {
+  const db = await getDB()
+  const existing = await db.get('exercises', id)
+  if (!existing) throw new Error(`Exercise ${id} not found`)
+  const updated: Exercise = { ...existing }
+  delete updated.progression
+  if (progression.holdAt !== undefined || progression.next) updated.progression = progression
+  await db.put('exercises', updated)
+  await syncCloudData()
 }
 
 // Session Service

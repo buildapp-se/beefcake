@@ -1,6 +1,7 @@
 export type {
   ExerciseKind,
   Exercise,
+  ExerciseProgression,
   SetEntry,
   SetType,
   ActiveSetEntry,

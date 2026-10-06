@@ -8,7 +8,16 @@ export interface Exercise {
   kind?: ExerciseKind
   muscleGroup?: string
   equipment?: string
+  /** Höjningsförslaget mot platå, se src/lib/progression.ts. Följer med kontot i snapshoten. Sedan 2026-10-06. */
+  progression?: ExerciseProgression
   createdAt: string
+}
+
+export interface ExerciseProgression {
+  /** "Håll vikten med flit": toppvikten när valet gjordes. Tystar förslaget tills toppvikten ändras. */
+  holdAt?: number
+  /** Väntande förslag, visas vid övningen tills det tas eller avböjs. Aldrig tyst ifyllt. */
+  next?: { weight: number; reps: number }
 }
 
 export interface SetEntry {
@@ -114,6 +123,8 @@ export type SetType = 'normal' | 'warmup' | 'drop' | 'failure'
 export interface ActiveSetEntry extends SetEntry {
   completed?: boolean
   type?: SetType
+  /** AMRAP-setet från höjningsförslagets test: när det bockas av räknas nästa pass vikt ut */
+  calibration?: boolean
 }
 
 export interface ActiveExercise {

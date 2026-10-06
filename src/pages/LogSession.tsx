@@ -10,7 +10,9 @@ import {
   saveActiveWorkout,
   clearActiveWorkout,
   getLastPerformanceForExercise,
-  getExerciseRecords
+  getExerciseRecords,
+  getExerciseHistory,
+  saveExerciseProgression
 } from '../services/dataService'
 import { startRestTimer, triggerHaptic } from '../services/timerService'
 import { formatDateShort } from '../lib/date'
@@ -18,8 +20,9 @@ import { formatSet, formatSetCompact, formatSets, formatWeight, parseDecimal } f
 import { barWeightFor, formatPlatesPerSide } from '../lib/plates'
 import { epley1RM } from '../lib/exerciseMetrics'
 import { warmupSets } from '../lib/warmup'
+import { calibratedWeight, isPlateau, plateauLength, stepFor, topSet } from '../lib/progression'
 import { setsVolume } from '../lib/volume'
-import { todayISO, nowISO } from '../models'
+import { getDB, todayISO, nowISO } from '../models'
 import { icon } from '../icons'
 import { useLocation } from 'wouter'
 import { Card } from '../components/Card'
@@ -28,8 +31,12 @@ import { EmptyState } from '../components/EmptyState'
 import { Field } from '../components/Field'
 import { PlateCalculatorModal } from '../components/PlateCalculator'
 import { RestTimer } from '../components/RestTimer'
+import { PlateauDialog, type PlateauChoice, type PlateauItem } from '../components/PlateauDialog'
 import { announceGuestSave, useIsGuest } from '../components/LoginGate'
-import type { Template, Exercise, TemplateExercise, SetEntry, ActiveSetEntry, SetType } from '../models'
+import type { Template, Exercise, ExerciseProgression, TemplateExercise, SetEntry, ActiveSetEntry, SetType } from '../models'
+
+// Höjningsfrågan ställs en gång per pass: datum och program, sparat per enhet så en omladdning inte frågar igen
+const PLATEAU_ASKED_KEY = 'plateau-asked'
 
 // Settyp som fullt ord i pickern (bokstaven ensam var obegriplig på mobil), tom sträng för normal i brickan
 const SET_TYPE_LABELS: Record<SetType, string> = { normal: 'Normal', warmup: 'Uppvärmning', drop: 'Drop', failure: 'Failure' }
@@ -91,6 +98,10 @@ export function LogSession() {
       return next
     })
   }
+
+  // Övningar på platå som dialogen "Vill du höja?" listar, null när den är stängd
+  const [plateauItems, setPlateauItems] = useState<PlateauItem[] | null>(null)
+  const plateauCheckedRef = useRef('')
 
   const draggedExerciseIndexRef = useRef<number | null>(null)
   const activeTemplateRequestRef = useRef<string>('')
@@ -276,6 +287,93 @@ export function LogSession() {
     })
   }, [exercises, date, selectedTemplateId, startTime, loading, templates])
 
+  // Platå: när ett pass öppnas och minst en övning stått still i PLATEAU_SESSIONS pass frågar
+  // dialogen en gång. En övning med ett väntande förslag frågas inte om igen.
+  const plateauKey = `${date}|${selectedTemplateId}`
+  const knownExerciseIds = exercises.map(e => e.exerciseId).filter(id => id && !id.startsWith('new-')).join(',')
+  useEffect(() => {
+    if (loading || !knownExerciseIds || plateauCheckedRef.current === plateauKey) return
+    plateauCheckedRef.current = plateauKey
+    let cancelled = false
+    void (async () => {
+      const asked = await (await getDB()).get('settings', PLATEAU_ASKED_KEY)
+      if (asked?.value === plateauKey) return
+      const items: PlateauItem[] = []
+      for (const id of knownExerciseIds.split(',')) {
+        const meta = allExercises.find(e => e.id === id)
+        const history = await getExerciseHistory(id)
+        const top = topSet(history[history.length - 1]?.setEntries ?? [])
+        if (!meta || !top || meta.progression?.next || !isPlateau(history, { kind: meta.kind, holdAt: meta.progression?.holdAt })) continue
+        items.push({ exerciseId: id, name: meta.name, weight: top.weight, reps: top.reps, run: plateauLength(history), step: stepFor(meta.equipment, meta.name) })
+      }
+      if (!cancelled && items.length > 0) setPlateauItems(items)
+    })().catch(err => console.error('Kunde inte läsa platåer:', err))
+    return () => { cancelled = true }
+  }, [loading, knownExerciseIds, plateauKey])
+
+  function setProgression(exerciseId: string, progression: ExerciseProgression) {
+    setAllExercises(prev => prev.map(e => {
+      if (e.id !== exerciseId) return e
+      const next: Exercise = { ...e }
+      delete next.progression
+      if (progression.holdAt !== undefined || progression.next) next.progression = progression
+      return next
+    }))
+    // Synkfel visas av synkbannern; valet ligger redan lokalt
+    saveExerciseProgression(exerciseId, progression).catch(err => console.error('Kunde inte spara höjningsförslaget:', err))
+  }
+
+  function handlePlateauChoice(choice: PlateauChoice, heldIds: string[]) {
+    const items = plateauItems ?? []
+    setPlateauItems(null)
+    void getDB().then(db => db.put('settings', { key: PLATEAU_ASKED_KEY, value: plateauKey })).catch(() => undefined)
+    for (const item of items.filter(i => heldIds.includes(i.exerciseId))) setProgression(item.exerciseId, { holdAt: item.weight })
+    const chosen = items.filter(i => !heldIds.includes(i.exerciseId))
+    if (choice === 'step') {
+      for (const item of chosen) setProgression(item.exerciseId, { next: { weight: Math.round((item.weight + item.step) * 100) / 100, reps: item.reps } })
+    }
+    if (choice === 'test') {
+      // AMRAP-setet först bland arbetsseten, efter eventuell uppvärmning, på samma vikt som nu
+      setExercises(current => current.map(ex => {
+        const item = chosen.find(i => i.exerciseId === ex.exerciseId)
+        if (!item || ex.setEntries.some(s => s.calibration)) return ex
+        const firstWork = ex.setEntries.findIndex(s => s.type !== 'warmup')
+        const at = firstWork === -1 ? ex.setEntries.length : firstWork
+        const amrap: ActiveSetEntry = { sets: 1, reps: item.reps, weight: item.weight, completed: false, type: 'failure', calibration: true }
+        return { ...ex, setEntries: [...ex.setEntries.slice(0, at), amrap, ...ex.setEntries.slice(at)] }
+      }))
+      const first = exercises.findIndex(ex => chosen.some(i => i.exerciseId === ex.exerciseId))
+      if (first !== -1) setActiveExerciseIndex(first)
+    }
+  }
+
+  // Övningens vanliga reps och steg: det AMRAP-setet räknas mot
+  function calibrationResult(ex: LogFormExercise, set: ActiveSetEntry): { weight: number; reps: number } {
+    const meta = allExercises.find(e => e.id === ex.exerciseId)
+    const usualReps = topSet(previousPerformances[ex.exerciseId]?.setEntries ?? [])?.reps ?? set.reps
+    return { weight: calibratedWeight(set.weight, set.reps, usualReps, stepFor(meta?.equipment, ex.exerciseName)), reps: usualReps }
+  }
+
+  // "Ta förslaget": vikten sätts på de arbetsset som är kvar, eller läggs in som lika många set som förra gången
+  function takeSuggestion(exerciseIdx: number) {
+    const ex = exercises[exerciseIdx]
+    const meta = allExercises.find(e => e.id === ex.exerciseId)
+    const next = meta?.progression?.next
+    if (!meta || !next) return
+    const prevSets = previousPerformances[ex.exerciseId]?.setEntries ?? []
+    const prevTop = topSet(prevSets)
+    const count = Math.max(1, prevSets.filter(s => s.weight === prevTop?.weight).length)
+    const setEntries: ActiveSetEntry[] = ex.setEntries.length === 0
+      ? Array.from({ length: count }, () => ({ sets: 1, reps: next.reps, weight: next.weight, completed: false, type: 'normal' as const }))
+      : ex.setEntries.map(s => s.completed || s.type === 'warmup' || s.calibration ? s : { ...s, weight: next.weight })
+    const newExercises = [...exercises]
+    newExercises[exerciseIdx] = { ...ex, setEntries }
+    setExercises(newExercises)
+    setInputDrafts({})
+    setProgression(meta.id, { holdAt: meta.progression?.holdAt })
+    triggerHaptic(20)
+  }
+
   // Kortkommandon på desktop: Ctrl+Enter slutför passet, Escape stänger det som är öppet.
   // Inget mer förrän något saknas på riktigt; fler tangenter är fler saker att glömma.
   useEffect(() => {
@@ -335,6 +433,13 @@ export function LogSession() {
     const newExercises = [...exercises]
     newExercises[exerciseIdx] = { ...ex, setEntries: newSetEntries }
     setExercises(newExercises)
+
+    // Testsetet bockat: nästa pass vikt sparas som förslag. Avbockat igen: förslaget tas bort.
+    const meta = allExercises.find(e => e.id === ex.exerciseId)
+    if (currentSet.calibration && meta) {
+      const result = calibrationResult(ex, currentSet)
+      setProgression(meta.id, nextCompleted && result.weight > currentSet.weight ? { next: result } : {})
+    }
 
     if (nextCompleted) {
       // Rekordet får den långa vibrationen, samma som när passet sparas
@@ -701,7 +806,12 @@ export function LogSession() {
               {exercises.map((ex, exIdx) => {
                 const prev = previousPerformances[ex.exerciseId]
                 const prevSets = prev?.setEntries ?? []
-                const barWeight = barWeightFor(allExercises.find(e => e.id === ex.exerciseId)?.equipment)
+                const exerciseMeta = allExercises.find(e => e.id === ex.exerciseId)
+                const barWeight = barWeightFor(exerciseMeta?.equipment)
+                const prevTop = topSet(prevSets)
+                const suggestion = exerciseMeta?.progression?.next
+                const calibrationSet = ex.setEntries.find(s => s.calibration)
+                const calibrated = calibrationSet?.completed ? calibrationResult(ex, calibrationSet) : null
                 // En plattrad per distinkt vikt bland seten, så tre set på 82,5 ger en rad, inte tre
                 const plateWeights = barWeight === null ? [] : Array.from(new Set(ex.setEntries.map(s => s.weight).filter(w => w > 0)))
                 const expanded = activeExerciseIndex === exIdx
@@ -753,6 +863,23 @@ export function LogSession() {
                           <strong>{formatSets(prevSets)}</strong>
                           {prev.notes && <span class="exercise-prev-notes"> · {prev.notes}</span>}
                         </span>
+                      </div>
+                    )}
+
+                    {suggestion && !calibrationSet && (!prevTop || suggestion.weight > prevTop.weight) && (
+                      <div class="progression-line mb-sm">
+                        <span>Förslag: <strong class="tabular-nums">{formatWeight(suggestion.weight)} kg × {suggestion.reps}</strong></span>
+                        <Button size="sm" onClick={() => takeSuggestion(exIdx)}>Ta {formatWeight(suggestion.weight)} kg</Button>
+                        <Button size="sm" variant="secondary" onClick={() => setProgression(ex.exerciseId, { holdAt: exerciseMeta?.progression?.holdAt })}>Nej tack</Button>
+                      </div>
+                    )}
+                    {calibrationSet && (
+                      <div class="progression-line mb-sm" role="status">
+                        {!calibrationSet.completed
+                          ? <span>Testset: så många reps du klarar med god form. På stång: stanna när nästa rep känns osäker. Skriv antalet och bocka av.</span>
+                          : calibrated && calibrated.weight > calibrationSet.weight
+                            ? <span><strong>{calibrationSet.reps} reps!</strong> Nästa gång: <strong class="tabular-nums">{formatWeight(calibrated.weight)} kg × {calibrated.reps}</strong></span>
+                            : <span><strong>{calibrationSet.reps} reps.</strong> Du ligger rätt: stanna på {formatWeight(calibrationSet.weight)} kg en gång till.</span>}
                       </div>
                     )}
 
@@ -1072,6 +1199,8 @@ export function LogSession() {
             </div>
           </div>
         )}
+
+        {plateauItems && <PlateauDialog items={plateauItems} onChoose={handlePlateauChoice} />}
 
         {/* Plattkalkylatorn monteras först när den öppnas: useState läser initialWeight bara vid första renderingen */}
         {plateCalcModal.isOpen && (

@@ -26,13 +26,13 @@ Sju object stores i IndexedDB `beefcake-db` (version 4 sedan 2026-09-01). Typern
 ```ts
 SetEntry         { sets, reps, weight, rpe? }
 ExerciseKind     'weight' | 'bodyweight' | 'time' | 'distance'
-Exercise         { id, name, kind?, muscleGroup?, equipment?, createdAt }
+Exercise         { id, name, kind?, muscleGroup?, equipment?, progression?: { holdAt?, next?: { weight, reps } }, createdAt }
 TemplateExercise { exerciseId, defaultSetEntry: SetEntry, order }
 Template         { id, name, exercises: TemplateExercise[], updatedAt }
 SessionExercise  { exerciseId, exerciseName, setEntries: SetEntry[], order, notes? }
 Session          { id, date (YYYY-MM-DD), templateId, templateName, exercises: SessionExercise[], createdAt }
 ExerciseHistory  { id, date, exerciseId, exerciseName, setEntries: SetEntry[], volume, sessionId }
-ActiveSetEntry   SetEntry plus { completed?, type?: 'normal'|'warmup'|'drop'|'failure' }
+ActiveSetEntry   SetEntry plus { completed?, type?: 'normal'|'warmup'|'drop'|'failure', calibration? }
 ActiveWorkout    { id, date, templateId, templateName, exercises: ActiveExercise[], startTime, updatedAt }
 BodyWeight       { date (YYYY-MM-DD, nyckel), kg }
 ```
@@ -85,6 +85,16 @@ Cartman speglar träningskedjan. I full storlek med statustexten bara på Hem (s
 
 Avatarerna i `src/assets/beefcake/` och ikonerna `favicon.ico`, `apple-touch-icon.png` och `pwa-*.png` i `public/` är **genererade**, aldrig handredigerade. Originalen ligger i `assets-source/` och byggs om med `python scripts/generate-beefcake-assets.py`. Favicon är huvudet ur `beefcake3.jpg`.
 
+## Höjningsförslaget
+
+En fast regel mot att stå still på samma vikt (sedan 2026-10-06), inte en programmotor: procent av träningsmax och cykler står under "Bygg inte" i BACKLOG. `src/lib/progression.ts` äger regeln och källhänvisningarna, och är det enda stället.
+
+- **Platå:** bästa arbetssetet (tyngsta vikten, sedan flest reps på den) är detsamma i tre pass i rad, utan fler reps än passet före. Fler reps på samma vikt är framsteg. Vikt 0 och `kind` annat än `weight` undantas. `kind` sätts ingenstans i koden i dag, så undantaget är i praktiken vikt 0; Chins och Armhävningar loggade med kroppsvikten som tal räknas som viktövningar. Settypen sparas inte i historiken: uppvärmning faller bort för att den är lättare än toppsetet.
+- **Steg:** stång och ez-stång 2,5 kg (två av minsta skivan i `plates.ts`), hantlar 1 kg (namnet innehåller "hantel" eller "hantlar"), allt annat 2,5 kg. Steget räknas från vikten man står på.
+- **Test:** ett AMRAP-set (settyp Failure, `calibration` på setet i utkastet) på dagens vikt. e1RM med Epley och högst tio reps, tillbaka till de vanliga repsen (förra passets toppset), nedåt till hela steg. Från tio vanliga reps skiljer formeln inte längre: där ger fler reps än de vanliga ett steg.
+- **Lagring:** `Exercise.progression` bär `holdAt` ("Håll vikten med flit": toppvikten när valet gjordes, tystar tills toppvikten ändras) och `next` (väntande förslag). Fältet ligger på övningen och följer därför med snapshoten till D1 och fungerar i gästläget; `validateSnapshot` släpper igenom okända fält, så Workern behövde inte ändras. `settings` valdes bort: den storen är per enhet. Vid gästsammanslagning vinner kontots övning, gästens val för en övning med samma namn följer inte med.
+- **Gränssnitt:** `PlateauDialog` visas en gång per pass i Logga pass (markeringen `plateau-asked`, datum och program, per enhet i `settings`). En övning med väntande förslag frågas inte om igen. Förslaget visas som en rad vid övningen och ändrar aldrig en vikt utan tryck; det göms när förra passets toppvikt redan nått förslaget.
+
 ## Muskelgrupper
 
 `MUSCLE_GROUP_MAP` och `EQUIPMENT_MAP` i `dataService.ts` mappar övningsnamn till muskelgrupp respektive stång (`skivstång` 20 kg, `ez-stång` 10 kg, stångvikterna i `src/lib/plates.ts`). `backfillExerciseMeta()` körs i `syncSeed` och fyller på det som saknas, aldrig över ett satt värde. Övningar utan mappning visas som "Övrigt" i statistiken och får ingen plattrad i loggvyn. Både grupp och utrustning härleds ur namnet, de väljs aldrig av användaren vid loggning.
@@ -105,7 +115,7 @@ Vite 8 · Preact 10 · TypeScript strict · wouter · `idb` · Chart.js (lazy) �
 src/main.tsx              entry, registerSW (prompt), syncSeed sedan render
 src/app.tsx               Router, navigering, rutter
 src/app.css               all styling, tokens överst
-src/components/           Button, Card, Stat, EmptyState, Field, LoginGate (inloggning, useAuthUser), RestTimer, PlateCalculator, CloudSyncStatus, UpdateBanner (ny version väntar), BeefcakeBadge (märke, avatar, useBeefcakeStreak), ExerciseAnimation (två bildrutor som växlar)
+src/components/           Button, Card, Stat, EmptyState, Field, LoginGate (inloggning, useAuthUser), RestTimer, PlateCalculator, CloudSyncStatus, UpdateBanner (ny version väntar), BeefcakeBadge (märke, avatar, useBeefcakeStreak), PlateauDialog ("Vill du höja?"), ExerciseAnimation (två bildrutor som växlar)
 src/db/schema.ts          IndexedDB-schema och typer
 src/db/seedData.ts        GENERERAD, all träningshistorik
 src/lib/date.ts           all datumhantering, tidszonssäker (även mondayISO, isoWeek). Använd den, aldrig new Date() rakt av
@@ -117,6 +127,7 @@ src/lib/nextPrograms.ts   nästa pass i rotationen ur historiken för Hem
 src/lib/plates.ts         skivor per sida och stångvikt per utrustning
 src/lib/exerciseMetrics.ts Epley-1RM, grafens mått per genomförande, rekord per repsantal
 src/lib/warmup.ts         uppvärmningsset ur första arbetssetet
+src/lib/progression.ts    höjningsförslaget: platå, steg per utrustning, nästa vikt ur ett AMRAP-set
 src/lib/exerciseDb.ts     övningsdatabasen: laddning, svenska etiketter, sökning, namnkarta egna övningar → databas-id
 src/data/exerciseDb.json  GENERERAD ur free-exercise-db, se scripts/generate-exercise-db.py
 src/assets/beefcake/      GENERERADE avatarer, se assets-source/ och scripts/
