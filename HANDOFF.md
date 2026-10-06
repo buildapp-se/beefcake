@@ -140,3 +140,15 @@ och POST utan token ger 401. Kvar från rundan: P2 kontobyte och konfliktbannern
 ## Automated audit batch, 2026-10-06
 
 Cross-project run from elwyn-dash with aifabriken `tools/audit-suite.ts` (headers, npm audit, secrets, Actions, markup, axe at one mobile viewport; TLS and Lighthouse not run). Results are the `(automated)` lines under `## Audits` in CONTEXT.md, findings under `## Granskning 2026-10-06` in BACKLOG.md. Markup fail (seven SPA deep links answer 404), axe fail (one contrast violation in the bottom nav), npm audit fail (dev chain only). `.gitleaksignore` gained the worktree fingerprint of the already reviewed public Firebase apiKey; secrets now pass. Headers fail is the shared buildapp.se CSP without `script-src` (zone Transform Rule, owned by elwyn-dash `docs/security.md` §Open 11), not something this repository can fix. No application code or deployment changed. `reviewedAt` was left alone: the goal and next action above were not reviewed.
+
+## Nattbatch 2026-10-06, grenen `batch/2026-10-06`
+
+Förgodkänd batch över öppna BACKLOG-poster, i ett eget arbetsträd. **Inget är mergat eller deployat:** `master` är orörd, grenen väntar på Patriks ja. Tre poster ur Granskning 2026-10-06 byggda, detaljer per rad i BACKLOG:
+
+- npm audit 0 (`6445fdc`): `npm audit fix` plus `overrides.sharp` 0.35.5, eftersom miniflare låser 0.35.4 exakt. Overriden ska bort när miniflare släpper kravet.
+- Aktiv navlänk AA (`e447390`): token `--accent-on-tint`, uppmätt 5,67:1 ljust och 4,76:1 mörkt i Chromium 390.
+- Djuplänkar (`39c9ce9`): `scripts/spa-routes.mjs` sist i bygget. **Kolla efter deploy:** `curl -I https://buildapp.se/beefcake/log` ska ge 200; det går inte att prova lokalt, `vite preview` har egen fallback.
+
+Verifierat på grenen: 185 tester, lint, `server:check`, build.
+
+Överhoppade, kräver Patrik: Resend-brevet (P0, väntar på ett riktigt uppehåll i produktion), webb-push för vilotimern (P1, ny VAPID-hemlighet och delad Cloudflare-kvot), eget ansikte på Cartman (P3, smakbeslut och bilder), IndexedDB-migreringen (P3, posten säger själv "om det dyker upp på en riktig enhet", och den rör lagrad användardata).
