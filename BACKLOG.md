@@ -147,7 +147,7 @@ Underlag, skärmbilder och källor: `Beefcake Designgenomlysning` i vaulten. Tv�
 Fynd från den automatiska sviten (aifabriken `tools/audit-suite.ts`: headers, npm audit, secrets, Actions, markup, axe). Mätvärdena står som `(automated)`-rader under `## Audits` i CONTEXT.md.
 
 - [x] `[P2]` (rättad 2026-10-06 i batchgrenen: `npm audit fix` tog sex av nio, wrangler 4.148.0; de tre sista satt i `sharp` 0.35.4 som miniflare låser exakt, löst med `overrides.sharp` 0.35.5 i `package.json`. Ta bort overriden när miniflare själv kräver 0.35.5 eller senare. `npm audit` 0, 185 tester, lint, `server:check` och build gröna) npm audit: 9 advisories (7 high, 2 moderate), alla i dev-kedjan (wrangler, miniflare, undici, sharp, vitest, brace-expansion, fast-uri), 0 i produktion. `npm audit fix` löser samtliga utan major-hopp.
-- [ ] `[P2]` WCAG: aktiv flik i bottenmenyn har kontrast 4,4:1 (`.bottom-nav .nav-link.active .nav-text`, #d6283a på #fceeef, 11,2 px). Kravet är 4,5:1.
+- [x] `[P2]` (rättad 2026-10-06 i batchgrenen: ny token `--accent-on-tint` för text på `--accent-bg`, `--accent-strong` i ljust läge och `--accent` i mörkt, på aktiv navlänk i bottenmeny, sidebar och Mer-knappen. Uppmätt i Chromium 390 på `/log`: 5,67:1 ljust, 4,76:1 mörkt. Inte kört om med axe; övrig accenttext på tonad yta, `.badge-primary` och kalenderns i dag-datum, är orörd) WCAG: aktiv flik i bottenmenyn har kontrast 4,4:1 (`.bottom-nav .nav-link.active .nav-text`, #d6283a på #fceeef, 11,2 px). Kravet är 4,5:1.
 - [ ] `[P3]` Markup: djuplänkarna `/beefcake/log`, `/templates`, `/ovningar`, `/history`, `/stats`, `/konto` och `/settings` svarar HTTP 404 (GitHub Pages SPA-fallback). Fungerar i webbläsaren, men länkkontroller och sökmotorer ser 404.
 
 ## Captured
