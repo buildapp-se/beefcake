@@ -4,6 +4,7 @@
 
 ## Öppet
 
+- [ ] `[P1]` Höjningsförslag mot platå (Patriks beslut 2026-10-06: "så man inte harvar på med samma vikter vecka ut och vecka in"). En fast regel, ingen programmotor: har en övning samma toppvikt och inte fler reps i N pass i rad, föreslå en höjning synligt i Logga pass (förslaget som kg-värde, ett tryck för att ta det, "Håll vikten" stänger av för övningen). Aldrig tyst höjning av förifyllda vikter. Steget efter utrustning (minsta stegen i plattkalkylatorn för stång, hantelsteget för hantlar). N och procent belagda i källa (ACSM:s position stand 2009 och NSCA:s 2-för-2-regel ska läsas, inte citeras ur minnet). Dubbel progression (fler reps på samma vikt) är framsteg och ska inte trigga förslaget
 - [x] `[P0]` Koppla Cloudflare Access-applikation till `api.orgutveckling.se` och verifiera en riktig synk från produktionsklienten
 - [x] `[P0]` `Exercise.kind` för kroppsvikt, tid och distans. 95 konditionspass har volym 0 och kroppsviktsövningar räknas fel
 - [x] `[P1]` Autosave av påbörjat pass, utkast i IndexedDB som går att återuppta
@@ -111,7 +112,7 @@
 
 ## Bygg inte
 
-Program-motor (5×5, GZCL) · flerspråkighet · sociala funktioner och delade mallar · AI-förslag på vikter · egen backend enbart för synk · Excel-import i webbläsaren (borttagen i `410efd1`, `xlsx` 0.18.5 gav tom chunk under Vite 8) · trettio diagram · rest timer om du inte faktiskt vilar på klocka · superset och dropsets i gränssnittet, se bara till att modellen klarar dem.
+Program-motor med procent av träningsmax och cykler (5/3/1, nSuns, Candito; beslut 2026-10-06, de får köra sitt kalkylark) · flerspråkighet · sociala funktioner och delade mallar · AI-förslag på vikter (höjningsförslaget i Öppet är en fast regel, inte AI) · egen backend enbart för synk · Excel-import i webbläsaren (borttagen i `410efd1`, `xlsx` 0.18.5 gav tom chunk under Vite 8) · trettio diagram · rest timer om du inte faktiskt vilar på klocka · superset och dropsets i gränssnittet, se bara till att modellen klarar dem.
 
 ## Förslag från genomlysning 2026-09
 
