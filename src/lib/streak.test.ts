@@ -87,6 +87,19 @@ describe('beefcakeStreak', () => {
     expect(beefcakeStreak(dates, '2026-08-21')).toMatchObject({ level: 4, streak: 10, daysSinceLast: 0, startDate: '2026-08-03' })
   })
 
+  it('20, 40 och 80 pass i rad ger nivå 5, 6 och 7', () => {
+    const chain = (n: number) => Array.from({ length: n }, (_, i) => {
+      const d = new Date(2026, 7, 21 - i * 2)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })
+    expect(beefcakeStreak(chain(19), '2026-08-21').level).toBe(4)
+    expect(beefcakeStreak(chain(20), '2026-08-21').level).toBe(5)
+    expect(beefcakeStreak(chain(39), '2026-08-21').level).toBe(5)
+    expect(beefcakeStreak(chain(40), '2026-08-21').level).toBe(6)
+    expect(beefcakeStreak(chain(79), '2026-08-21').level).toBe(6)
+    expect(beefcakeStreak(chain(80), '2026-08-21').level).toBe(7)
+  })
+
   it('kedjan bryts vid det första för långa glappet, äldre pass räknas inte', () => {
     const dates = ['2026-07-01', '2026-07-03', '2026-08-19', '2026-08-21']
     expect(beefcakeStreak(dates, '2026-08-21').streak).toBe(2)

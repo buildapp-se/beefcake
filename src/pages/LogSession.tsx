@@ -33,6 +33,7 @@ import { PlateCalculatorModal } from '../components/PlateCalculator'
 import { RestTimer } from '../components/RestTimer'
 import { PlateauDialog, type PlateauChoice, type PlateauItem } from '../components/PlateauDialog'
 import { Celebration } from '../components/Celebration'
+import { beefcakeImage, useBeefcakeStreak } from '../components/BeefcakeBadge'
 import { isCloudSyncConfigured } from '../services/cloudSyncService'
 import { announceGuestSave, useIsGuest } from '../components/LoginGate'
 import type { Template, Exercise, ExerciseProgression, TemplateExercise, SetEntry, ActiveSetEntry, SetType } from '../models'
@@ -105,6 +106,9 @@ export function LogSession() {
   const [plateauItems, setPlateauItems] = useState<PlateauItem[] | null>(null)
   const plateauCheckedRef = useRef('')
   const [celebrating, setCelebrating] = useState(false)
+  // Cartman visas bara inloggad, i den nivå kedjan ger just nu
+  const beefcakeLevel = useBeefcakeStreak().level
+  const showCartman = isCloudSyncConfigured() && !guest
 
   const draggedExerciseIndexRef = useRef<number | null>(null)
   const activeTemplateRequestRef = useRef<string>('')
@@ -1238,8 +1242,8 @@ export function LogSession() {
           </div>
         )}
 
-        {plateauItems && <PlateauDialog items={plateauItems} onChoose={handlePlateauChoice} />}
-        {celebrating && <Celebration showCartman={isCloudSyncConfigured() && !guest} onDone={() => setCelebrating(false)} />}
+        {plateauItems && <PlateauDialog items={plateauItems} image={showCartman ? beefcakeImage(beefcakeLevel, 'plateau') : null} onChoose={handlePlateauChoice} />}
+        {celebrating && <Celebration image={showCartman ? beefcakeImage(beefcakeLevel, 'celebrate') : null} onDone={() => setCelebrating(false)} />}
 
         {/* Plattkalkylatorn monteras först när den öppnas: useState läser initialWeight bara vid första renderingen */}
         {plateCalcModal.isOpen && (

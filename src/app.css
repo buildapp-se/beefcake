@@ -599,7 +599,7 @@ th, td {
   flex-shrink: 0;
 }
 .beefcake-banner.level-3 img { border-color: var(--accent); }
-.beefcake-banner.level-4 img { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-sm); }
+.beefcake-banner:is(.level-4, .level-5, .level-6, .level-7) img { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-sm); }
 
 /* pre-line renderar radbrytningen från beefcakeStatusText. Byt inte till
    normal: då blir nivåns namn och förklaringen en enda klump. */
@@ -623,7 +623,7 @@ th, td {
   background: var(--on-accent); border: 2px solid var(--border);
 }
 .beefcake-avatar.level-3 { border-color: var(--accent); }
-.beefcake-avatar.level-4 { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.beefcake-avatar:is(.level-4, .level-5, .level-6, .level-7) { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .brand-mark { width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0; }
 .login-brand-mark { width: 72px; height: 72px; border-radius: 16px; margin-bottom: var(--space-3); }
 .header-brand { display: flex; align-items: center; gap: var(--space-3); }
@@ -880,7 +880,8 @@ canvas { display: block; max-width: 100%; }
 /* Klarat testset: konfetti faller över skärmen, Cartman poppar upp för inloggade. Tar inga tryck. */
 .celebration { position: fixed; inset: 0; z-index: 1100; pointer-events: none; overflow: hidden; }
 .celebration-piece { position: absolute; top: -16px; width: 9px; height: 15px; border-radius: 2px; animation: celebrationFall 1500ms ease-in forwards; }
-.celebration-cartman { position: absolute; left: 50%; top: 32%; width: 180px; height: 180px; margin-left: -90px; object-fit: cover; border-radius: 50%; box-shadow: var(--shadow-lg); animation: celebrationPop 2200ms ease forwards; }
+.celebration-cartman { position: absolute; left: 50%; top: 28%; width: 240px; height: 240px; margin-left: -120px; border-radius: var(--radius); box-shadow: var(--shadow-lg); animation: celebrationPop 2200ms ease forwards; }
+.plateau-dialog-image { display: block; width: 140px; height: 140px; margin: 0 auto var(--space-3); border-radius: var(--radius); }
 @keyframes celebrationFall { to { transform: translateY(105vh) rotate(700deg); opacity: 0.8; } }
 @keyframes celebrationPop {
   0% { transform: scale(0) rotate(-20deg); opacity: 0; }

@@ -2,13 +2,15 @@ import { useEffect, useState } from 'preact/hooks'
 import { useLocation } from 'wouter'
 import { getAllSessions } from '../services/dataService'
 import { todayISO } from '../lib/date'
-import { beefcakeStatusText, beefcakeStreak, BEEFCAKE_LABELS, type BeefcakeStreak } from '../lib/streak'
-import level1 from '../assets/beefcake/1.jpg'
-import level2 from '../assets/beefcake/2.jpg'
-import level3 from '../assets/beefcake/3.jpg'
-import level4 from '../assets/beefcake/4.jpg'
+import { beefcakeStatusText, beefcakeStreak, BEEFCAKE_LABELS, type BeefcakeLevel, type BeefcakeStreak } from '../lib/streak'
 
-const AVATARS = { 1: level1, 2: level2, 3: level3, 4: level4 } as const
+// Alla genererade bilder i mappen: N.jpg (nivån), celebrate-N.jpg (klarat testset), plateau-N.jpg ("Vill du höja?")
+const IMAGES = import.meta.glob<string>('../assets/beefcake/*.jpg', { eager: true, import: 'default' })
+
+/** Cartman för en nivå: själva nivåbilden, eller firandet och platån i samma kropp. */
+export function beefcakeImage(level: BeefcakeLevel, kind?: 'celebrate' | 'plateau'): string {
+  return IMAGES[`../assets/beefcake/${kind ? `${kind}-` : ''}${level}.jpg`]
+}
 
 /**
  * Träningskedjan, läst om vid varje sidbyte: det är billigt mot IndexedDB och
@@ -39,7 +41,7 @@ export function BeefcakeBadge({ streak }: { streak: BeefcakeStreak }) {
   return (
     <div class={`beefcake-banner level-${streak.level}`}>
       <img
-        src={AVATARS[streak.level]}
+        src={beefcakeImage(streak.level)}
         alt={`Beefcake-nivå ${streak.level}: ${BEEFCAKE_LABELS[streak.level]}`}
         width="320"
         height="320"
@@ -54,7 +56,7 @@ export function BeefcakeAvatar({ streak }: { streak: BeefcakeStreak }) {
   return (
     <img
       class={`beefcake-avatar level-${streak.level}`}
-      src={AVATARS[streak.level]}
+      src={beefcakeImage(streak.level)}
       alt={`Beefcake-nivå ${streak.level}: ${BEEFCAKE_LABELS[streak.level]}`}
       title={beefcakeStatusText(streak, todayISO()).replaceAll('\n', ' ')}
       width="40"

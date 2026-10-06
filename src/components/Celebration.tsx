@@ -1,15 +1,14 @@
 import { useEffect } from 'preact/hooks'
-import cartman from '../assets/beefcake/4.jpg'
 
 const PIECES = 28
 const COLORS = ['var(--accent)', 'var(--success)', 'var(--warning)', 'var(--primary)']
 
 /**
- * Konfetti (och Cartman för den som är inloggad) när testsetet i höjningsförslaget klaras.
+ * Konfetti (och Cartman i den inloggades nivå) när testsetet i höjningsförslaget klaras.
  * Ren CSS, stänger sig själv, tar inga tryck och är dold för skärmläsare: resultatraden vid
  * setet bär beskedet. Under prefers-reduced-motion visas ingenting som rör sig.
  */
-export function Celebration({ showCartman, onDone }: { showCartman: boolean; onDone: () => void }) {
+export function Celebration({ image, onDone }: { image: string | null; onDone: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onDone, 2200)
     return () => clearTimeout(timer)
@@ -29,7 +28,7 @@ export function Celebration({ showCartman, onDone }: { showCartman: boolean; onD
           }}
         />
       ))}
-      {showCartman && <img class="celebration-cartman" src={cartman} alt="" />}
+      {image && <img class="celebration-cartman" src={image} alt="" />}
     </div>
   )
 }

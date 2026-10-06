@@ -18,8 +18,10 @@ export type PlateauChoice = 'test' | 'step' | 'no'
  * appens övriga dialoger, plus det de saknar: dialogroll, fokus in och tillbaka, Tab stannar i
  * rutan och Escape stänger som "Nä".
  */
-export function PlateauDialog({ items, onChoose }: {
+export function PlateauDialog({ items, image, onChoose }: {
   items: PlateauItem[]
+  /** Cartman på platån i den inloggades nivå, null för gäster och utan moln */
+  image: string | null
   onChoose: (choice: PlateauChoice, heldIds: string[]) => void
 }) {
   const [held, setHeld] = useState<string[]>([])
@@ -64,6 +66,7 @@ export function PlateauDialog({ items, onChoose }: {
         onClick={e => e.stopPropagation()}
         onKeyDown={onKeyDown}
       >
+        {image && <img class="plateau-dialog-image" src={image} alt="" width="140" height="140" />}
         <h3 id="plateau-dialog-title" class="m-0 mb-sm">Vill du höja?</h3>
         <ul class="plateau-list">
           {items.map(item => (

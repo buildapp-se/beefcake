@@ -9,7 +9,7 @@ import { localDateISO, monthNames, parseLocalDate, weekdayNames } from './date'
  */
 export const MAX_GAP_DAYS = 3
 
-export type BeefcakeLevel = 1 | 2 | 3 | 4
+export type BeefcakeLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export interface BeefcakeStreak {
   level: BeefcakeLevel
@@ -31,6 +31,9 @@ function daysBetween(fromISO: string, toISO: string): number {
 
 /** Nivån stegas upp med kedjans längd. Trappan är medvetet snål i toppen. */
 function levelForStreak(streak: number): BeefcakeLevel {
+  if (streak >= 80) return 7
+  if (streak >= 40) return 6
+  if (streak >= 20) return 5
   if (streak >= 10) return 4
   if (streak >= 4) return 3
   return 2
@@ -78,7 +81,10 @@ export const BEEFCAKE_LABELS: Record<BeefcakeLevel, string> = {
   1: 'Weight Gain 4000',
   2: 'På gång',
   3: 'Beefcake',
-  4: 'BEEFCAAAAKE!'
+  4: 'BEEFCAAAAKE!',
+  5: 'Bänkar skolbussen',
+  6: 'Lyfter världen',
+  7: 'Två jordklot räcker knappt'
 }
 
 /**
