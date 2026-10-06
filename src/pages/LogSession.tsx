@@ -32,6 +32,8 @@ import { Field } from '../components/Field'
 import { PlateCalculatorModal } from '../components/PlateCalculator'
 import { RestTimer } from '../components/RestTimer'
 import { PlateauDialog, type PlateauChoice, type PlateauItem } from '../components/PlateauDialog'
+import { Celebration } from '../components/Celebration'
+import { isCloudSyncConfigured } from '../services/cloudSyncService'
 import { announceGuestSave, useIsGuest } from '../components/LoginGate'
 import type { Template, Exercise, ExerciseProgression, TemplateExercise, SetEntry, ActiveSetEntry, SetType } from '../models'
 
@@ -102,6 +104,7 @@ export function LogSession() {
   // Övningar på platå som dialogen "Vill du höja?" listar, null när den är stängd
   const [plateauItems, setPlateauItems] = useState<PlateauItem[] | null>(null)
   const plateauCheckedRef = useRef('')
+  const [celebrating, setCelebrating] = useState(false)
 
   const draggedExerciseIndexRef = useRef<number | null>(null)
   const activeTemplateRequestRef = useRef<string>('')
@@ -354,18 +357,46 @@ export function LogSession() {
     return { weight: calibratedWeight(set.weight, set.reps, usualReps, stepFor(meta?.equipment, ex.exerciseName)), reps: usualReps }
   }
 
+  // Antal arbetsset förra gången: raderna på toppvikten. Pass ur Excel-seeden har en rad med sets: 3.
+  function previousWorkSetCount(exerciseId: string): number {
+    const prevSets = previousPerformances[exerciseId]?.setEntries ?? []
+    const prevTop = topSet(prevSets)
+    return prevSets.filter(s => s.weight === prevTop?.weight).reduce((sum, s) => sum + (s.sets || 1), 0)
+  }
+
+  // Obockade arbetsset: det som "Ta förslaget" och "Resten på" får byta vikt på
+  function isOpenWorkSet(s: ActiveSetEntry): boolean {
+    return !s.completed && s.type !== 'warmup' && !s.calibration
+  }
+
+  // "Resten på N kg" efter testsetet: resten av dagens set på testets vikt och de vanliga repsen.
+  // Tar du en höjning i dag är passet loggat på nya vikten, så förslaget till nästa gång rensas.
+  function fillAfterTest(exerciseIdx: number) {
+    const ex = exercises[exerciseIdx]
+    const test = ex.setEntries.find(s => s.calibration)
+    const meta = allExercises.find(e => e.id === ex.exerciseId)
+    if (!test) return
+    const result = calibrationResult(ex, test)
+    const setEntries: ActiveSetEntry[] = ex.setEntries.some(isOpenWorkSet)
+      ? ex.setEntries.map(s => isOpenWorkSet(s) ? { ...s, weight: result.weight } : s)
+      : [...ex.setEntries, ...Array.from({ length: Math.max(1, previousWorkSetCount(ex.exerciseId) - 1) }, () => ({ sets: 1, reps: result.reps, weight: result.weight, completed: false, type: 'normal' as const }))]
+    const newExercises = [...exercises]
+    newExercises[exerciseIdx] = { ...ex, setEntries }
+    setExercises(newExercises)
+    setInputDrafts({})
+    if (meta && result.weight > test.weight) setProgression(meta.id, { holdAt: meta.progression?.holdAt })
+    triggerHaptic(20)
+  }
+
   // "Ta förslaget": vikten sätts på de arbetsset som är kvar, eller läggs in som lika många set som förra gången
   function takeSuggestion(exerciseIdx: number) {
     const ex = exercises[exerciseIdx]
     const meta = allExercises.find(e => e.id === ex.exerciseId)
     const next = meta?.progression?.next
     if (!meta || !next) return
-    const prevSets = previousPerformances[ex.exerciseId]?.setEntries ?? []
-    const prevTop = topSet(prevSets)
-    const count = Math.max(1, prevSets.filter(s => s.weight === prevTop?.weight).length)
     const setEntries: ActiveSetEntry[] = ex.setEntries.length === 0
-      ? Array.from({ length: count }, () => ({ sets: 1, reps: next.reps, weight: next.weight, completed: false, type: 'normal' as const }))
-      : ex.setEntries.map(s => s.completed || s.type === 'warmup' || s.calibration ? s : { ...s, weight: next.weight })
+      ? Array.from({ length: Math.max(1, previousWorkSetCount(ex.exerciseId)) }, () => ({ sets: 1, reps: next.reps, weight: next.weight, completed: false, type: 'normal' as const }))
+      : ex.setEntries.map(s => isOpenWorkSet(s) ? { ...s, weight: next.weight } : s)
     const newExercises = [...exercises]
     newExercises[exerciseIdx] = { ...ex, setEntries }
     setExercises(newExercises)
@@ -438,14 +469,17 @@ export function LogSession() {
     const meta = allExercises.find(e => e.id === ex.exerciseId)
     if (currentSet.calibration && meta) {
       const result = calibrationResult(ex, currentSet)
-      setProgression(meta.id, nextCompleted && result.weight > currentSet.weight ? { next: result } : {})
+      const passed = nextCompleted && result.weight > currentSet.weight
+      setProgression(meta.id, passed ? { next: result } : {})
+      if (passed) setCelebrating(true)
     }
 
     if (nextCompleted) {
       // Rekordet får den långa vibrationen, samma som när passet sparas
       triggerHaptic(isRecordSet(ex.exerciseId, newSetEntries[setIdx]) ? [60, 40, 100] : 50)
       startRestTimer()
-      if (newSetEntries.every(s => s.completed)) {
+      // Efter testsetet stannar kortet öppet: resultatet och "Resten på N kg" står där
+      if (!currentSet.calibration && newSetEntries.every(s => s.completed)) {
         const nextIndex = newExercises.findIndex((candidate, index) => index > exerciseIdx && (candidate.setEntries.length === 0 || candidate.setEntries.some(s => !s.completed)))
         if (nextIndex !== -1) setActiveExerciseIndex(nextIndex)
       }
@@ -550,7 +584,8 @@ export function LogSession() {
     // nollsetstarten). Förra passets hela trappa hämtas med "Som förra gången", inte set för set.
     const prevSets = previousPerformances[ex.exerciseId]?.setEntries
     const programDefault = templates.find(t => t.id === selectedTemplateId)?.exercises.find(te => te.exerciseId === ex.exerciseId)?.defaultSetEntry
-    const ref = lastSet ?? prevSets?.[0] ?? programDefault
+    // Efter ett bockat testset gäller testets vikt och de vanliga repsen, inte en kopia av testsetet
+    const ref = lastSet?.calibration && lastSet.completed ? calibrationResult(ex, lastSet) : lastSet ?? prevSets?.[0] ?? programDefault
     const newSet: ActiveSetEntry = {
       sets: 1,
       reps: ref?.reps || 10,
@@ -878,8 +913,11 @@ export function LogSession() {
                         {!calibrationSet.completed
                           ? <span>Testset: så många reps du klarar med god form. På stång: stanna när nästa rep känns osäker. Skriv antalet och bocka av.</span>
                           : calibrated && calibrated.weight > calibrationSet.weight
-                            ? <span><strong>{calibrationSet.reps} reps!</strong> Nästa gång: <strong class="tabular-nums">{formatWeight(calibrated.weight)} kg × {calibrated.reps}</strong></span>
+                            ? <span><strong>{calibrationSet.reps} reps! Du klarade det.</strong> Ny vikt: <strong class="tabular-nums">{formatWeight(calibrated.weight)} kg × {calibrated.reps}</strong></span>
                             : <span><strong>{calibrationSet.reps} reps.</strong> Du ligger rätt: stanna på {formatWeight(calibrationSet.weight)} kg en gång till.</span>}
+                        {calibrated && (!ex.setEntries.some(s => !s.calibration && s.type !== 'warmup') || ex.setEntries.some(s => isOpenWorkSet(s) && s.weight !== calibrated.weight)) && (
+                          <Button size="sm" onClick={() => fillAfterTest(exIdx)}>Resten på {formatWeight(calibrated.weight)} kg</Button>
+                        )}
                       </div>
                     )}
 
@@ -1201,6 +1239,7 @@ export function LogSession() {
         )}
 
         {plateauItems && <PlateauDialog items={plateauItems} onChoose={handlePlateauChoice} />}
+        {celebrating && <Celebration showCartman={isCloudSyncConfigured() && !guest} onDone={() => setCelebrating(false)} />}
 
         {/* Plattkalkylatorn monteras först när den öppnas: useState läser initialWeight bara vid första renderingen */}
         {plateCalcModal.isOpen && (

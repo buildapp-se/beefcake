@@ -877,6 +877,20 @@ canvas { display: block; max-width: 100%; }
 .plateau-choice span { font-size: var(--text-xs); font-weight: 400; }
 .progression-line { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--accent-bg); font-size: var(--text-sm); }
 .progression-line > span { flex: 1 1 160px; }
+/* Klarat testset: konfetti faller över skärmen, Cartman poppar upp för inloggade. Tar inga tryck. */
+.celebration { position: fixed; inset: 0; z-index: 1100; pointer-events: none; overflow: hidden; }
+.celebration-piece { position: absolute; top: -16px; width: 9px; height: 15px; border-radius: 2px; animation: celebrationFall 1500ms ease-in forwards; }
+.celebration-cartman { position: absolute; left: 50%; top: 32%; width: 180px; height: 180px; margin-left: -90px; object-fit: cover; border-radius: 50%; box-shadow: var(--shadow-lg); animation: celebrationPop 2200ms ease forwards; }
+@keyframes celebrationFall { to { transform: translateY(105vh) rotate(700deg); opacity: 0.8; } }
+@keyframes celebrationPop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  20% { transform: scale(1.15) rotate(6deg); opacity: 1; }
+  35% { transform: scale(1) rotate(-4deg); }
+  50% { transform: scale(1.05) rotate(4deg); }
+  80% { transform: scale(1) rotate(0); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .celebration { display: none; } }
 
 /* Password Gate: a "reveal" screen, not a login form */
 /* Förankrat uppifrån, inte centrerat: kortet växer från "Laddar…" till formuläret när Firebase
