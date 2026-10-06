@@ -183,3 +183,9 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 - Actions: 2026-09-24, pass, zizmor 0 high, 0 medium, 0 low
 - Mutation: 2026-09-24, Stryker on 6 of 10 logic files: importValidation 85,00 % (was 66,67), streak 100 % (92,86), date 100 % (64,37), plates 98,08 % (94,23), exerciseMetrics 100 % (86,96), format 95,83 % (79,17), exerciseDb 97,04 % (86,98), timerService 94,07 % (2026-10-03, was 50,85; 7 survivors judged equivalent), nextPrograms 100 % (2026-10-03, was 94,12), warmup 100 % already (2026-10-03), hypertrophy 75,00 % (2026-10-03, the 4 survivors are label strings, deliberately untested), snapshot 100 % already; tests by Antigravity, reviewed; volume lane made no changes
 - WCAG 2.2 AA: 2026-09-24, warn, axe 4.13.0 0 violations on buildapp.se/beefcake (mobile, one page); manual keyboard pass not done
+- Headers (automated): 2026-10-06, fail, 1 targets; 1 failed, 0 blocked; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-a/beefcake.json
+- npm audit (automated): 2026-10-06, fail, 1 targets; 1 failed, 0 blocked; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-a/beefcake.json
+- Secrets (automated): 2026-10-06, pass, 2 targets; 0 failed, 0 blocked; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-s/beefcake.json
+- Actions (automated): 2026-10-06, pass, zizmor 0 high, 0 medium, 0 low; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-a/beefcake.json
+- Markup (automated): 2026-10-06, fail, 1 targets; 1 failed, 0 blocked; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-a2/beefcake.json
+- WCAG 2.2 AA (automated): 2026-10-06, fail, 1 targets; 1 failed, 0 blocked; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-a2/beefcake.json

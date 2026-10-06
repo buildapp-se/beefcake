@@ -6,3 +6,5 @@ f77c989428afce6107b7760a6309c64b314ca8a5:src/config.ts:gcp-api-key:7
 # AUTH_HASH från den avvecklade lösenordsgrinden (7ff0e56 till 1fd3f50). Inloggningen är Firebase/Google sedan dess
 # och Patrik bekräftade 2026-09-24 att lösenordet inte används någon annanstans. Historiken skrivs inte om.
 7ff0e5665088006125fa5f3539f6794c5ffee046:src/config.ts:generic-api-key:1
+# Arbetskopian (gitleaks dir), samma Firebase webb-apiKey som ovan, granskad 2026-10-06
+src/config.ts:gcp-api-key:7

@@ -136,3 +136,7 @@ efter varje insert), `MAX_WRITES_PER_DAY` 300 per konto i tabellen `write_quota`
 `twoClients.test.ts`: 30 skrivningar ger 20 rader, 301:a ger 429. Verifierat: 96
 tester, lint, dry-run; migration applicerad remote; Worker `71ae15bd`; live health
 och POST utan token ger 401. Kvar från rundan: P2 kontobyte och konfliktbannern.
+
+## Automated audit batch, 2026-10-06
+
+Cross-project run from elwyn-dash with aifabriken `tools/audit-suite.ts` (headers, npm audit, secrets, Actions, markup, axe at one mobile viewport; TLS and Lighthouse not run). Results are the `(automated)` lines under `## Audits` in CONTEXT.md, findings under `## Granskning 2026-10-06` in BACKLOG.md. Markup fail (seven SPA deep links answer 404), axe fail (one contrast violation in the bottom nav), npm audit fail (dev chain only). `.gitleaksignore` gained the worktree fingerprint of the already reviewed public Firebase apiKey; secrets now pass. Headers fail is the shared buildapp.se CSP without `script-src` (zone Transform Rule, owned by elwyn-dash `docs/security.md` §Open 11), not something this repository can fix. No application code or deployment changed. `reviewedAt` was left alone: the goal and next action above were not reviewed.

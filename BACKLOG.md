@@ -142,6 +142,14 @@ Underlag, skärmbilder och källor: `Beefcake Designgenomlysning` i vaulten. Tv�
 - [x] `[P3]` Uppvärmningsset med ett tryck: 40, 60 och 80 % av första arbetssetet som settyp W, avrundat till 2,5 kg. Modellen har redan typen. Hevy "Warm Up Set Calculator" (https://www.hevyapp.com/features/), Strong "Warm Up Calculator" (https://apps.apple.com/us/app/strong-workout-tracker-gym-log/id464254577)
 - [x] `[P3]` Kroppsvikt: ett tal per datum i Inställningar eller Hem, kurva på Statistik. Strong, Hevy och Gravitus har det; Gravitus "Custom Progress Charts" för "1RM, volume, and body weight" (https://www.gravitus.com/)
 
+## Granskning 2026-10-06
+
+Fynd från den automatiska sviten (aifabriken `tools/audit-suite.ts`: headers, npm audit, secrets, Actions, markup, axe). Mätvärdena står som `(automated)`-rader under `## Audits` i CONTEXT.md.
+
+- [ ] `[P2]` npm audit: 9 advisories (7 high, 2 moderate), alla i dev-kedjan (wrangler, miniflare, undici, sharp, vitest, brace-expansion, fast-uri), 0 i produktion. `npm audit fix` löser samtliga utan major-hopp.
+- [ ] `[P2]` WCAG: aktiv flik i bottenmenyn har kontrast 4,4:1 (`.bottom-nav .nav-link.active .nav-text`, #d6283a på #fceeef, 11,2 px). Kravet är 4,5:1.
+- [ ] `[P3]` Markup: djuplänkarna `/beefcake/log`, `/templates`, `/ovningar`, `/history`, `/stats`, `/konto` och `/settings` svarar HTTP 404 (GitHub Pages SPA-fallback). Fungerar i webbläsaren, men länkkontroller och sökmotorer ser 404.
+
 ## Captured
 
 - [ ] `[P3]` [Wish] Eget ansikte på Cartman-kroppen, och andra figurer (Patrik 2026-10-06: "det blir kul", andra figurer tänkt som kända seriefigurer; också vägen ut om copyright blir aktuellt). Skiss: ett val "figur" mellan nivå och bild (`beefcakeImage()`), och för eget ansikte ett foto beskuret till en cirkel som läggs över huvudet, med huvudets läge och storlek uppmätt per bild (21 per figur). Fotot stannar på enheten (snapshoten har 2 MB-tak och ett ansikte är inte träningsdata). Inte AI-genererade bilder per användare: kräver server som kostar per bild. Varje ny figur behöver 21 bilder
