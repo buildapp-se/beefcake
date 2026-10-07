@@ -5,7 +5,7 @@ currentGoal: "Höjningsförslaget mot platå byggt och publicerat (2026-10-06)"
 nextAction: "Prova höjningsförslaget inloggad på telefonen: öppna ett program med en övning som stått still, gå igenom popupen och se att valet finns kvar på en annan enhet. Öppet sedan tidigare: inloggat flöde och gästläge på iPhone efter designgranskningen, webb-push för vilotimer, latmask-brevets första utskick och Firebase sign-up-kontrollen."
 blockers:
   - "Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt"
-reviewedAt: 2026-10-06
+reviewedAt: 2026-10-07
 ---
 
 ## Recent work
@@ -143,11 +143,11 @@ Cross-project run from elwyn-dash with aifabriken `tools/audit-suite.ts` (header
 
 ## Nattbatch 2026-10-06, grenen `batch/2026-10-06`
 
-Förgodkänd batch över öppna BACKLOG-poster, i ett eget arbetsträd. **Inget är mergat eller deployat:** `master` är orörd, grenen väntar på Patriks ja. Tre poster ur Granskning 2026-10-06 byggda, detaljer per rad i BACKLOG:
+Förgodkänd batch över öppna BACKLOG-poster, i ett eget arbetsträd. **Mergad till `master` och deployad 2026-10-07 på Patriks order.** Tre poster ur Granskning 2026-10-06 byggda, detaljer per rad i BACKLOG:
 
 - npm audit 0 (`6445fdc`): `npm audit fix` plus `overrides.sharp` 0.35.5, eftersom miniflare låser 0.35.4 exakt. Overriden ska bort när miniflare släpper kravet.
 - Aktiv navlänk AA (`e447390`): token `--accent-on-tint`, uppmätt 5,67:1 ljust och 4,76:1 mörkt i Chromium 390.
-- Djuplänkar (`39c9ce9`): `scripts/spa-routes.mjs` sist i bygget. **Kolla efter deploy:** `curl -I https://buildapp.se/beefcake/log` ska ge 200; det går inte att prova lokalt, `vite preview` har egen fallback.
+- Djuplänkar (`39c9ce9`): `scripts/spa-routes.mjs` sist i bygget. **Verifierat 2026-10-07 efter deploy:** https://buildapp.se/beefcake/log svarar HTTP 200 (curl); det gick inte att prova lokalt, `vite preview` har egen fallback. Rutter med id ger fortfarande 404 vid första besöket.
 
 Verifierat på grenen: 185 tester, lint, `server:check`, build.
 
