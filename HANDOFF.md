@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: "Snabb uppstart och vilotimerns rad på telefon, publicerat 2026-10-10, väntar på Patriks prov på telefonen"
-nextAction: "Prova på telefonen: stäng och öppna appen (ska visa passen utan 'Hämtar dina pass…'), bocka av ett set (raden 'Vila' ska ligga ovanför menyn). Ett beslut väntar i BACKLOG Öppet: pass loggade utan nät (P1). Sedan tidigare: prova höjningsförslaget inloggad på telefonen: öppna ett program med en övning som stått still, gå igenom popupen och se att valet finns kvar på en annan enhet. Öppet sedan tidigare: inloggat flöde och gästläge på iPhone efter designgranskningen, webb-push för vilotimer, latmask-brevets första utskick och Firebase sign-up-kontrollen."
+nextAction: "Prova på telefonen: stäng och öppna appen (ska visa passen utan 'Hämtar dina pass…'), bocka av ett set (raden 'Vila' ska ligga ovanför menyn). Samma dag efter prov på telefon: vilans sluttid sparas och ett laddfel raderar inte utkastet (`b2d0e16`). Öppet i BACKLOG: var Julias pass tog vägen (P1), pass loggade utan nät (P1), Cloudflares cache av `sw.js` (P2), Patriks okända felmeddelande (P2). Sedan tidigare: prova höjningsförslaget inloggad på telefonen: öppna ett program med en övning som stått still, gå igenom popupen och se att valet finns kvar på en annan enhet. Öppet sedan tidigare: inloggat flöde och gästläge på iPhone efter designgranskningen, webb-push för vilotimer, latmask-brevets första utskick och Firebase sign-up-kontrollen."
 blockers:
   - "Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt"
 reviewedAt: 2026-10-10
