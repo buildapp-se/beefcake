@@ -69,6 +69,30 @@ export async function requestRestTimerNotifications(): Promise<NotificationPermi
   return Notification.requestPermission()
 }
 
+/**
+ * När vilan är slut, som klockslag i ms. Sparas så nedräkningen överlever att appen startas
+ * om: iOS kastar ut en webbapp som ligger i bakgrunden, och timern fanns bara i minnet.
+ * localStorage för att det läses synkront i första renderingen.
+ */
+const REST_DEADLINE_KEY = 'beefcake-rest-deadline'
+
+/** Sparad sluttid om den ligger i framtiden, annars null (en vila som redan gått ut glöms). */
+export function loadRestDeadline(): number | null {
+  try {
+    const deadline = Number(localStorage.getItem(REST_DEADLINE_KEY))
+    if (Number.isFinite(deadline) && deadline > Date.now()) return deadline
+    localStorage.removeItem(REST_DEADLINE_KEY)
+  } catch { /* Utan localStorage lever timern i minnet som förut */ }
+  return null
+}
+
+export function saveRestDeadline(deadline: number | null): void {
+  try {
+    if (deadline === null) localStorage.removeItem(REST_DEADLINE_KEY)
+    else localStorage.setItem(REST_DEADLINE_KEY, String(deadline))
+  } catch { /* se loadRestDeadline */ }
+}
+
 export function startRestTimer(seconds?: number): void {
   window.dispatchEvent(new CustomEvent('beefcake-start-timer', { detail: { seconds } }))
 }

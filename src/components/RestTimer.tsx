@@ -4,7 +4,9 @@ import {
   loadRestTimerAlarmDuration,
   loadRestTimerPresets,
   REST_TIMER_ALARM_DURATION_CHANGED_EVENT,
+  loadRestDeadline,
   requestRestTimerNotifications,
+  saveRestDeadline,
   saveRestTimerPresets,
   showRestTimerNotification,
   type RestTimerAlarmDuration
@@ -75,12 +77,18 @@ export function RestTimer() {
   // Det som skrivs i snabbvalsfältet, null när fältet visar det sparade värdet
   const [presetDraft, setPresetDraft] = useState<string | null>(null)
   const [remaining, setRemaining] = useState(180)
-  const [status, setStatus] = useState<TimerStatus>('idle')
+  // En vila som pågick när appen startades om (iOS, omladdning) fortsätter där klockan står
+  const [restoredDeadline] = useState(loadRestDeadline)
+  const [status, setStatus] = useState<TimerStatus>(restoredDeadline ? 'running' : 'idle')
   const [alarmDuration, setAlarmDuration] = useState<RestTimerAlarmDuration>(DEFAULT_REST_TIMER_ALARM_DURATION)
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>(() =>
     'Notification' in window ? Notification.permission : 'unsupported'
   )
-  const deadlineRef = useRef<number | null>(null)
+  const deadlineRef = useRef<number | null>(restoredDeadline)
+  function setDeadline(deadline: number | null) {
+    deadlineRef.current = deadline
+    saveRestDeadline(deadline)
+  }
 
   useEffect(() => {
     Promise.all([loadRestTimerPresets(), loadRestTimerAlarmDuration()]).then(([loadedPresets, loadedAlarmDuration]) => {
@@ -109,7 +117,7 @@ export function RestTimer() {
       const nextRemaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
       setRemaining(nextRemaining)
       if (nextRemaining === 0) {
-        deadlineRef.current = null
+        setDeadline(null)
         setStatus('finished')
         playTimerSound(alarmDuration)
         void showRestTimerNotification()
@@ -150,7 +158,7 @@ export function RestTimer() {
       const customEvent = event as CustomEvent<{ seconds?: number }>
       const seconds = customEvent.detail?.seconds ?? (presets[selectedPreset] * 60)
       setRemaining(seconds)
-      deadlineRef.current = Date.now() + seconds * 1000
+      setDeadline(Date.now() + seconds * 1000)
       setStatus('running')
     }
 
@@ -160,7 +168,7 @@ export function RestTimer() {
 
   function adjustTime(deltaSeconds: number) {
     if (deadlineRef.current) {
-      deadlineRef.current += deltaSeconds * 1000
+      setDeadline(deadlineRef.current + deltaSeconds * 1000)
     }
     setRemaining(prev => Math.max(0, prev + deltaSeconds))
   }
@@ -190,7 +198,7 @@ export function RestTimer() {
     if (status === 'finished' || status === 'idle') {
       setRemaining(presets[selectedPreset] * 60)
     }
-    deadlineRef.current = Date.now() + remaining * 1000
+    setDeadline(Date.now() + remaining * 1000)
     setStatus('running')
   }
 
@@ -198,13 +206,13 @@ export function RestTimer() {
     if (deadlineRef.current) {
       setRemaining(Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000)))
     }
-    deadlineRef.current = null
+    setDeadline(null)
     setStatus('paused')
   }
 
   function reset() {
     stopTimerSound()
-    deadlineRef.current = null
+    setDeadline(null)
     setRemaining(presets[selectedPreset] * 60)
     setStatus('idle')
   }

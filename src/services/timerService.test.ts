@@ -302,3 +302,38 @@ describe('triggerHaptic', () => {
   })
 })
 
+
+describe('vilans sluttid över en omstart', () => {
+  beforeEach(() => {
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value) },
+      removeItem: (key: string) => { store.delete(key) }
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('en sluttid i framtiden finns kvar efter omstart', async () => {
+    const { loadRestDeadline, saveRestDeadline } = await import('./timerService')
+    const deadline = Date.now() + 60_000
+    saveRestDeadline(deadline)
+    expect(loadRestDeadline()).toBe(deadline)
+  })
+
+  it('en vila som gått ut eller stoppats glöms', async () => {
+    const { loadRestDeadline, saveRestDeadline } = await import('./timerService')
+    saveRestDeadline(Date.now() - 1000)
+    expect(loadRestDeadline()).toBeNull()
+    saveRestDeadline(Date.now() + 60_000)
+    saveRestDeadline(null)
+    expect(loadRestDeadline()).toBeNull()
+  })
+
+  it('utan localStorage går timern som förut', async () => {
+    const { loadRestDeadline, saveRestDeadline } = await import('./timerService')
+    vi.stubGlobal('localStorage', { getItem: () => { throw new Error('blocked') }, setItem: () => { throw new Error('blocked') }, removeItem: () => { throw new Error('blocked') } })
+    expect(() => saveRestDeadline(Date.now() + 1000)).not.toThrow()
+    expect(loadRestDeadline()).toBeNull()
+  })
+})

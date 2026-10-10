@@ -280,7 +280,8 @@ export function LogSession() {
 
   // Auto-save to activeWorkout whenever exercises or settings change (after initial load)
   useEffect(() => {
-    if (isInitialLoadRef.current || loading) return
+    // Ett fel visar felsidan med tom övningslista: det är inte ett tomt pass, utkastet får ligga kvar
+    if (isInitialLoadRef.current || loading || error) return
 
     // Ett utkast finns först när något kan gå förlorat: minst ett set. Förvalda övningar
     // utan set är en startpunkt, inte ett pågående pass, och lämnar inget spår.
@@ -297,7 +298,7 @@ export function LogSession() {
       exercises: exercises.map((e, idx) => ({ ...e, order: idx })),
       startTime
     })
-  }, [exercises, date, selectedTemplateId, startTime, loading, templates])
+  }, [exercises, date, selectedTemplateId, startTime, loading, templates, error])
 
   // Platå: när ett pass öppnas och minst en övning stått still i PLATEAU_SESSIONS pass frågar
   // dialogen en gång. En övning med ett väntande förslag frågas inte om igen.
