@@ -33,8 +33,34 @@ export function useAuthUser(): AuthUser | null | undefined {
   return user
 }
 
+/**
+ * Kontot som senast var inloggat med sina pass på enheten. Med märket visas appen innan
+ * Firebase hunnit fråga Google om sessionen lever (beslut 2026-10-10, ändrar 2026-10-03:
+ * en återkallad session visar passen tills svaret kommit, en gång). localStorage för att
+ * det läses synkront i första renderingen.
+ */
+const RESUME_KEY = 'beefcake-resume-uid'
+
+function readResumeUid(): string | null {
+  try { return localStorage.getItem(RESUME_KEY) } catch { return null }
+}
+
+function writeResumeUid(uid: string | null): void {
+  try {
+    if (uid) localStorage.setItem(RESUME_KEY, uid)
+    else localStorage.removeItem(RESUME_KEY)
+  } catch { /* Utan localStorage väntar appen på Firebase som förut */ }
+}
+
 export function LoginGate({ children }: { children: ComponentChildren }) {
   const user = useAuthUser()
+  const [resumeUid, setResumeUid] = useState(readResumeUid)
+  // Firebase säger utloggad: märket bort, nästa start väntar på inloggningen
+  useEffect(() => {
+    if (user !== null) return
+    writeResumeUid(null)
+    setResumeUid(null)
+  }, [user])
   // Snapshoten hämtas först när Firebase gett en bekräftad användare, med giltig token.
   // Körs om per användare, så ett kontobyte hämtar det nya kontots data.
   const uid = user && user.emailVerified ? user.uid : null
@@ -45,7 +71,7 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
   useEffect(() => {
     if (!uid) return
     let cancelled = false
-    let shownEarly = false
+    let shownEarly = readResumeUid() === uid
     // Enheten har redan kontots pass: visa dem direkt, D1 läses i bakgrunden
     isLocalDataOwnedBy(uid)
       .then(owned => { if (owned && !cancelled) { shownEarly = true; setLoadedFor(uid) } })
@@ -53,7 +79,12 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
     syncSeed()
       .then(({ replaced }) => { if (replaced && shownEarly && !cancelled) setDataVersion(v => v + 1) })
       .catch(err => console.error('Molnsnapshoten kunde inte hämtas:', err))
-      .finally(() => { if (!cancelled) setLoadedFor(uid) })
+      .finally(() => {
+        if (cancelled) return
+        setLoadedFor(uid)
+        // Märket sätts först när kontots pass bevisligen ligger på enheten
+        void isLocalDataOwnedBy(uid).then(owned => { if (owned) writeResumeUid(uid) }).catch(() => undefined)
+      })
     return () => { cancelled = true }
   }, [uid])
   // Utloggad: gäst om enheten är tom eller gästens, annars inloggning som förut
@@ -69,13 +100,16 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
 
   if (!isCloudSyncConfigured()) return <>{children}</>
   if (!isAuthConfigured()) return <Shell><p class="login-error">Inloggningen är inte konfigurerad i det här bygget.</p></Shell>
-  if (user === undefined || (user === null && guest === null)) return <Shell><p class="login-subtitle">Laddar…</p></Shell>
+  // Samma element före och efter Firebase-svaret, så appen inte monteras om när det kommer
+  const app = <Fragment key={dataVersion}>{children}</Fragment>
+  if (user === undefined) return resumeUid ? app : <Shell><p class="login-subtitle">Laddar…</p></Shell>
+  if (user === null && guest === null) return <Shell><p class="login-subtitle">Laddar…</p></Shell>
   if (user === null && guest) return <GuestContext.Provider value={true}>{children}</GuestContext.Provider>
   if (user === null) return <Shell><LoginForm /></Shell>
   if (!user.emailVerified) return <Shell><VerifyEmail user={user} /></Shell>
   // Misslyckas hämtningen släpps appen in ändå: synkfelet visas beständigt av CloudSyncStatus
-  if (loadedFor !== user.uid) return <Shell><p class="login-subtitle">Hämtar dina pass…</p></Shell>
-  return <Fragment key={dataVersion}>{children}</Fragment>
+  if (loadedFor !== user.uid && resumeUid !== user.uid) return <Shell><p class="login-subtitle">Hämtar dina pass…</p></Shell>
+  return app
 }
 
 function Shell({ children }: { children: ComponentChildren }) {

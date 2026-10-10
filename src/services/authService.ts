@@ -18,7 +18,11 @@ interface FirebaseUser extends AuthUser {
 }
 
 interface FirebaseApp { readonly name: string }
-interface Auth { currentUser: FirebaseUser | null }
+interface Auth {
+  currentUser: FirebaseUser | null
+  /** Klar när Firebase läst upp den sparade inloggningen; före det är currentUser alltid null */
+  authStateReady(): Promise<void>
+}
 interface AppModule { initializeApp(config: typeof FIREBASE): FirebaseApp }
 interface AuthModule {
   getAuth(app: FirebaseApp): Auth
@@ -68,14 +72,18 @@ export function subscribeToAuth(next: (user: AuthUser | null) => void): () => vo
   return () => { cancelled = true; unsubscribe?.() }
 }
 
+// Appen visas innan Firebase svarat (LoginGate), så en tidig sparning måste vänta in
+// inloggningen: annars ser den ut att komma från en gäst och laddas aldrig upp.
 export async function getIdToken(): Promise<string> {
   const { auth } = await firebase()
+  await auth.authStateReady()
   if (!auth.currentUser) throw new Error('Du är inte inloggad.')
   return auth.currentUser.getIdToken()
 }
 
 export async function getCurrentUid(): Promise<string | null> {
   const { auth } = await firebase()
+  await auth.authStateReady()
   return auth.currentUser?.uid ?? null
 }
 
