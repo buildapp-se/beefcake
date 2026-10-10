@@ -128,6 +128,9 @@
   /* Touch - minimum hit area for all interactive elements */
   --touch-target: 44px;
 
+  /* Bottennavigeringens höjd utan safe-area. Allt som ska ligga precis ovanför den räknar från samma tal. */
+  --bottom-nav-h: 66px;
+
   /* Legacy aliases */
   --bg: var(--surface);
   --bg-secondary: var(--surface-raised);
@@ -453,7 +456,7 @@ th, td {
     position: fixed;
     left: var(--space-3);
     right: var(--space-3);
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
     z-index: 190;
     display: flex;
     align-items: center;
@@ -663,7 +666,11 @@ th, td {
   border-top: 1px solid var(--border);
   z-index: 200;
   justify-content: space-around;
-  padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom, 0));
+  align-items: center;
+  /* Fast höjd, inte innehållets: timerraden ligger kant i kant ovanför och får inte skymmas när texten växer.
+     ponytail: rymmer text upp till 125 %, större än så behöver --bottom-nav-h räknas i rem. */
+  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+  padding: var(--space-1) 0 calc(var(--space-1) + env(safe-area-inset-bottom, 0));
 }
 .bottom-nav .nav-link { flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-1); min-width: 44px; min-height: 44px; }
 .bottom-nav .nav-icon { width: 24px; height: 24px; }
@@ -1392,7 +1399,7 @@ canvas { display: block; max-width: 100%; }
   .mobile-set-menu { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .mobile-set-menu button { padding-inline: var(--space-3); }
   .mobile-set-menu .text-danger { color: var(--danger); }
-  .rest-timer-active { left: 0; right: 0; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); min-height: 56px; padding: 0 var(--space-4); gap: var(--space-2); border-radius: 0; box-shadow: none; }
+  .rest-timer-active { left: 0; right: 0; bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); min-height: 56px; padding: 0 var(--space-4); gap: var(--space-2); border-radius: 0; box-shadow: none; }
   .rest-timer-active .rest-timer-display { display: flex; align-items: center; gap: var(--space-2); font-size: 1.75rem; white-space: nowrap; }
   .rest-timer-mobile-label { display: inline; font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0; }
   .rest-timer-active .rest-timer-adjust-group, .rest-timer-active .rest-timer-actions { display: none; }
