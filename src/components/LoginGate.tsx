@@ -1,8 +1,8 @@
-import { createContext } from 'preact'
+import { createContext, Fragment } from 'preact'
 import { useContext, useEffect, useState } from 'preact/hooks'
 import type { ComponentChildren } from 'preact'
 import { Redirect } from 'wouter'
-import { canBrowseAsGuest, isCloudSyncConfigured } from '../services/cloudSyncService'
+import { canBrowseAsGuest, isCloudSyncConfigured, isLocalDataOwnedBy } from '../services/cloudSyncService'
 import { syncSeed } from '../services/dataService'
 import {
   authErrorMessage, isAuthConfigured, refreshUser, registerWithEmail, resendVerification,
@@ -39,10 +39,19 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
   // Körs om per användare, så ett kontobyte hämtar det nya kontots data.
   const uid = user && user.emailVerified ? user.uid : null
   const [loadedFor, setLoadedFor] = useState<string | null>(null)
+  // Räknas upp när D1 skrev om det lokala under en app som redan visas: sidorna monteras
+  // om och läser från IndexedDB igen. Ett pågående pass ligger i activeWorkout och överlever.
+  const [dataVersion, setDataVersion] = useState(0)
   useEffect(() => {
     if (!uid) return
     let cancelled = false
+    let shownEarly = false
+    // Enheten har redan kontots pass: visa dem direkt, D1 läses i bakgrunden
+    isLocalDataOwnedBy(uid)
+      .then(owned => { if (owned && !cancelled) { shownEarly = true; setLoadedFor(uid) } })
+      .catch(() => undefined)
     syncSeed()
+      .then(({ replaced }) => { if (replaced && shownEarly && !cancelled) setDataVersion(v => v + 1) })
       .catch(err => console.error('Molnsnapshoten kunde inte hämtas:', err))
       .finally(() => { if (!cancelled) setLoadedFor(uid) })
     return () => { cancelled = true }
@@ -66,7 +75,7 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
   if (!user.emailVerified) return <Shell><VerifyEmail user={user} /></Shell>
   // Misslyckas hämtningen släpps appen in ändå: synkfelet visas beständigt av CloudSyncStatus
   if (loadedFor !== user.uid) return <Shell><p class="login-subtitle">Hämtar dina pass…</p></Shell>
-  return <>{children}</>
+  return <Fragment key={dataVersion}>{children}</Fragment>
 }
 
 function Shell({ children }: { children: ComponentChildren }) {

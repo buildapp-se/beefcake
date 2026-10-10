@@ -561,13 +561,11 @@ function sessionKey(date: string, templateName: string): string {
 }
 
 /** @param seedEmpty seeda en tom databas med Excel-historiken. Förval: bara utan moln, en ny användare i D1 startar tom. */
-export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ sessionsAdded: number; exercisesAdded: number }> {
-  await loadSnapshotFromCloud(JSON.parse(await exportAllData()) as SnapshotData, replaceDataInLocal)
-  await backfillExerciseMeta()
+export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ sessionsAdded: number; exercisesAdded: number; replaced: boolean }> {
+  const replaced = await loadSnapshotFromCloud(async () => JSON.parse(await exportAllData()) as SnapshotData, replaceDataInLocal)
+  const backfilled = await backfillExerciseMeta()
 
   const db = await getDB()
-  const { seedTemplates, seedExercises, seedSessions } = await import('../db/seedData')
-
   const [existingExercises, existingTemplates, existingSessions] = await Promise.all([
     db.getAll('exercises'),
     db.getAll('templates'),
@@ -577,9 +575,12 @@ export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ 
   // Seeden är en engångsimport i en tom databas. Den var additiv vid varje uppstart,
   // och då kom varje raderat seedpass tillbaka nästa gång appen laddades.
   if (!seedEmpty || existingExercises.length || existingTemplates.length || existingSessions.length) {
-    await syncCloudData()
-    return { sessionsAdded: 0, exercisesAdded: 0 }
+    // Det lokala är just läst från D1: bara en backfill ger något nytt att ladda upp
+    if (backfilled) await syncCloudData()
+    return { sessionsAdded: 0, exercisesAdded: 0, replaced }
   }
+
+  const { seedTemplates, seedExercises, seedSessions } = await import('../db/seedData')
 
   const exerciseIdByName = new Map(existingExercises.map(e => [exerciseKey(e.name), e.id]))
   const templateIdByName = new Map(existingTemplates.map(t => [exerciseKey(t.name), t.id]))
@@ -649,7 +650,7 @@ export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ 
 
   if (!newExercises.length && !newTemplates.length && !newSessions.length) {
     await syncCloudData()
-    return { sessionsAdded: 0, exercisesAdded: 0 }
+    return { sessionsAdded: 0, exercisesAdded: 0, replaced }
   }
 
   const tx = db.transaction(['templates', 'exercises', 'sessions', 'exerciseHistory'], 'readwrite')
@@ -661,7 +662,7 @@ export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ 
 
   await syncCloudData()
 
-  return { sessionsAdded: newSessions.length, exercisesAdded: newExercises.length }
+  return { sessionsAdded: newSessions.length, exercisesAdded: newExercises.length, replaced }
 }
 
 export async function exportSessionsCSV(): Promise<string> {

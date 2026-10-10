@@ -105,27 +105,60 @@ export async function syncSnapshot(snapshot: SnapshotData): Promise<void> {
   return next
 }
 
+/** Sant när enheten redan bär det här kontots D1-snapshot: appen kan visas innan servern svarat. */
+export async function isLocalDataOwnedBy(uid: string): Promise<boolean> {
+  return (await getKnownOwner()) === uid
+}
+
+/**
+ * Läser D1 och ersätter det lokala med serverns snapshot. Svarar sant när det lokala skrevs om.
+ * Går i samma kö som sparningarna: appen kan redan vara igång när servern svarar.
+ */
 export async function loadSnapshotFromCloud(
-  local: SnapshotData,
+  readLocal: () => Promise<SnapshotData>,
   replaceLocalSnapshot: (snapshot: SnapshotData) => Promise<void>
-): Promise<SnapshotData> {
-  if (!isCloudSyncConfigured()) return local
+): Promise<boolean> {
+  const next = syncQueue.then(() => loadSnapshotNow(readLocal, replaceLocalSnapshot))
+  syncQueue = next.then(() => undefined, () => undefined)
+  return next
+}
+
+async function loadSnapshotNow(
+  readLocal: () => Promise<SnapshotData>,
+  replaceLocalSnapshot: (snapshot: SnapshotData) => Promise<void>
+): Promise<boolean> {
+  if (!isCloudSyncConfigured()) return false
 
   try {
+    const local = await readLocal()
+    const before = JSON.stringify(local)
     const server = await getServerSnapshot()
+    const uid = await getCurrentUid()
+    const owner = await getKnownOwner()
     // Gästens pass följer med in i kontot, sammanslagna med det som redan finns där
-    const guest = (await getKnownOwner()) === GUEST_OWNER && hasTrainingData(local) ? local : null
+    const guest = owner === GUEST_OWNER && hasTrainingData(local) ? local : null
     const snapshot = guest
       ? mergeGuestIntoAccount(selectAuthoritativeSnapshot(server.data), guest)
       : selectAuthoritativeSnapshot(server.data)
+    if (owner !== null && owner === uid) {
+      // Vanliga fallet: enheten har redan exakt serverns snapshot, inget att skriva om
+      if (server.revision === await getKnownRevision() && before === JSON.stringify(snapshot)) {
+        setSyncError(null)
+        return false
+      }
+      // Något sparades medan servern svarade: skriv inte över det. Sparningens egen synk
+      // står näst i kön och visar konflikten.
+      // ponytail: jämförelsen och omskrivningen är inte en transaktion, några ms glapp kvar.
+      if (JSON.stringify(await readLocal()) !== before) return false
+    }
     await replaceLocalSnapshot(snapshot)
     await setKnownRevision(server.revision)
-    await setKnownOwner(await getCurrentUid())
+    await setKnownOwner(uid)
     setSyncError(null)
     // Misslyckas uppladdningen visar synkbannern felet och nästa sparning försöker igen;
     // passen ligger redan lokalt under kontot.
     if (guest) await syncSnapshotNow(snapshot).catch(() => undefined)
-    return snapshot
+    return true
   } catch (error) {
     const message = syncErrorMessage(error, 'D1 kunde inte läsas.')
     setSyncError(message)
