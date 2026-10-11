@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calibratedWeight, calibrationTarget, isPlateau, nextStep, plateauLength, reachedTarget, stepFor, topSet } from './progression'
+import { calibratedWeight, calibrationTarget, isPlateau, nextStep, plateauLength, reachedTarget, stepFor, topSet, workSets } from './progression'
 
 const pass = (...sets: [number, number][]) => ({ setEntries: sets.map(([weight, reps]) => ({ weight, reps })) })
 
@@ -9,6 +9,23 @@ describe('topSet', () => {
   })
   it('saknas när allt är kroppsvikt', () => {
     expect(topSet(pass([0, 12]).setEntries)).toBeNull()
+  })
+})
+
+describe('workSets', () => {
+  it('byter testsetet mot passets arbetsset (Chins 2026-10-06: 70 × 13 som test, sedan 72,5 × 10)', () => {
+    const sets = [{ sets: 1, weight: 70, reps: 13, calibration: true }, { sets: 1, weight: 72.5, reps: 10 }, { sets: 1, weight: 72.5, reps: 10 }]
+    expect(workSets(sets).map(s => [s.weight, s.reps])).toEqual([[72.5, 10], [72.5, 10], [72.5, 10]])
+  })
+  it('rör inte ett pass utan testset, och inte ett testset utan arbetsset bredvid', () => {
+    const plain = [{ sets: 1, weight: 40, reps: 8 }, { sets: 1, weight: 60, reps: 8 }]
+    expect(workSets(plain)).toEqual(plain)
+    const alone = [{ sets: 1, weight: 70, reps: 13, calibration: true }]
+    expect(workSets(alone)).toEqual(alone)
+  })
+  it('bara kroppen: testet på 14 reps blir de vanliga repsen', () => {
+    const sets = [{ sets: 1, weight: 0, reps: 14, calibration: true }, { sets: 1, weight: 0, reps: 11 }]
+    expect(workSets(sets, true).map(s => s.reps)).toEqual([11, 11])
   })
 })
 

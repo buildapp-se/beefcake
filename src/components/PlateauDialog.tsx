@@ -69,6 +69,10 @@ export function PlateauDialog({ items, image, onChoose }: {
       >
         {image && <img class="plateau-dialog-image" src={image} alt="" width="140" height="140" />}
         <h3 id="plateau-dialog-title" class="m-0 mb-sm">Vill du höja?</h3>
+        {/* Frågan kommer varje pass så länge något står still: säg vilka den gäller, annars ser den ut som en repris */}
+        <p class="text-sm text-muted m-0 mb-sm">
+          {items.length === 1 ? 'En övning i dagens pass har stått still.' : `${items.length} övningar i dagens pass har stått still.`} Övningar du redan höjt är inte med.
+        </p>
         <ul class="plateau-list">
           {items.map(item => (
             <li key={item.exerciseId}>

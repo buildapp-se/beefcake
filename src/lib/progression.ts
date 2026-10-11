@@ -41,6 +41,15 @@ export function topSet(sets: readonly SetLike[], bodyweight = false): SetLike | 
 }
 
 /**
+ * Ett tidigare pass som utgångsläge för dagens: testsetet (max reps på gamla vikten) är inget att
+ * upprepa och byts mot passets arbetsset. Utan arbetsset vid sidan av testet lämnas raderna orörda.
+ */
+export function workSets<T extends SetLike & { sets: number; calibration?: boolean }>(sets: readonly T[], bodyweight = false): (T | { sets: number; reps: number; weight: number })[] {
+  const work = topSet(sets.filter(s => !s.calibration), bodyweight)
+  return work ? sets.map(s => s.calibration ? { sets: s.sets, reps: work.reps, weight: work.weight } : s) : [...sets]
+}
+
+/**
  * Antal pass i rad, räknat bakifrån, med samma toppvikt och utan fler reps än passet före.
  * Fler reps på samma vikt (dubbel progression) är framsteg och bryter raden. Historiken i tidsordning.
  */

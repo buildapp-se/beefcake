@@ -26,6 +26,11 @@ export interface SetEntry {
   weight: number
   /** RPE 5 till 10, valfritt. Saknas i all historik före 2026-09-01. */
   rpe?: number
+  /**
+   * AMRAP-setet från höjningsförslagets test: när det bockas av räknas nästa pass vikt ut. Sparas
+   * med passet sedan 2026-10-11, så nästa pass inte tar testet för ett vanligt arbetsset.
+   */
+  calibration?: boolean
 }
 
 export interface TemplateExercise {
@@ -123,8 +128,6 @@ export type SetType = 'normal' | 'warmup' | 'drop' | 'failure'
 export interface ActiveSetEntry extends SetEntry {
   completed?: boolean
   type?: SetType
-  /** AMRAP-setet från höjningsförslagets test: när det bockas av räknas nästa pass vikt ut */
-  calibration?: boolean
 }
 
 export interface ActiveExercise {
