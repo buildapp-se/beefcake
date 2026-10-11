@@ -252,8 +252,15 @@ export function RestTimer() {
       </div>
       {(isActive || status === 'finished') && (
         <div class="rest-timer-mobile-actions">
-          <button type="button" onClick={() => adjustTime(30)}>+30 s</button>
-          <button type="button" onClick={status === 'paused' ? startOrResume : reset}>{status === 'paused' ? 'Fortsätt' : 'Hoppa över'}</button>
+          {/* Paus och play som symbol, samma som alla spelare; text bara där symbolen inte räcker */}
+          {isActive && (
+            <button type="button" class="rest-timer-mobile-icon" onClick={status === 'running' ? pause : startOrResume} aria-label={status === 'running' ? 'Pausa vilan' : 'Fortsätt vilan'}>
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d={status === 'running' ? 'M7 5h3v14H7zM14 5h3v14h-3z' : 'm8 5 11 7-11 7z'} /></svg>
+            </button>
+          )}
+          {isActive && <button type="button" onClick={() => adjustTime(30)}>+30 s</button>}
+          {/* "Hoppa över" lät som att hoppa över ett set. När tiden är ute finns inget kvar att avsluta: då stänger knappen raden och tystar ljudet */}
+          <button type="button" onClick={reset}>{status === 'finished' ? 'Stäng' : 'Avsluta vila'}</button>
         </div>
       )}
 

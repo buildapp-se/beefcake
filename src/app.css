@@ -1413,6 +1413,9 @@ canvas { display: block; max-width: 100%; }
   .rest-timer-mobile-label { display: inline; font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0; }
   .rest-timer-active .rest-timer-adjust-group, .rest-timer-active .rest-timer-actions { display: none; }
   .rest-timer-active .rest-timer-mobile-actions { display: flex; margin-left: auto; gap: 4px; }
+  /* Smala telefoner: ordet "Vila" ger plats åt knapparna, klockan säger samma sak */
+  @media (max-width: 374px) { .rest-timer-mobile-label { display: none; } }
+  .rest-timer-mobile-actions .rest-timer-mobile-icon { display: grid; place-items: center; width: 48px; padding: 0; }
   .rest-timer-mobile-actions button { min-height: 48px; padding: 0 var(--space-2); border: 1px solid var(--surface-deep-muted); border-radius: var(--radius-sm); background: transparent; color: var(--timer-text); font: inherit; font-size: var(--text-xs); font-weight: 700; white-space: nowrap; }
   .log-session-main { padding-bottom: 56px; }
 }
