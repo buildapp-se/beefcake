@@ -79,7 +79,6 @@ export function LogSession() {
   const [openExercises, setOpenExercises] = useState<ReadonlySet<number>>(() => new Set([0]))
   // Setet och fältet som telefonens stegknappar verkar på: det du senast tryckte i
   const [focusedSet, setFocusedSet] = useState<{ exIdx: number; setIdx: number; field: 'kg' | 'reps' } | null>(null)
-  const [setMenuOpen, setSetMenuOpen] = useState(false)
   const [exerciseMenuOpen, setExerciseMenuOpen] = useState<number | null>(null)
   const [notesOpen, setNotesOpen] = useState<number | null>(null)
   // Rekord per övning vid passets start: ett bockat set som slår dem får PR-märket på raden
@@ -1030,7 +1029,7 @@ export function LogSession() {
                                       value={inputDrafts[weightKey] ?? formatWeight(set.weight)}
                                       aria-label="Kg"
                                       placeholder={prevSet ? formatWeight(prevSet.weight) : undefined}
-                                      onFocus={() => { setFocusedSet({ exIdx, setIdx, field: 'kg' }); setSetMenuOpen(false) }}
+                                      onFocus={() => setFocusedSet({ exIdx, setIdx, field: 'kg' })}
                                       onInput={(e: Event) => {
                                         const text = (e.target as HTMLInputElement).value
                                         setInputDrafts(prev => ({ ...prev, [weightKey]: text }))
@@ -1055,7 +1054,7 @@ export function LogSession() {
                                       value={inputDrafts[repsKey] ?? String(set.reps)}
                                       aria-label="Reps"
                                       placeholder={prevSet ? String(prevSet.reps) : undefined}
-                                      onFocus={() => { setFocusedSet({ exIdx, setIdx, field: 'reps' }); setSetMenuOpen(false) }}
+                                      onFocus={() => setFocusedSet({ exIdx, setIdx, field: 'reps' })}
                                       onInput={(e: Event) => {
                                         const text = (e.target as HTMLInputElement).value
                                         setInputDrafts(prev => ({ ...prev, [repsKey]: text }))
@@ -1136,14 +1135,12 @@ export function LogSession() {
                             {delta > 0 ? '+' : '−'}{formatWeight(Math.abs(delta))} {tool.field === 'kg' ? 'kg' : 'rep'}
                           </button>
                         ))}
-                        <button type="button" class="mobile-set-more" aria-expanded={setMenuOpen} onClick={() => setSetMenuOpen(open => !open)} aria-label="Fler setval">⋯</button>
-                        {setMenuOpen && (
-                          <div class="mobile-set-menu">
-                            <button type="button" onClick={() => { setTypePicker({ exIdx, setIdx: tool.setIdx }); setSetMenuOpen(false) }}>Settyp</button>
-                            <button type="button" onClick={() => { setRpePicker({ exIdx, setIdx: tool.setIdx }); setSetMenuOpen(false) }}>RPE</button>
-                            <button type="button" class="text-danger" onClick={() => { removeSet(exIdx, tool.setIdx); setFocusedSet(null); setSetMenuOpen(false) }}>Ta bort set</button>
-                          </div>
-                        )}
+                        {/* Alltid synlig: bakom "⋯" hittade ingen Ta bort set. Numret säger vilket set som försvinner. */}
+                        <div class="mobile-set-menu">
+                          <button type="button" onClick={() => setTypePicker({ exIdx, setIdx: tool.setIdx })}>Settyp</button>
+                          <button type="button" onClick={() => setRpePicker({ exIdx, setIdx: tool.setIdx })}>RPE</button>
+                          <button type="button" class="text-danger" onClick={() => { removeSet(exIdx, tool.setIdx); setFocusedSet(null) }}>Ta bort set {tool.setIdx + 1}</button>
+                        </div>
                       </div>
                     )}
 

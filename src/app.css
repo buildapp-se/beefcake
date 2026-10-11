@@ -1400,14 +1400,15 @@ canvas { display: block; max-width: 100%; }
   .set-rows-table .set-type-badge:not(.rpe-badge) { width: 40px; height: 56px; }
   .set-rows-table .btn-check-set { width: 56px; height: 56px; }
   .set-rows-table-wrap { overflow: visible; }
-  .mobile-set-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-bottom: var(--space-3); }
+  .mobile-set-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: var(--space-3); }
   .mobile-set-tools > button, .mobile-set-menu button { min-height: 44px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text); font: inherit; font-size: var(--text-sm); font-weight: 600; }
-  .mobile-set-tools-reps > button:not(.mobile-set-more) { grid-column: span 2; }
+  .mobile-set-tools-reps > button { grid-column: span 2; }
   /* Fältet stegknapparna verkar på är markerat även när tangentbordet är stängt */
   .set-rows-table .set-input-target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
   .mobile-set-menu { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .mobile-set-menu button { padding-inline: var(--space-3); }
-  .mobile-set-menu .text-danger { color: var(--danger); }
+  /* Ta bort längst till höger, skild från stegknapparna och de ofarliga valen */
+  .mobile-set-menu .text-danger { margin-left: auto; color: var(--danger); }
   .rest-timer-active { left: 0; right: 0; bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); min-height: 56px; padding: 0 var(--space-4); gap: var(--space-2); border-radius: 0; box-shadow: none; }
   .rest-timer-active .rest-timer-display { display: flex; align-items: center; gap: var(--space-2); font-size: 1.75rem; white-space: nowrap; }
   .rest-timer-mobile-label { display: inline; font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0; }
