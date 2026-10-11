@@ -75,6 +75,7 @@ export function LogSession() {
   const [draggedExerciseIndex, setDraggedExerciseIndex] = useState<number | null>(null)
   const [previousPerformances, setPreviousPerformances] = useState<Record<string, { date: string; setEntries: SetEntry[]; notes?: string }>>({})
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false)
   // Öppna övningskort på telefon, per plats i listan. Flera får vara öppna: du jämför och hoppar mellan övningar.
   const [openExercises, setOpenExercises] = useState<ReadonlySet<number>>(() => new Set([0]))
   // Setet och fältet som telefonens stegknappar verkar på: det du senast tryckte i
@@ -441,9 +442,10 @@ export function LogSession() {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault()
-        void handleFinishSession()
+        handleFinishSession()
       } else if (event.key === 'Escape') {
         setCancelDialogOpen(false)
+        setFinishDialogOpen(false)
         setShowSaveTemplate(false)
         setRpePicker(null)
         setTypePicker(null)
@@ -688,16 +690,25 @@ export function LogSession() {
     setDraggedExerciseIndex(null)
   }
 
-  async function handleFinishSession() {
-    if (totalSetsCount === 0) return
+  // Blandat bockat och obockat går inte att tolka: glömt att bocka, eller aldrig kört? Då frågar rutan.
+  // Allt bockat sparas direkt, och inget bockat alls också: den som aldrig bockar ska inte få frågan varje pass.
+  function handleFinishSession() {
+    if (totalSetsCount === 0 || saving) return
+    if (completedSetsCount > 0 && completedSetsCount < totalSetsCount) setFinishDialogOpen(true)
+    else void finishSession(false)
+  }
+
+  async function finishSession(onlyCompleted: boolean) {
+    setFinishDialogOpen(false)
     setSaving(true)
     try {
       const template = templates.find(t => t.id === selectedTemplateId)
       const templateTitle = template?.name || 'Fritt pass'
+      const kept = exercises.map(e => onlyCompleted ? { ...e, setEntries: e.setEntries.filter(s => s.completed) } : e)
 
       // Övningar utan set gjordes inte: de hör inte hemma i historiken
       const validExercises = await Promise.all(
-        exercises.filter(e => e.setEntries.length > 0).map(async (e, order) => {
+        kept.filter(e => e.setEntries.length > 0).map(async (e, order) => {
           let exerciseId = e.exerciseId
           if (!exerciseId || exerciseId.startsWith('new-')) {
             const ex = await getOrCreateExercise(e.exerciseName)
@@ -1289,6 +1300,27 @@ export function LogSession() {
               <div class="flex gap mt justify-end">
                 <Button variant="secondary" onClick={() => setCancelDialogOpen(false)}>Fortsätt träna</Button>
                 <Button variant="danger" onClick={handleCancelSession}>Avbryt pass</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Obockade set vid Slutför: säg vilka, så valet går att göra utan att bläddra tillbaka */}
+        {finishDialogOpen && (
+          <div class="dialog-overlay" onClick={() => setFinishDialogOpen(false)}>
+            <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="finish-dialog-title" onClick={e => e.stopPropagation()}>
+              <h3 id="finish-dialog-title" class="m-0 mb-sm">{totalSetsCount - completedSetsCount} set är inte bockade</h3>
+              <ul class="plateau-list">
+                {exercises.filter(e => e.setEntries.some(s => !s.completed)).map(e => (
+                  <li key={e.exerciseId}>
+                    <strong>{e.exerciseName || 'Ny övning'}</strong>: set {e.setEntries.flatMap((s, i) => s.completed ? [] : [`${i + 1}${s.calibration ? ' (test)' : ''}`]).join(', ')}
+                  </li>
+                ))}
+              </ul>
+              <div class="plateau-choices">
+                <Button onClick={() => finishSession(true)}>Spara bara de bockade</Button>
+                <Button variant="secondary" onClick={() => finishSession(false)}>Bocka i och spara alla</Button>
+                <Button variant="ghost" onClick={() => setFinishDialogOpen(false)}>Tillbaka till passet</Button>
               </div>
             </div>
           </div>
