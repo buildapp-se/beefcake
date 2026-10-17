@@ -1,10 +1,10 @@
-import type { ComponentChildren, JSX } from 'preact'
+import type { ComponentChildren, HTMLAttributes } from 'preact'
 
 export type CardPadding = 'none' | 'sm' | 'md' | 'lg'
 
 // Övriga attribut (data-*, aria-*, role) går vidare till diven: loggvyns dragning hittar
 // korten via data-exercise-index, och när Card kastade det gick det aldrig att flytta en övning.
-interface CardProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'title'> {
+interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   children?: ComponentChildren
   padding?: CardPadding
   class?: string

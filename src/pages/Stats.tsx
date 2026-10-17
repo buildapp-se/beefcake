@@ -524,7 +524,7 @@ export function Stats() {
             </p>
           )}
           {!volumeAvailable && <p class="text-sm text-muted m-0">Inga pass för den här övningen under vald period.</p>}
-          <div class="h-300" style={volumeAvailable ? undefined : { height: 1, overflow: 'hidden' }}>
+          <div class="h-300" style={volumeAvailable ? undefined : { height: '1px', overflow: 'hidden' }}>
             <canvas ref={volumeCanvasRef} id="volume-chart"></canvas>
           </div>
         </Card>

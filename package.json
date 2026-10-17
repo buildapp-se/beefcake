@@ -20,7 +20,7 @@
     "date-fns": "^4.4.0",
     "idb": "^8.0.4",
     "jose": "^6.2.12",
-    "preact": "^10.29.8",
+    "preact": "^11.0.1",
     "wouter": "^3.13.0"
   },
   "devDependencies": {
