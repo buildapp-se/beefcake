@@ -34,6 +34,7 @@
 - [ ] `[P2]` Patrik, telefon, 2026-10-10: felmeddelande vid start och en knapp som inte gjorde något, manuell omladdning hjälpte. Texten i meddelandet är inte känd, inte reproducerat
 - [ ] `[P2]` Höjningsfrågan gäller fel övningar när programmet byts i väljaren med övningar redan laddade (utkast eller ett annat program). `plateauKey` byts direkt men övningarna laddas efteråt, så effekten i `LogSession.tsx` räknar på de gamla övningarna och märker nyckeln som kontrollerad; det nya programmets platåer frågas aldrig. Sett i Chromium 2026-10-11: utkast med Chins med flera, byte till Ben gav rutan med utkastets fem övningar. Öppnas passet från Hem (`?template=`) händer det inte
 - [x] `[P3]` (rättad 2026-10-11, Patriks val: fråga vid Slutför, se Byggt) Obockade set sparas som gjorda: `handleFinishSession` tar alla set, bockade eller inte. Ett testset som aldrig kördes hamnar i historiken med de vanliga repsen (sett 2026-10-11)
+- [ ] `[P3]` TypeScript 7 väntar på typescript-eslint: 8.71.2 kräver `typescript >=4.8.4 <6.1.0`, och lint körs i CI före bygget. Kvar på 6.0.3 (peer-kravet kontrollerat 2026-10-17). Uppgradera när typescript-eslint stöder 7.
 
 - [x] `[P2]` Egen app-ikon och og-image: symbol i favicon, apple-touch-icon, PWA-manifest och head-taggar. Cartman visas bara efter inloggning.
 - [x] `[P3]` Hem för en ny gäst har välkomstrad, exempelpass och en tydlig väg till program och första passet.
