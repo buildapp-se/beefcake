@@ -1,3 +1,4 @@
+import { Fragment } from 'preact'
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import {
   getAllTemplates,
@@ -12,8 +13,10 @@ import {
   getLastPerformanceForExercise,
   getExerciseRecords,
   getExerciseHistory,
-  saveExerciseProgression
+  saveExerciseProgression,
+  updateTemplate
 } from '../services/dataService'
+import { setCompletedInSuperset, supersetGroup, unlinkAt } from '../lib/superset'
 import { startRestTimer, triggerHaptic } from '../services/timerService'
 import { formatDateShort } from '../lib/date'
 import { formatSet, formatSetCompact, formatWeight, parseDecimal } from '../lib/format'
@@ -55,6 +58,7 @@ export interface LogFormExercise {
   exerciseName: string
   setEntries: ActiveSetEntry[]
   notes?: string
+  supersetWithNext?: boolean
 }
 
 export function LogSession() {
@@ -253,11 +257,13 @@ export function LogSession() {
       template.exercises.forEach((te: TemplateExercise, idx: number) => { next[te.exerciseId] = exerciseRecords[idx] })
       return next
     })
-    const formExercises: LogFormExercise[] = template.exercises.map((te: TemplateExercise) => ({
+    const formExercises: LogFormExercise[] = template.exercises.map((te: TemplateExercise, idx: number) => ({
       exerciseId: te.exerciseId,
       exerciseName: exMap.get(te.exerciseId) || '',
       // Passet börjar på noll set: du klickar upp dem under passet, förra gången syns i bannern
-      setEntries: []
+      setEntries: [],
+      // Programmets superset gäller bara när partnern fortfarande står direkt under
+      ...(te.supersetWith && template.exercises[idx + 1]?.exerciseId === te.supersetWith ? { supersetWithNext: true } : {})
     }))
     setExercises(formExercises)
     setPreviousPerformances(prev => {
@@ -487,14 +493,9 @@ export function LogSession() {
     const currentSet = ex.setEntries[setIdx]
     const nextCompleted = !currentSet.completed
 
-    const newSetEntries = [...ex.setEntries]
-    newSetEntries[setIdx] = {
-      ...currentSet,
-      completed: nextCompleted
-    }
-
-    const newExercises = [...exercises]
-    newExercises[exerciseIdx] = { ...ex, setEntries: newSetEntries }
+    // Superset: samma arbetsset i de kopplade övningarna bockas med
+    const newExercises = setCompletedInSuperset(exercises, exerciseIdx, setIdx, nextCompleted)
+    const newSetEntries = newExercises[exerciseIdx].setEntries
     setExercises(newExercises)
 
     // Testsetet bockat: nästa pass vikt sparas som förslag. Avbockat igen: förslaget tas bort.
@@ -511,10 +512,13 @@ export function LogSession() {
       triggerHaptic(isRecordSet(ex.exerciseId, newSetEntries[setIdx]) ? [60, 40, 100] : 50)
       startRestTimer()
       // Efter testsetet stannar kortet öppet: resultatet och "Resten på N kg" står där
-      if (!currentSet.calibration && newSetEntries.every(s => s.completed)) {
-        const nextIndex = newExercises.findIndex((candidate, index) => index > exerciseIdx && (candidate.setEntries.length === 0 || candidate.setEntries.some(s => !s.completed)))
+      // Ett superset är klart först när hela gruppen är det, och då fälls hela gruppen ihop
+      const group = supersetGroup(newExercises, exerciseIdx)
+      if (!currentSet.calibration && group.every(i => newExercises[i].setEntries.every(s => s.completed))) {
+        const last = group[group.length - 1]
+        const nextIndex = newExercises.findIndex((candidate, index) => index > last && (candidate.setEntries.length === 0 || candidate.setEntries.some(s => !s.completed)))
         // Den klara fälls ihop och nästa öppnas; övriga kort du själv öppnat rörs inte
-        if (nextIndex !== -1) setOpenExercises(prev => new Set([...prev].filter(i => i !== exerciseIdx).concat(nextIndex)))
+        if (nextIndex !== -1) setOpenExercises(prev => new Set([...prev].filter(i => !group.includes(i)).concat(nextIndex)))
       }
     }
   }
@@ -605,8 +609,27 @@ export function LogSession() {
     ])
   }
 
+  // Kopplar ihop övningen med den under, eller loss. Valt program minns kopplingen till nästa pass.
+  function toggleSuperset(idx: number) {
+    const ex = exercises[idx]
+    const partner = exercises[idx + 1]
+    if (!partner) return
+    const linked = !ex.supersetWithNext
+    setExercises(prev => prev.map((e, i) => i === idx ? { ...e, supersetWithNext: linked } : e))
+    triggerHaptic(20)
+    const template = templates.find(t => t.id === selectedTemplateId)
+    if (!template || ex.exerciseId.startsWith('new-')) return
+    const templateExercises = template.exercises.map(te => {
+      if (te.exerciseId !== ex.exerciseId) return te
+      const { supersetWith: _old, ...rest } = te
+      return linked && !partner.exerciseId.startsWith('new-') ? { ...rest, supersetWith: partner.exerciseId } : rest
+    })
+    setTemplates(prev => prev.map(t => t.id === template.id ? { ...t, exercises: templateExercises } : t))
+    updateTemplate(template.id, { exercises: templateExercises }).catch(err => console.error('Kunde inte spara supersetet i programmet:', err))
+  }
+
   function removeExercise(idx: number) {
-    setExercises(prev => prev.filter((_, i) => i !== idx))
+    setExercises(prev => unlinkAt(prev, idx).filter((_, i) => i !== idx))
     // Korten under den borttagna flyttar upp ett steg och tar sitt öppet-läge med sig
     setOpenExercises(prev => new Set([...prev].filter(i => i !== idx).map(i => i > idx ? i - 1 : i)))
   }
@@ -650,11 +673,12 @@ export function LogSession() {
 
   function moveExercise(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex || toIndex < 0 || toIndex >= exercises.length) return
+    // ponytail: en flyttad övning lämnar sitt superset och bryter det den passerar; flytta hela grupper om det blir ett behov
     setExercises(current => {
-      const reordered = [...current]
+      const reordered = unlinkAt(current, fromIndex)
       const [moved] = reordered.splice(fromIndex, 1)
       reordered.splice(toIndex, 0, moved)
-      return reordered
+      return unlinkAt(reordered, toIndex)
     })
     // Öppet-läget följer med kortet, inte platsen
     setOpenExercises(prev => {
@@ -780,7 +804,9 @@ export function LogSession() {
           }
         })
       )
-      const newTemplate = await createTemplate(templateName.trim(), templateExercises)
+      // Supersetkopplingarna följer med till det nya programmet
+      const withSupersets = templateExercises.map((te, i) => exercises[i].supersetWithNext && templateExercises[i + 1] ? { ...te, supersetWith: templateExercises[i + 1].exerciseId } : te)
+      const newTemplate = await createTemplate(templateName.trim(), withSupersets)
       setTemplates(prev => [...prev, newTemplate].sort((a, b) => a.name.localeCompare(b.name)))
       setSelectedTemplateId(newTemplate.id)
       setShowSaveTemplate(false)
@@ -916,9 +942,9 @@ export function LogSession() {
                 // Stegknapparnas mål i det här kortet, null när du står i ett annat
                 const tool = focusedSet?.exIdx === exIdx && ex.setEntries[focusedSet.setIdx] ? focusedSet : null
                 return (
+                  <Fragment key={exIdx}>
                   <Card
-                    key={exIdx}
-                    class={`exercise-live-card mb ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
+                    class={`exercise-live-card ${ex.supersetWithNext ? 'superset-top' : 'mb'} ${exIdx > 0 && exercises[exIdx - 1].supersetWithNext ? 'superset-bottom' : ''} ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
                     data-exercise-index={exIdx}
                   >
                     <button type="button" class={`exercise-collapse-toggle ${allDone ? 'exercise-collapse-done' : ''}`} aria-expanded={expanded} onClick={toggleOpen}>
@@ -954,6 +980,9 @@ export function LogSession() {
                     </div>
                     {exerciseMenuOpen === exIdx && <div class="exercise-options">
                       <button type="button" onClick={() => { setNotesOpen(exIdx); setExerciseMenuOpen(null) }}>Anteckning</button>
+                      {exIdx < exercises.length - 1 && <button type="button" onClick={() => { toggleSuperset(exIdx); setExerciseMenuOpen(null) }}>
+                        {ex.supersetWithNext ? 'Ta bort superset' : `Superset med ${exercises[exIdx + 1].exerciseName || 'nästa'}`}
+                      </button>}
                       <button type="button" class="text-danger" onClick={() => { removeExercise(exIdx); setExerciseMenuOpen(null) }}>Ta bort övning</button>
                     </div>}
 
@@ -1243,6 +1272,10 @@ export function LogSession() {
                     </div>
                     </div>
                   </Card>
+                  {ex.supersetWithNext && exIdx < exercises.length - 1 && (
+                    <div class="superset-link" aria-label={`${ex.exerciseName} i superset med ${exercises[exIdx + 1].exerciseName}`}>Superset: ett bockat set bockar båda</div>
+                  )}
+                  </Fragment>
                 )
               })}
 

@@ -149,10 +149,13 @@ export function Templates() {
           const ex = await getOrCreateExercise(fe.exerciseName)
           exerciseId = ex.id
         }
+        // Supersetkopplingen sätts i loggvyn och ska överleva en redigering här
+        const supersetWith = templates.find(t => t.id === editingId)?.exercises.find(te => te.exerciseId === exerciseId)?.supersetWith
         return {
           exerciseId,
           defaultSetEntry: fe.defaultSetEntry,
-          order: i
+          order: i,
+          ...(supersetWith ? { supersetWith } : {})
         }
       })
     )

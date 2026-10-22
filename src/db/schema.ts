@@ -37,6 +37,8 @@ export interface TemplateExercise {
   exerciseId: string
   defaultSetEntry: SetEntry
   order: number
+  /** Superset: övningen (id) som körs ihop med den här, se src/lib/superset.ts. Sedan 2026-10-22. */
+  supersetWith?: string
 }
 
 export interface Template {
@@ -144,6 +146,8 @@ export interface ActiveExercise {
   setEntries: ActiveSetEntry[]
   order: number
   notes?: string
+  /** Kopplad i superset med övningen under, se src/lib/superset.ts */
+  supersetWithNext?: boolean
 }
 
 export interface ActiveWorkout {
