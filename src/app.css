@@ -1171,6 +1171,7 @@ canvas { display: block; max-width: 100%; }
   background: var(--surface-deep);
   color: var(--surface-deep-text);
 }
+.active-workout-card h3 { color: inherit; }
 .active-workout-card .text-muted { color: var(--surface-deep-muted); }
 .active-workout-label { color: var(--surface-deep-muted); font-size: var(--text-sm); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 .active-workout-card .btn-primary { background: var(--brand-cream); color: var(--brand-ink); min-height: 52px; }
