@@ -11,7 +11,7 @@ import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { useIsGuest } from '../components/LoginGate'
 import { isCloudSyncConfigured } from '../services/cloudSyncService'
-import { beefcakeStatusText, beefcakeStreak } from '../lib/streak'
+import { beefcakeStatusText, streakFromSessions } from '../lib/streak'
 import type { Session, ActiveWorkout } from '../models'
 
 export function Home() {
@@ -53,7 +53,7 @@ export function Home() {
       setRecentSessions(sessions.slice(0, 5))
       setGreeting(sessions.length === 0
         ? 'Välkommen till Beefcake\nLogga ditt första pass och se hur du utvecklas.'
-        : beefcakeStatusText(beefcakeStreak(sessions.map(s => s.date), todayISO()), todayISO()))
+        : beefcakeStatusText(streakFromSessions(sessions, todayISO()), todayISO()))
       setTotalSessions(sessions.length)
       if (active && active.exercises.length > 0) {
         setActiveWorkout(active)

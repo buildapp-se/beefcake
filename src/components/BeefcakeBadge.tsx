@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import { useLocation } from 'wouter'
 import { getAllSessions } from '../services/dataService'
 import { todayISO } from '../lib/date'
-import { beefcakeStatusText, beefcakeStreak, BEEFCAKE_LABELS, type BeefcakeLevel, type BeefcakeStreak } from '../lib/streak'
+import { beefcakeStatusText, streakFromSessions, BEEFCAKE_LABELS, type BeefcakeLevel, type BeefcakeStreak } from '../lib/streak'
 
 // Alla genererade bilder i mappen: N.jpg (nivån), celebrate-N.jpg (klarat testset), plateau-N.jpg ("Vill du höja?")
 const IMAGES = import.meta.glob<string>('../assets/beefcake/*.jpg', { eager: true, import: 'default' })
@@ -25,7 +25,7 @@ export function useBeefcakeStreak(): BeefcakeStreak {
     let cancelled = false
     getAllSessions()
       .then(sessions => {
-        if (!cancelled) setStreak(beefcakeStreak(sessions.map(s => s.date), todayISO()))
+        if (!cancelled) setStreak(streakFromSessions(sessions, todayISO()))
       })
       .catch(() => undefined)
     return () => {

@@ -40,11 +40,17 @@ function levelForStreak(streak: number): BeefcakeLevel {
 }
 
 /**
- * @param dates passdatum som `YYYY-MM-DD`, i valfri ordning, dubbletter tillåtna
+ * Cardio håller kedjan vid liv men höjer inte nivån (Patrik 2026-10-22): glappet räknas
+ * mellan alla träningsdagar, `streak` och nivån bara på styrkedagarna i kedjan.
+ *
+ * @param dates styrkepassens datum som `YYYY-MM-DD`, i valfri ordning, dubbletter tillåtna
  * @param todayISO dagens datum
+ * @param cardioDates cardiopassens datum. En dag med både styrka och cardio är en styrkedag.
  */
-export function beefcakeStreak(dates: string[], todayISO: string): BeefcakeStreak {
-  const days = Array.from(new Set(dates)).sort().reverse()
+export function beefcakeStreak(dates: string[], todayISO: string, cardioDates: string[] = []): BeefcakeStreak {
+  const strength = new Set(dates)
+  // Alla träningsdagar, nyast först: det är de som avgör om kedjan håller
+  const days = Array.from(new Set([...dates, ...cardioDates])).sort().reverse()
   if (days.length === 0) return { level: 1, streak: 0, daysSinceLast: null, startDate: null, deadline: null }
 
   const daysSinceLast = daysBetween(days[0], todayISO)
@@ -53,15 +59,33 @@ export function beefcakeStreak(dates: string[], todayISO: string): BeefcakeStrea
     return { level: 1, streak: 0, daysSinceLast, startDate: null, deadline: null }
   }
 
-  let streak = 1
-  for (let i = 1; i < days.length; i += 1) {
-    if (daysBetween(days[i], days[i - 1]) > MAX_GAP_DAYS) break
-    streak += 1
-  }
+  const { chainDays, streak } = countChain(days, strength)
 
   const deadline = parseLocalDate(days[0])
   deadline.setDate(deadline.getDate() + MAX_GAP_DAYS)
-  return { level: levelForStreak(streak), streak, daysSinceLast, startDate: days[streak - 1], deadline: localDateISO(deadline) }
+  return { level: levelForStreak(streak), streak, daysSinceLast, startDate: days[chainDays - 1], deadline: localDateISO(deadline) }
+}
+
+/** Delar passen i styrka och cardio. Hem och märket i headern går båda hit, så de räknar lika. */
+export function streakFromSessions(sessions: readonly { date: string; cardio?: unknown }[], todayISO: string): BeefcakeStreak {
+  return beefcakeStreak(sessions.filter(s => !s.cardio).map(s => s.date), todayISO, sessions.filter(s => s.cardio).map(s => s.date))
+}
+
+/**
+ * Går bakåt genom `days` (nyast först, inga dubbletter) tills ett glapp är större än MAX_GAP_DAYS.
+ *
+ * @returns chainDays: hur många dagar i `days` som hör till kedjan (minst 1, days[0] är alltid med).
+ *          streak: hur många av de dagarna som finns i `strength`.
+ */
+function countChain(days: string[], strength: Set<string>): { chainDays: number; streak: number } {
+  let chainDays = 1
+  let streak = strength.has(days[0]) ? 1 : 0
+  for (let i = 1; i < days.length; i += 1) {
+    if (daysBetween(days[i], days[i - 1]) > MAX_GAP_DAYS) break
+    chainDays += 1
+    if (strength.has(days[i])) streak += 1
+  }
+  return { chainDays, streak }
 }
 
 /**

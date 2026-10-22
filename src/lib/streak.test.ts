@@ -124,3 +124,34 @@ describe('beefcakeStreak', () => {
     expect(beefcakeStreak(dates, '2026-08-21').streak).toBe(4)
   })
 })
+
+describe('beefcakeStreak med cardio', () => {
+  it('cardio överbryggar ett glapp men räknas inte som pass', () => {
+    // 15 och 21 ligger sex dagar isär, löprundan den 18 håller ihop dem
+    const result = beefcakeStreak(['2026-08-15', '2026-08-21'], '2026-08-21', ['2026-08-18'])
+    expect(result).toEqual({ level: 2, streak: 2, daysSinceLast: 0, startDate: '2026-08-15', deadline: '2026-08-24' })
+  })
+
+  it('senaste träningen var cardio: kedjan lever, deadline räknas från cardiodagen', () => {
+    const result = beefcakeStreak(['2026-08-17'], '2026-08-21', ['2026-08-20'])
+    expect(result).toMatchObject({ streak: 1, daysSinceLast: 1, startDate: '2026-08-17', deadline: '2026-08-23' })
+  })
+
+  it('bara cardio håller Cartman på nivå 2 med noll pass', () => {
+    expect(beefcakeStreak([], '2026-08-21', ['2026-08-19', '2026-08-21'])).toMatchObject({ level: 2, streak: 0, startDate: '2026-08-19' })
+  })
+
+  it('kedjan bryts vid glappet även om cardio finns längre bak', () => {
+    const result = beefcakeStreak(['2026-08-01', '2026-08-19', '2026-08-21'], '2026-08-21', ['2026-08-03'])
+    expect(result).toMatchObject({ streak: 2, startDate: '2026-08-19' })
+  })
+
+  it('styrka och cardio samma dag räknas som en styrkedag', () => {
+    expect(beefcakeStreak(['2026-08-21'], '2026-08-21', ['2026-08-21']).streak).toBe(1)
+  })
+
+  it('fyra styrkepass med cardio emellan ger nivå 3', () => {
+    const result = beefcakeStreak(['2026-08-12', '2026-08-15', '2026-08-18', '2026-08-21'], '2026-08-21', ['2026-08-13', '2026-08-16', '2026-08-19'])
+    expect(result).toMatchObject({ level: 3, streak: 4, startDate: '2026-08-12' })
+  })
+})
