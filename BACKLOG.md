@@ -34,12 +34,17 @@
 - [ ] `[P2]` Patrik, telefon, 2026-10-10: felmeddelande vid start och en knapp som inte gjorde något, manuell omladdning hjälpte. Texten i meddelandet är inte känd, inte reproducerat
 - [ ] `[P2]` Höjningsfrågan gäller fel övningar när programmet byts i väljaren med övningar redan laddade (utkast eller ett annat program). `plateauKey` byts direkt men övningarna laddas efteråt, så effekten i `LogSession.tsx` räknar på de gamla övningarna och märker nyckeln som kontrollerad; det nya programmets platåer frågas aldrig. Sett i Chromium 2026-10-11: utkast med Chins med flera, byte till Ben gav rutan med utkastets fem övningar. Öppnas passet från Hem (`?template=`) händer det inte
 - [x] `[P3]` (rättad 2026-10-11, Patriks val: fråga vid Slutför, se Byggt) Obockade set sparas som gjorda: `handleFinishSession` tar alla set, bockade eller inte. Ett testset som aldrig kördes hamnar i historiken med de vanliga repsen (sett 2026-10-11)
+- [ ] `[P2]` "Ångra" efter radering i Historik återställer bara passet på skärmen: `handleUndoDelete` (`src/pages/History.tsx`) skriver aldrig tillbaka till IndexedDB eller D1, så passet är borta vid nästa omladdning. Hittat vid läsning 2026-10-22, inte åtgärdat
 - [ ] `[P3]` TypeScript 7 väntar på typescript-eslint: 8.71.2 kräver `typescript >=4.8.4 <6.1.0`, och lint körs i CI före bygget. Kvar på 6.0.3 (peer-kravet kontrollerat 2026-10-17). Uppgradera när typescript-eslint stöder 7.
 
 - [x] `[P2]` Egen app-ikon och og-image: symbol i favicon, apple-touch-icon, PWA-manifest och head-taggar. Cartman visas bara efter inloggning.
 - [x] `[P3]` Hem för en ny gäst har välkomstrad, exempelpass och en tydlig väg till program och första passet.
 
 ## Byggt
+
+- Superset (2026-10-22, Patriks beställning, `daa208b` och `6cb7b8a`): "+ Superset" mellan två kort i loggvyn kopplar ihop dem mitt i passet, ett bockat arbetsset bockar samma set i hela gruppen, programmet minns kopplingen. Regeln i CONTEXT §Datamodell. Först byggt bakom ⋯-menyn, flyttat till plusknappen samma dag på Patriks begäran. Verifierat: 211 tester (8 nya i `superset.test.ts`), lint, `tsc -b`, build; Chromium 390 utan moln: Chins och Benlyft mage kopplade, set 2 i Chins bockade set 2 i Benlyft och tvärtom, klar grupp fälldes ihop och nästa öppnades, kopplingen kvar efter omladdning av programmet, koppla loss och koppla ihop ett annat par med plus. Patrik hittade knappen live. **Inte sett:** ett riktigt pass på telefon
+- Cardio (2026-10-22, Patriks beställning, `ad3d061` och `14e5597`): promenad, löpning eller annat loggas på `/cardio` och syns grönt i kalendern; streaken räknar cardio som kedja men inte som nivå (Patriks val av fyra alternativ). Regeln i CONTEXT §Datamodell och §Beefcake-nivån. Verifierat: 203 tester (cardio i validering, 6 i `streak.test.ts`), build; Chromium utan moln: sparat, redigerat utan dubblett, 3,2 km med decimalkomma, grön etikett och dag, utanför Nästa pass. **Inte sett:** inloggat mot D1 och telefon
+- Rubriken i "Pågående pass" på Hem syntes inte (2026-10-22, `1b4e490`): `.card h3` gav mörk text på den mörkblå rutan, nu ärver rubriken rutans ljusa text
 
 - Fråga vid Slutför när bockat och obockat är blandat (2026-10-11, Patriks val och knapptexter): rutan "N set är inte bockade" listar seten per övning och har "Spara bara de bockade" (primär), "Bocka i och spara alla" och "Tillbaka till passet". Allt bockat eller inget bockat alls sparas direkt som förut (den som aldrig bockar får ingen fråga). Chromium 390, Ben med 3 + 1 set varav 2 bockade: rutan listade "Benböj: set 3" och "Utfall bakåt: set 1"; Tillbaka sparade inget; bara bockade gav Benböj 2 set utan Utfall; spara alla gav 3 + 1; noll bockade gav ingen ruta och 3 + 1. Testpassen raderade ur testprofilen. **Inte sett:** på telefon
 - Ta bort set på telefon (2026-10-11, Patrik: "jag kunde inte ta bort set"): gick, men låg bakom `⋯` i stegknapparnas rad. `⋯` är borta; under stegknapparna ligger alltid "Settyp", "RPE" och "Ta bort set N" (röd, till höger, med setets nummer). Chromium 390: set 2 av 3 (55 kg) borttaget, kvar 27,5 och 27,5, Settyp öppnar väljaren, knappar 44 px höga, ingen sidled-scroll. **Inte sett:** på telefon
@@ -128,7 +133,7 @@
 
 ## Bygg inte
 
-Program-motor med procent av träningsmax och cykler (5/3/1, nSuns, Candito; beslut 2026-10-06, de får köra sitt kalkylark) · flerspråkighet · sociala funktioner och delade mallar · AI-förslag på vikter (höjningsförslaget i Öppet är en fast regel, inte AI) · egen backend enbart för synk · Excel-import i webbläsaren (borttagen i `410efd1`, `xlsx` 0.18.5 gav tom chunk under Vite 8) · trettio diagram · rest timer om du inte faktiskt vilar på klocka · superset och dropsets i gränssnittet, se bara till att modellen klarar dem.
+Program-motor med procent av träningsmax och cykler (5/3/1, nSuns, Candito; beslut 2026-10-06, de får köra sitt kalkylark) · flerspråkighet · sociala funktioner och delade mallar · AI-förslag på vikter (höjningsförslaget i Öppet är en fast regel, inte AI) · egen backend enbart för synk · Excel-import i webbläsaren (borttagen i `410efd1`, `xlsx` 0.18.5 gav tom chunk under Vite 8) · trettio diagram · rest timer om du inte faktiskt vilar på klocka · dropsets i gränssnittet utöver settypen (superset byggt 2026-10-22 på Patriks beställning).
 
 ## Förslag från genomlysning 2026-09
 

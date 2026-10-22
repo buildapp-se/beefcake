@@ -27,12 +27,14 @@ Sju object stores i IndexedDB `beefcake-db` (version 4 sedan 2026-09-01). Typern
 SetEntry         { sets, reps, weight, rpe? }
 ExerciseKind     'weight' | 'bodyweight' | 'time' | 'distance'
 Exercise         { id, name, kind?, muscleGroup?, equipment?, progression?: { holdAt?, next?: { weight, reps } }, createdAt }
-TemplateExercise { exerciseId, defaultSetEntry: SetEntry, order }
+TemplateExercise { exerciseId, defaultSetEntry: SetEntry, order, supersetWith? (exerciseId) }
 Template         { id, name, exercises: TemplateExercise[], updatedAt }
 SessionExercise  { exerciseId, exerciseName, setEntries: SetEntry[], order, notes? }
-Session          { id, date (YYYY-MM-DD), templateId, templateName, exercises: SessionExercise[], createdAt }
+Session          { id, date (YYYY-MM-DD), templateId, templateName, exercises: SessionExercise[], createdAt, cardio?: CardioEntry }
+CardioEntry      { minutes, km?, notes? }
 ExerciseHistory  { id, date, exerciseId, exerciseName, setEntries: SetEntry[], volume, sessionId }
 ActiveSetEntry   SetEntry plus { completed?, type?: 'normal'|'warmup'|'drop'|'failure' }; `calibration?` bor på SetEntry sedan 2026-10-11
+ActiveExercise   { exerciseId, exerciseName, setEntries: ActiveSetEntry[], order, notes?, supersetWithNext? }
 ActiveWorkout    { id, date, templateId, templateName, exercises: ActiveExercise[], startTime, updatedAt }
 BodyWeight       { date (YYYY-MM-DD, nyckel), kg }
 ```
@@ -47,7 +49,11 @@ Loggvyn öppnas tom när användaren går direkt till `/log`. Ett program laddas
 
 Volym räknas alltid genom `src/lib/volume.ts`. Vikt 0 betyder kroppsvikt eller kondition och ger volym 0. Skriv aldrig `sets * reps * weight` på nytt ställe.
 
-**Skriv aldrig till `sessions` direkt.** `createSession`, `updateSession` och `deleteSession` håller ihop passet och dess historikrader i en transaktion. Skriver du ett pass utan att skriva om historiken blir graferna tyst fel.
+**Skriv aldrig till `sessions` direkt.** `createSession`, `updateSession` och `deleteSession` håller ihop passet och dess historikrader i en transaktion. Skriver du ett pass utan att skriva om historiken blir graferna tyst fel. Undantaget är `createCardioSession`: ett cardiopass har inga övningar och därför inga historikrader.
+
+**Cardio** (sedan 2026-10-22): promenad, löpning eller annat är ett `Session` med `templateId: 'cardio'`, aktiviteten som `templateName`, tom `exercises` och fältet `cardio` (minuter, km valfritt med decimalkomma, anteckning). Därför syns det i kalender, historik och synk utan egen samling; `validateSnapshot` kontrollerar fältet och Workern behövde ingen ändring. Loggas på `/cardio` (`LogCardio.tsx`, `?date=` förväljer datum, `?id=` redigerar), nås från "Cardio" på Hem och "Logga cardio i stället" i en tom loggvy. Grön etikett i kalendern (`--cardio`), grön dag när dagen bara har cardio, "45 min · 3,2 km" i stället för övningar och kg. Hålls utanför "Nästa pass". Statistikens antal pass räknar med cardio. Testas med `session.cardio`, aldrig på `templateId`.
+
+**Superset** (sedan 2026-10-22, Patriks beställning, ersätter "Bygg inte"): `ActiveExercise.supersetWithNext` kopplar en övning till den under, en obruten följd är en grupp. Ett bockat arbetsset bockar samma arbetsset (i ordning bland arbetsseten) i hela gruppen; uppvärmning och testset bockas för sig. Gruppen fälls ihop först när alla dess set är klara. Kopplas med "+ Superset" mellan två kort i loggvyn och lossas med "Koppla loss" i remsan. Valt program minns kopplingen som `TemplateExercise.supersetWith` (partnerns id), som bara gäller när partnern står direkt under; programredigeraren och "Spara som nytt program" bevarar den. En flyttad övning lämnar sitt superset och bryter det den passerar. Regeln bor i `src/lib/superset.ts`. Sparade pass bär inte kopplingen.
 
 ## Data och seed
 
@@ -79,7 +85,7 @@ Brevet går via Resend från `latmask@beefcake.buildapp.se` (`server/src/email.t
 
 ## Beefcake-nivån
 
-Cartman speglar träningskedjan. I full storlek med statustexten bara på Hem (sedan 2026-09-01), på övriga sidor som 40 px avatar i headern, sidebaren och railen. `src/lib/streak.ts` äger regeln, och är det enda stället: ett glapp på över **tre dagar** bryter kedjan och sätter nivå 1, annars stegas nivån upp med kedjans längd (1-3 pass ger 2, 4-9 ger 3, 10-19 ger 4, 20-39 ger 5, 40-79 ger 6, 80 eller fler ger 7; nivå 5 till 7 sedan 2026-10-06: skolbussen, jordgloben, den breda med två jordglober). Takten motsvarar "varannan dag", ungefär fyra pass i veckan. Streak-kortet i Statistik och alla andra läsningar går genom samma funktion. Hel kedja ger en tredje rad (sedan 2026-09-15): dagar från kedjans första pass till och med i dag, och sista dag att träna (senaste passet plus tre dagar, "i dag" eller "i morgon" när den är nära). Märket (avatar plus ordet) länkar till Hem i header, sidebar och rail.
+Cartman speglar träningskedjan. I full storlek med statustexten bara på Hem (sedan 2026-09-01), på övriga sidor som 40 px avatar i headern, sidebaren och railen. `src/lib/streak.ts` äger regeln, och är det enda stället: ett glapp på över **tre dagar** bryter kedjan och sätter nivå 1, annars stegas nivån upp med kedjans längd (1-3 pass ger 2, 4-9 ger 3, 10-19 ger 4, 20-39 ger 5, 40-79 ger 6, 80 eller fler ger 7; nivå 5 till 7 sedan 2026-10-06: skolbussen, jordgloben, den breda med två jordglober). Takten motsvarar "varannan dag", ungefär fyra pass i veckan. **Cardio håller kedjan vid liv men höjer inte nivån** (Patriks val 2026-10-22): glappet räknas mellan alla träningsdagar, kedjans längd och nivån bara på styrkedagarna; en dag med både styrka och cardio är en styrkedag. Hem och headern delar upp passen genom `streakFromSessions`. Latmask-mejlet räknar alla pass, alltså stoppar en löprunda också brevet. Streak-kortet i Statistik och alla andra läsningar går genom samma funktion. Hel kedja ger en tredje rad (sedan 2026-09-15): dagar från kedjans första pass till och med i dag, och sista dag att träna (senaste passet plus tre dagar, "i dag" eller "i morgon" när den är nära). Märket (avatar plus ordet) länkar till Hem i header, sidebar och rail.
 
 `beefcakeStatusText()` returnerar två rader: nivåns namn och förklaringen. Radbrytningen är en del av formatet, texten renderas med `white-space: pre-line`. Påminnelsen om latmasken efter mer än tre dagar bor i nivå 1-textens andra rad; det finns ingen separat banner.
 
@@ -125,7 +131,9 @@ src/lib/date.ts           all datumhantering, tidszonssäker (även mondayISO, i
 src/lib/format.ts         vikt och set som text, svensk notation
 src/lib/volume.ts         volymformeln, enda stället
 src/lib/hypertrophy.ts    set per vecka mot bandet 10-20
-src/lib/streak.ts         beefcake-nivån ur passdatumen
+src/lib/streak.ts         beefcake-nivån ur passdatumen, cardio separat
+src/lib/cardio.ts         aktivitetsförslag och raden "45 min · 3,2 km"
+src/lib/superset.ts       supersetgrupper och avbockning över gruppen
 src/lib/nextPrograms.ts   nästa pass i rotationen ur historiken för Hem
 src/lib/plates.ts         skivor per sida och stångvikt per utrustning
 src/lib/exerciseMetrics.ts Epley-1RM, grafens mått per genomförande, rekord per repsantal
@@ -142,10 +150,10 @@ server/src/index.ts         snapshot-API med revisionslås, /api/reminders och c
 server/src/email.ts         latmask-brevet via Resend
 server/src/reminders.ts     lazyDays (regeln) och stockholmToday
 server/migrations/          D1-schema för versionsnumrerade snapshots och reminders
-src/pages/                Home, LogSession, Templates, History, SessionDetail, ExerciseDetail, ExerciseDatabase (/ovningar), Stats, Settings (export, import, kroppsvikt)
+src/pages/                Home, LogSession, LogCardio (/cardio), Templates, History, SessionDetail, ExerciseDetail, ExerciseDatabase (/ovningar), Stats, Settings (export, import, kroppsvikt)
 ```
 
-Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?date=<YYYY-MM-DD>`) · `/templates` · `/history` · `/history/:id` · `/exercises/:id` (egen övning, statistik) · `/ovningar` (databasen, stödjer `?q=`) · `/ovningar/:id` · `/stats` · `/settings`. GitHub Pages saknar SPA-fallback, så `scripts/spa-routes.mjs` (sist i `npm run build`) kopierar `index.html` till en `.html` per fast rutt: en ny fast rutt ska in i listan där.
+Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?date=<YYYY-MM-DD>`) · `/cardio` (`?date=`, `?id=`) · `/templates` · `/history` · `/history/:id` · `/exercises/:id` (egen övning, statistik) · `/ovningar` (databasen, stödjer `?q=`) · `/ovningar/:id` · `/stats` · `/settings`. GitHub Pages saknar SPA-fallback, så `scripts/spa-routes.mjs` (sist i `npm run build`) kopierar `index.html` till en `.html` per fast rutt: en ny fast rutt ska in i listan där.
 
 Loggvyn startar timern genom att skicka `beefcake-start-timer` på `window`; `RestTimer` lyssnar. Det håller avbockning och timer i olika komponenter utan delad state. Alarmtiden lagras lokalt per enhet i IndexedDB-inställningarna: standard är 19 sekunder, användaren kan välja 1 till 3 600 sekunder eller låta ljudet fortsätta tills det tystas manuellt.
 
