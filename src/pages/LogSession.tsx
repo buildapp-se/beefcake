@@ -944,7 +944,7 @@ export function LogSession() {
                 return (
                   <Fragment key={exIdx}>
                   <Card
-                    class={`exercise-live-card ${ex.supersetWithNext ? 'superset-top' : 'mb'} ${exIdx > 0 && exercises[exIdx - 1].supersetWithNext ? 'superset-bottom' : ''} ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
+                    class={`exercise-live-card ${ex.supersetWithNext ? 'superset-top' : exIdx === exercises.length - 1 ? 'mb' : ''}${exIdx > 0 && exercises[exIdx - 1].supersetWithNext ? 'superset-bottom' : ''} ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
                     data-exercise-index={exIdx}
                   >
                     <button type="button" class={`exercise-collapse-toggle ${allDone ? 'exercise-collapse-done' : ''}`} aria-expanded={expanded} onClick={toggleOpen}>
@@ -979,11 +979,7 @@ export function LogSession() {
                       <button type="button" class="exercise-fold-button" aria-label={`Fäll ihop ${ex.exerciseName || 'övningen'}`} onClick={toggleOpen}></button>
                     </div>
                     {exerciseMenuOpen === exIdx && <div class="exercise-options">
-                      <button type="button" onClick={() => { setNotesOpen(exIdx); setExerciseMenuOpen(null) }}>Anteckning</button>
-                      {exIdx < exercises.length - 1 && <button type="button" onClick={() => { toggleSuperset(exIdx); setExerciseMenuOpen(null) }}>
-                        {ex.supersetWithNext ? 'Ta bort superset' : `Superset med ${exercises[exIdx + 1].exerciseName || 'nästa'}`}
-                      </button>}
-                      <button type="button" class="text-danger" onClick={() => { removeExercise(exIdx); setExerciseMenuOpen(null) }}>Ta bort övning</button>
+                      <button type="button" onClick={() => { setNotesOpen(exIdx); setExerciseMenuOpen(null) }}>Anteckning</button>                      <button type="button" class="text-danger" onClick={() => { removeExercise(exIdx); setExerciseMenuOpen(null) }}>Ta bort övning</button>
                     </div>}
 
                     {prev && (prevSets.length > 0 || prev.notes) && (
@@ -1272,9 +1268,15 @@ export function LogSession() {
                     </div>
                     </div>
                   </Card>
-                  {ex.supersetWithNext && exIdx < exercises.length - 1 && (
-                    <div class="superset-link" aria-label={`${ex.exerciseName} i superset med ${exercises[exIdx + 1].exerciseName}`}>Superset: ett bockat set bockar båda</div>
-                  )}
+                  {/* Mellan två kort: plus kopplar ihop dem mitt i passet, remsan kopplar loss */}
+                  {exIdx < exercises.length - 1 && (ex.supersetWithNext
+                    ? <div class="superset-link">
+                        <span>Superset</span>
+                        <button type="button" onClick={() => toggleSuperset(exIdx)} aria-label={`Koppla loss ${ex.exerciseName} och ${exercises[exIdx + 1].exerciseName}`}>Koppla loss</button>
+                      </div>
+                    : <div class="superset-add">
+                        <button type="button" onClick={() => toggleSuperset(exIdx)} aria-label={`Superset: koppla ihop ${ex.exerciseName || 'övningen'} och ${exercises[exIdx + 1].exerciseName || 'nästa'}`}>+ Superset</button>
+                      </div>)}
                   </Fragment>
                 )
               })}
