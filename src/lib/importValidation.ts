@@ -83,6 +83,7 @@ function validateSession(s: Record<string, unknown>): s is Record<string, unknow
     && typeof s.createdAt === 'string'
     && Array.isArray(s.exercises)
     && s.exercises.every(e => isRecord(e) && isText(e.exerciseId) && typeof e.exerciseName === 'string' && isSetEntries(e.setEntries) && isNumber(e.order) && (e.notes === undefined || typeof e.notes === 'string'))
+    && (s.cardio === undefined || (isRecord(s.cardio) && isNumber(s.cardio.minutes) && (s.cardio.km === undefined || isNumber(s.cardio.km)) && (s.cardio.notes === undefined || typeof s.cardio.notes === 'string')))
 }
 
 function validateHistory(h: Record<string, unknown>): h is Record<string, unknown> & ExerciseHistory {

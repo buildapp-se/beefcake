@@ -6,6 +6,7 @@ import type {
   ExerciseKind,
   ExerciseProgression,
   Session,
+  CardioEntry,
   SessionExercise,
   ExerciseHistory,
   SetEntry,
@@ -263,6 +264,15 @@ export async function createSession(
   await clearActiveWorkout()
   await syncCloudData()
 
+  return session
+}
+
+/** Cardiopass: ett vanligt pass utan övningar, så historik, kalender och synk tar det som det är. Redigering går via updateSession. */
+export async function createCardioSession(date: string, activity: string, cardio: CardioEntry): Promise<Session> {
+  const db = await getDB()
+  const session: Session = { id: generateId(), date, templateId: 'cardio', templateName: activity, exercises: [], createdAt: nowISO(), cardio }
+  await db.put('sessions', session)
+  await syncCloudData()
   return session
 }
 

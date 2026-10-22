@@ -12,6 +12,7 @@ import { isCloudSyncConfigured } from './services/cloudSyncService'
 import { Card } from './components/Card'
 import { Home } from './pages/Home'
 import { LogSession } from './pages/LogSession'
+import { LogCardio } from './pages/LogCardio'
 import { Templates } from './pages/Templates'
 import { Settings } from './pages/Settings'
 import { History } from './pages/History'
@@ -170,6 +171,7 @@ function Shell() {
         <Switch>
             <Route path="/" component={Home} />
             <Route path="/log" component={LogSession} />
+            <Route path="/cardio" component={LogCardio} />
             <Route path="/templates" component={Templates} />
             <Route path="/history" component={History} />
             <Route path="/history/:id" component={SessionDetail} />

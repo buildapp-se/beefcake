@@ -14,6 +14,7 @@ import { icon } from '../icons'
 import { formatDateCompact, formatDateShort } from '../lib/date'
 import { formatSets, restoreIfEmpty } from '../lib/format'
 import { setsVolume, exercisesVolume } from '../lib/volume'
+import { cardioSummary } from '../lib/cardio'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -440,6 +441,38 @@ export function SessionDetail() {
           title="Passet hittades inte"
           action={<Button href="/history">Tillbaka till historik</Button>}
         />
+      </div>
+    )
+  }
+
+  // Cardiopass: inga övningar att visa, redigering sker i cardioformuläret
+  if (session.cardio) {
+    return (
+      <div>
+        <Button href="/history" variant="secondary" size="sm">‹ Historik</Button>
+        <h1 class="page-title">Passdetaljer</h1>
+        <Card>
+          <div class="flex justify-between items-center mb session-detail-head">
+            <div>
+              <h2 class="mb-1">{session.templateName}</h2>
+              <p class="m-0 text-muted">{formatDateCompact(session.date)} · Cardio</p>
+            </div>
+            <div class="flex gap-sm flex-wrap session-detail-actions">
+              <Button variant="secondary" size="sm" href={`/cardio?id=${session.id}`}>Redigera</Button>
+            </div>
+          </div>
+          <p class="volume-hero m-0">{cardioSummary(session.cardio)}</p>
+          {session.cardio.notes && <p class="text-muted mt-1 m-0">{session.cardio.notes}</p>}
+        </Card>
+        <button type="button" class="template-delete-link" onClick={() => setDeleteDialogOpen(true)}>Radera pass</button>
+        <DeleteDialog
+          isOpen={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={handleDelete}
+          sessionName={session.templateName}
+          sessionDate={formatDateShort(session.date)}
+        />
+        {toastMessage && <Toast message={toastMessage} onDismiss={dismissToast} />}
       </div>
     )
   }

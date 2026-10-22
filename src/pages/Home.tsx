@@ -5,6 +5,7 @@ import { formatDateWithWeekday, formatDateCompact, daysBetween, daysAgoText, tod
 import { classifyWeeklySets, SET_LOAD_LABELS } from '../lib/hypertrophy'
 import { exercisesVolume } from '../lib/volume'
 import { nextPrograms, type NextProgram } from '../lib/nextPrograms'
+import { cardioSummary } from '../lib/cardio'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -60,7 +61,7 @@ export function Home() {
         setActiveWorkout(null)
       }
       if (sessions.length > 0) {
-        setNextPrograms(nextPrograms(sessions))
+        setNextPrograms(nextPrograms(sessions.filter(s => !s.cardio)))
       }
     } catch (err) {
       setError('Kunde inte ladda data. Försök igen.')
@@ -159,7 +160,10 @@ export function Home() {
       <Card padding="none">
         <div class="flex justify-between items-center mb-sm" style="padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6)">
           <h2 class="m-0">Senaste pass</h2>
-          <Button href="/log" variant="secondary" size="sm">Logga nytt</Button>
+          <div class="flex gap-sm">
+            <Button href="/cardio" variant="secondary" size="sm">Cardio</Button>
+            <Button href="/log" variant="secondary" size="sm">Logga nytt</Button>
+          </div>
         </div>
 
         {recentSessions.length === 0 ? (
@@ -173,8 +177,8 @@ export function Home() {
           <div class="home-session-list">
             {recentSessions.map(session => (
               <button type="button" class="session-summary-row" key={session.id} onClick={() => navigate(`/history/${session.id}`)}>
-                <span><strong>{session.templateName}</strong><small>{formatDateCompact(session.date)} · {session.exercises.length} övningar</small></span>
-                <strong>{exercisesVolume(session.exercises).toLocaleString('sv-SE')} kg</strong>
+                <span><strong>{session.templateName}</strong><small>{formatDateCompact(session.date)} · {session.cardio ? 'Cardio' : `${session.exercises.length} övningar`}</small></span>
+                <strong>{session.cardio ? cardioSummary(session.cardio) : `${exercisesVolume(session.exercises).toLocaleString('sv-SE')} kg`}</strong>
               </button>
             ))}
           </div>
@@ -197,9 +201,9 @@ export function Home() {
                       onClick={() => navigate(`/history/${session.id}`)}
                     >
                       <td>{formatDateWithWeekday(session.date)}</td>
-                      <td><span class="badge badge-primary">{session.templateName}</span></td>
-                      <td>{session.exercises.length}</td>
-                      <td class="volume-hero">{sessionVolume.toLocaleString('sv-SE')} kg</td>
+                      <td><span class={`badge ${session.cardio ? 'badge-cardio' : 'badge-primary'}`}>{session.templateName}</span></td>
+                      <td>{session.cardio ? 'Cardio' : session.exercises.length}</td>
+                      <td class="volume-hero">{session.cardio ? cardioSummary(session.cardio) : `${sessionVolume.toLocaleString('sv-SE')} kg`}</td>
                     </tr>
                   )
                 })}

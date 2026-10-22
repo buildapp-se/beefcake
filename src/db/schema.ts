@@ -61,6 +61,14 @@ export interface Session {
   templateName: string
   exercises: SessionExercise[]
   createdAt: string
+  /** Cardiopass (promenad, löpning, annat): templateName är aktiviteten, exercises är tom. Sedan 2026-10-22. */
+  cardio?: CardioEntry
+}
+
+export interface CardioEntry {
+  minutes: number
+  km?: number
+  notes?: string
 }
 
 export interface ExerciseHistory {

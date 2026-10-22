@@ -8,6 +8,7 @@ import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field } from '../components/Field'
 import { exercisesVolume } from '../lib/volume'
+import { cardioSummary } from '../lib/cardio'
 import type { Session, Template } from '../models'
 
 interface FilterState {
@@ -434,7 +435,7 @@ export function History() {
               const daySessions = sessionsByDate.get(date) || []
               return (
                 <div
-                  class={`history-week-day${daySessions.length ? ' trained' : ''}${date === today ? ' today' : ''}`}
+                  class={`history-week-day${daySessions.length ? ' trained' : ''}${daySessions.length && daySessions.every(s => s.cardio) ? ' cardio-only' : ''}${date === today ? ' today' : ''}`}
                   key={date}
                   role="button"
                   tabIndex={0}
@@ -448,7 +449,7 @@ export function History() {
                     {daySessions.map(session => (
                       <button
                         type="button"
-                        class="history-week-session"
+                        class={`history-week-session${session.cardio ? ' cardio' : ''}`}
                         key={session.id}
                         onClick={event => {
                           event.stopPropagation()
@@ -456,7 +457,7 @@ export function History() {
                         }}
                       >
                         <span>{session.templateName}</span>
-                        <small>{session.exercises.length} {session.exercises.length === 1 ? 'övning' : 'övningar'} · {calculateTotalVolume(session).toLocaleString('sv-SE')} kg</small>
+                        <small>{session.cardio ? cardioSummary(session.cardio) : `${session.exercises.length} ${session.exercises.length === 1 ? 'övning' : 'övningar'} · ${calculateTotalVolume(session).toLocaleString('sv-SE')} kg`}</small>
                       </button>
                     ))}
                   </div>
@@ -485,7 +486,7 @@ export function History() {
             }
             cells.push(
               <div
-                class={`history-calendar-day${isCurrentMonth ? '' : ' outside'}${daySessions.length ? ' trained' : ''}${date === today ? ' today' : ''}`}
+                class={`history-calendar-day${isCurrentMonth ? '' : ' outside'}${daySessions.length ? ' trained' : ''}${daySessions.length && daySessions.every(s => s.cardio) ? ' cardio-only' : ''}${date === today ? ' today' : ''}`}
                 key={date}
                 role="button"
                 tabIndex={0}
@@ -497,7 +498,7 @@ export function History() {
                 {daySessions.map(session => (
                   <button
                     type="button"
-                    class="history-calendar-session"
+                    class={`history-calendar-session${session.cardio ? ' cardio' : ''}`}
                     key={session.id}
                     onClick={event => {
                       event.stopPropagation()
@@ -553,9 +554,9 @@ export function History() {
                     {monthSessions.map(session => (
                       <tr key={session.id} onClick={() => goToDetail(session.id)}>
                         <td class="nowrap">{formatDateCompact(session.date)}</td>
-                        <td><span class="badge badge-primary">{session.templateName}</span></td>
-                        <td>{session.exercises.length}</td>
-                        <td class="volume-hero">{calculateTotalVolume(session).toLocaleString('sv-SE')} kg</td>
+                        <td><span class={`badge ${session.cardio ? 'badge-cardio' : 'badge-primary'}`}>{session.templateName}</span></td>
+                        <td>{session.cardio ? 'Cardio' : session.exercises.length}</td>
+                        <td class="volume-hero">{session.cardio ? cardioSummary(session.cardio) : `${calculateTotalVolume(session).toLocaleString('sv-SE')} kg`}</td>
                         <td class="history-actions">
                           <button 
                             class="btn-remove" 
@@ -602,11 +603,11 @@ export function History() {
                   >
                     <div class="history-card-header">
                       <span class="history-card-date">{formatDateCompact(session.date)}</span>
-                      <span class="badge badge-primary">{session.templateName}</span>
+                      <span class={`badge ${session.cardio ? 'badge-cardio' : 'badge-primary'}`}>{session.templateName}</span>
                     </div>
                     <div class="history-card-body">
-                      <span>{session.exercises.length} övningar</span>
-                      <span class="history-card-volume tabular-nums">{calculateTotalVolume(session).toLocaleString('sv-SE')} kg</span>
+                      <span>{session.cardio ? 'Cardio' : `${session.exercises.length} övningar`}</span>
+                      <span class="history-card-volume tabular-nums">{session.cardio ? cardioSummary(session.cardio) : `${calculateTotalVolume(session).toLocaleString('sv-SE')} kg`}</span>
                     </div>
                   </div>
                 ))}

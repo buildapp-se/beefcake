@@ -172,4 +172,15 @@ describe('parseImportData', () => {
     d7.sessions[0].exercises[0].order = '0' as any;
     expect(() => parseImportData(JSON.stringify(d7))).toThrow('sessions');
   })
+
+  it('accepterar ett cardiopass och avvisar ett med trasiga minuter eller km', () => {
+    const ok = valid(); (ok.sessions[0] as any).cardio = { minutes: 45, km: 3.2, notes: 'Runt sjön' };
+    expect(() => parseImportData(JSON.stringify(ok))).not.toThrow();
+
+    const d1 = valid(); (d1.sessions[0] as any).cardio = { minutes: '45' };
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow('sessions');
+
+    const d2 = valid(); (d2.sessions[0] as any).cardio = { minutes: 45, km: -1 };
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow('sessions');
+  })
 })

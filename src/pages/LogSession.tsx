@@ -884,7 +884,11 @@ export function LogSession() {
               <EmptyState
                 title="Inga övningar tillagda"
                 message="Välj ett program ovan eller lägg till din första övning."
-                action={<Button onClick={addExercise}>+ Lägg till övning</Button>}
+                action={<div class="flex gap-sm justify-center flex-wrap">
+                  <Button onClick={addExercise}>+ Lägg till övning</Button>
+                  {/* Kalendern skickar hit med ?date=, så cardio får samma datum */}
+                  <Button variant="secondary" href={`/cardio?date=${date}`}>Logga cardio i stället</Button>
+                </div>}
               />
             </Card>
           ) : (
