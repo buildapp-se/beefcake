@@ -944,7 +944,7 @@ export function LogSession() {
                 return (
                   <Fragment key={exIdx}>
                   <Card
-                    class={`exercise-live-card ${ex.supersetWithNext ? 'superset-top' : exIdx === exercises.length - 1 ? 'mb' : ''}${exIdx > 0 && exercises[exIdx - 1].supersetWithNext ? 'superset-bottom' : ''} ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
+                    class={`exercise-live-card ${ex.supersetWithNext ? 'superset-top' : exIdx === exercises.length - 1 ? 'mb' : ''}${exIdx > 0 && exercises[exIdx - 1].supersetWithNext ? ' superset-bottom' : ''} ${draggedExerciseIndex === exIdx ? 'exercise-row-dragging' : ''}`}
                     data-exercise-index={exIdx}
                   >
                     <button type="button" class={`exercise-collapse-toggle ${allDone ? 'exercise-collapse-done' : ''}`} aria-expanded={expanded} onClick={toggleOpen}>
