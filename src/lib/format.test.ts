@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatWeight, parseDecimal, formatSet, formatSets, formatSetCompact } from './format'
+import { formatWeight, parseDecimal, restoreIfEmpty, formatSet, formatSets, formatSetCompact } from './format'
 
 // Non-breaking space: svensk tusentalsavgränsare i Intl är U+00A0, inte mellanslag.
 const NBSP = ' '
@@ -43,6 +43,20 @@ describe('parseDecimal', () => {
   it('returnerar null för ogiltig text', () => {
     expect(parseDecimal('abc')).toBeNull()
     expect(parseDecimal('')).toBeNull()
+  })
+})
+
+describe('restoreIfEmpty', () => {
+  it('återställer det sparade värdet när fältet lämnas tomt', () => {
+    const input = { value: '' }
+    restoreIfEmpty(82.5)({ currentTarget: input } as unknown as Event)
+    expect(input.value).toBe('82.5')
+  })
+
+  it('lämnar ett ifyllt fält orört', () => {
+    const input = { value: '90' }
+    restoreIfEmpty(82.5)({ currentTarget: input } as unknown as Event)
+    expect(input.value).toBe('90')
   })
 })
 

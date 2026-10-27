@@ -10,7 +10,7 @@ reviewedAt: 2026-10-27
 
 ## 2026-10-27: mutation-tester
 
-Nattens mutation-lanes (Gemini 3.8 Flash skrev tester, Stryker 10 mätte, Claude granskade): bara testfiler ändrade, inga tester borttagna, repots kontrollkedja grön. Poängen per fil står på Mutation-raden i CONTEXT.
+Mutation-lanes under dygnet (Gemini 3.8 Flash och Gemini 4 Argon skrev tester, Stryker 10 mätte, Claude granskade): bara testfiler ändrade om inget annat sägs, inga tester borttagna, repots kontrollkedja grön. Poängen per fil står på Mutation-raden i CONTEXT.
 
 ## Recent work
 

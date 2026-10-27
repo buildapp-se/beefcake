@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { beefcakeStatusText, beefcakeStreak } from './streak'
+import { beefcakeStatusText, beefcakeStreak, streakFromSessions } from './streak'
 
 describe('beefcakeStatusText', () => {
   it('sätter nivåns namn på egen rad före förklaringen och streaken', () => {
@@ -51,6 +51,17 @@ describe('beefcakeStatusText', () => {
 
     const text4 = beefcakeStatusText({ level: 4, streak: 10, daysSinceLast: 0, startDate: '2026-08-03', deadline: '2026-08-24' }, '2026-08-21')
     expect(text4.split('\n')[0]).toBe('BEEFCAAAAKE!')
+  })
+
+  it('skriver ut rätt namn för nivå 5, 6 och 7', () => {
+    const text5 = beefcakeStatusText({ level: 5, streak: 20, daysSinceLast: 0, startDate: '2026-07-14', deadline: '2026-08-24' }, '2026-08-21')
+    expect(text5.split('\n')[0]).toBe('Bänkar skolbussen')
+
+    const text6 = beefcakeStatusText({ level: 6, streak: 40, daysSinceLast: 0, startDate: '2026-06-04', deadline: '2026-08-24' }, '2026-08-21')
+    expect(text6.split('\n')[0]).toBe('Lyfter världen')
+
+    const text7 = beefcakeStatusText({ level: 7, streak: 80, daysSinceLast: 0, startDate: '2026-03-16', deadline: '2026-08-24' }, '2026-08-21')
+    expect(text7.split('\n')[0]).toBe('Två jordklot räcker knappt')
   })
 
   it('faller tillbaka till att bara visa kedjan om startdatum eller deadline saknas', () => {
@@ -153,5 +164,22 @@ describe('beefcakeStreak med cardio', () => {
   it('fyra styrkepass med cardio emellan ger nivå 3', () => {
     const result = beefcakeStreak(['2026-08-12', '2026-08-15', '2026-08-18', '2026-08-21'], '2026-08-21', ['2026-08-13', '2026-08-16', '2026-08-19'])
     expect(result).toMatchObject({ level: 3, streak: 4, startDate: '2026-08-12' })
+  })
+})
+
+describe('streakFromSessions', () => {
+  it('delar upp pass i styrka och cardio så att cardio överbryggar glapp utan att räknas som styrkepass', () => {
+    const sessions = [
+      { date: '2026-08-15' },
+      { date: '2026-08-18', cardio: { type: 'running', durationMinutes: 30 } },
+      { date: '2026-08-21' }
+    ]
+    expect(streakFromSessions(sessions, '2026-08-21')).toEqual({
+      level: 2,
+      streak: 2,
+      daysSinceLast: 0,
+      startDate: '2026-08-15',
+      deadline: '2026-08-24'
+    })
   })
 })

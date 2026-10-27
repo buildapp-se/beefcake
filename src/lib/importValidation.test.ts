@@ -177,10 +177,53 @@ describe('parseImportData', () => {
     const ok = valid(); (ok.sessions[0] as any).cardio = { minutes: 45, km: 3.2, notes: 'Runt sjön' };
     expect(() => parseImportData(JSON.stringify(ok))).not.toThrow();
 
+    const minimal = valid(); (minimal.sessions[0] as any).cardio = { minutes: 45 };
+    expect(() => parseImportData(JSON.stringify(minimal))).not.toThrow();
+
     const d1 = valid(); (d1.sessions[0] as any).cardio = { minutes: '45' };
     expect(() => parseImportData(JSON.stringify(d1))).toThrow('sessions');
 
     const d2 = valid(); (d2.sessions[0] as any).cardio = { minutes: 45, km: -1 };
     expect(() => parseImportData(JSON.stringify(d2))).toThrow('sessions');
+
+    const d3 = valid(); (d3.sessions[0] as any).cardio = { minutes: 45, notes: 123 };
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow('sessions');
+  })
+
+  it('avvisar pass med ogiltiga metadatafält eller övningslista', () => {
+    const d1 = valid(); d1.sessions[0].date = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow('sessions');
+
+    const d2 = valid(); d2.sessions[0].templateId = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow('sessions');
+
+    const d3 = valid(); d3.sessions[0].templateName = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow('sessions');
+
+    const d4 = valid(); d4.sessions[0].createdAt = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d4))).toThrow('sessions');
+
+    const d5 = valid(); d5.sessions[0].exercises = {} as any;
+    expect(() => parseImportData(JSON.stringify(d5))).toThrow('sessions');
+  })
+
+  it('avvisar historikrader med ogiltiga fält', () => {
+    const d1 = valid(); d1.exerciseHistory[0].date = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d1))).toThrow(/^Importen har fel format: exerciseHistory$/);
+
+    const d2 = valid(); d2.exerciseHistory[0].exerciseId = '';
+    expect(() => parseImportData(JSON.stringify(d2))).toThrow(/^Importen har fel format: exerciseHistory$/);
+
+    const d3 = valid(); d3.exerciseHistory[0].exerciseName = 123 as any;
+    expect(() => parseImportData(JSON.stringify(d3))).toThrow(/^Importen har fel format: exerciseHistory$/);
+
+    const d4 = valid(); d4.exerciseHistory[0].setEntries = {} as any;
+    expect(() => parseImportData(JSON.stringify(d4))).toThrow(/^Importen har fel format: exerciseHistory$/);
+
+    const d5 = valid(); d5.exerciseHistory[0].volume = -1;
+    expect(() => parseImportData(JSON.stringify(d5))).toThrow(/^Importen har fel format: exerciseHistory$/);
+
+    const d6 = valid(); d6.exerciseHistory[0].sessionId = '';
+    expect(() => parseImportData(JSON.stringify(d6))).toThrow(/^Importen har fel format: exerciseHistory$/);
   })
 })

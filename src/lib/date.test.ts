@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   daysBetween, daysAgoText, formatDateTime, mondayISO, isoWeek,
-  formatDateShort, formatDateWithWeekday, formatDateFull, getMonthKey, todayISO
+  formatDateShort, formatDateWithWeekday, formatDateCompact, formatDateFull, getMonthKey, todayISO
 } from './date'
 
 // Fasta datum överallt: 2026-09-01 är en tisdag.
@@ -129,5 +129,25 @@ describe('todayISO', () => {
   it('returnerar dagens datum', () => {
     vi.setSystemTime(new Date('2026-09-01T12:00:00.000+02:00'))
     expect(todayISO()).toBe('2026-09-01')
+  })
+})
+
+describe('formatDateCompact', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T12:00:00.000+02:00'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('visar gemen veckodag utan år för innevarande år', () => {
+    expect(formatDateCompact('2026-07-28')).toBe('tis 28 jul')
+    expect(formatDateCompact('2026-08-30')).toBe('sön 30 aug')
+  })
+
+  it('visar år utan veckodag för andra år', () => {
+    expect(formatDateCompact('2025-07-28')).toBe('28 jul 2025')
   })
 })

@@ -17,6 +17,7 @@ vi.mock('../models', () => ({
 
 import {
   DEFAULT_REST_TIMER_ALARM_DURATION,
+  REST_TIMER_ALARM_DURATION_CHANGED_EVENT,
   loadRestTimerAlarmDuration,
   saveRestTimerAlarmDuration,
   loadRestTimerPresets,
@@ -36,6 +37,8 @@ describe('vilotimerns alarmtid', () => {
 
   it('sparar en vald tid i sekunder', async () => {
     await saveRestTimerAlarmDuration(30)
+    expect(settings.get('rest-timer-alarm-duration')).toBe(30)
+    expect(REST_TIMER_ALARM_DURATION_CHANGED_EVENT).toBe('beefcake-alarm-duration-changed')
     await expect(loadRestTimerAlarmDuration()).resolves.toBe(30)
   })
 
@@ -71,6 +74,7 @@ describe('vilotimerns snabbval (presets)', () => {
 
   it('sparar och laddar giltiga snabbval', async () => {
     await saveRestTimerPresets([1, 2, 60])
+    expect(settings.get('rest-timer-presets')).toEqual([1, 2, 60])
     await expect(loadRestTimerPresets()).resolves.toEqual([1, 2, 60])
   })
 
@@ -279,6 +283,10 @@ describe('triggerHaptic', () => {
 
     try {
       expect(() => triggerHaptic()).not.toThrow()
+      const vibrate = vi.fn()
+      globalThis.navigator = { vibrate } as unknown as Navigator
+      triggerHaptic()
+      expect(vibrate).not.toHaveBeenCalled()
     } finally {
       globalThis.window = originalWindow
       globalThis.navigator = originalNavigator
@@ -318,6 +326,7 @@ describe('vilans sluttid över en omstart', () => {
     const { loadRestDeadline, saveRestDeadline } = await import('./timerService')
     const deadline = Date.now() + 60_000
     saveRestDeadline(deadline)
+    expect(localStorage.getItem('beefcake-rest-deadline')).toBe(String(deadline))
     expect(loadRestDeadline()).toBe(deadline)
   })
 
@@ -325,8 +334,16 @@ describe('vilans sluttid över en omstart', () => {
     const { loadRestDeadline, saveRestDeadline } = await import('./timerService')
     saveRestDeadline(Date.now() - 1000)
     expect(loadRestDeadline()).toBeNull()
+    expect(localStorage.getItem('beefcake-rest-deadline')).toBeNull()
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(50_000)
+    saveRestDeadline(50_000)
+    expect(loadRestDeadline()).toBeNull()
+    expect(localStorage.getItem('beefcake-rest-deadline')).toBeNull()
+    nowSpy.mockRestore()
+    expect(loadRestDeadline()).toBeNull()
     saveRestDeadline(Date.now() + 60_000)
     saveRestDeadline(null)
+    expect(localStorage.getItem('beefcake-rest-deadline')).toBeNull()
     expect(loadRestDeadline()).toBeNull()
   })
 

@@ -66,6 +66,7 @@ describe('exerciseDb', () => {
     const db1 = await loadExerciseDb()
     expect(db1.length).toBeGreaterThan(0)
     expect(db1[0].id).toBeDefined()
+    expect(loadExerciseDb()).toBe(loadExerciseDb())
     const db2 = await loadExerciseDb()
     expect(db2).toBe(db1) // Ska returnera samma cacheade Promise/instans
   })
