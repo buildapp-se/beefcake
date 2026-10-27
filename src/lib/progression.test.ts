@@ -7,6 +7,18 @@ describe('topSet', () => {
   it('tar tyngsta vikten och flest reps på den', () => {
     expect(topSet(pass([40, 8], [60, 8], [60, 9], [50, 12]).setEntries)).toEqual({ weight: 60, reps: 9 })
   })
+  it('väljer setet med flest reps när samma vikt förekommer tidigare med fler reps', () => {
+    expect(topSet(pass([60, 10], [60, 8]).setEntries)).toEqual({ weight: 60, reps: 10 })
+    expect(topSet(pass([60, 10], [40, 8]).setEntries)).toEqual({ weight: 60, reps: 10 })
+  })
+  it('hoppar över ogiltiga set med 0 reps eller negativ vikt', () => {
+    expect(topSet(pass([0, 0]).setEntries, true)).toBeNull()
+    expect(topSet(pass([0, -1]).setEntries, true)).toBeNull()
+    expect(topSet(pass([-5, 10]).setEntries, true)).toBeNull()
+    expect(topSet(pass([-5, 10]).setEntries, false)).toBeNull()
+    expect(topSet(pass([0, 0], [0, 8]).setEntries, true)).toEqual({ weight: 0, reps: 8 })
+    expect(topSet(pass([-5, 10], [0, 8]).setEntries, true)).toEqual({ weight: 0, reps: 8 })
+  })
   it('saknas när allt är kroppsvikt', () => {
     expect(topSet(pass([0, 12]).setEntries)).toBeNull()
   })
@@ -22,6 +34,10 @@ describe('workSets', () => {
     expect(workSets(plain)).toEqual(plain)
     const alone = [{ sets: 1, weight: 70, reps: 13, calibration: true }]
     expect(workSets(alone)).toEqual(alone)
+  })
+  it('standardvärdet för bodyweight är false: set med vikt 0 räknas inte som arbetsset', () => {
+    const withZero = [{ sets: 1, weight: 0, reps: 10 }, { sets: 1, weight: 70, reps: 13, calibration: true }]
+    expect(workSets(withZero)).toEqual(withZero)
   })
   it('bara kroppen: testet på 14 reps blir de vanliga repsen', () => {
     const sets = [{ sets: 1, weight: 0, reps: 14, calibration: true }, { sets: 1, weight: 0, reps: 11 }]
@@ -49,11 +65,25 @@ describe('platå', () => {
   it('uppvärmningsset räknas inte: bara toppsetet jämförs', () => {
     expect(isPlateau([pass([20, 8], [60, 8]), pass([30, 5], [60, 8]), pass([40, 10], [60, 8])])).toBe(true)
   })
+  it('standardvärdet för bodyweight i plateauLength är false: vikt 0 ger 0 i längd', () => {
+    expect(plateauLength([pass([0, 10]), pass([0, 10]), pass([0, 10])])).toBe(0)
+  })
+  it('pass utan toppset bryter platån utan att krascha', () => {
+    expect(plateauLength([pass([0, 10]), pass([60, 8]), pass([60, 8])])).toBe(2)
+    expect(plateauLength([pass(), pass([60, 8]), pass([60, 8])])).toBe(2)
+    expect(isPlateau([pass([0, 10]), pass([60, 8]), pass([60, 8])])).toBe(false)
+  })
+  it('olika vikter bryter platålängden', () => {
+    expect(plateauLength([pass([50, 8]), pass([60, 8]), pass([60, 8])])).toBe(2)
+  })
   it('vikt 0 på en vanlig viktövning, tid och distans undantas', () => {
     const flat = [pass([0, 12]), pass([0, 12]), pass([0, 12])]
     expect(isPlateau(flat)).toBe(false)
     expect(isPlateau(flat, { kind: 'time' })).toBe(false)
     expect(isPlateau([pass([70, 10]), pass([70, 10]), pass([70, 10])], { kind: 'distance' })).toBe(false)
+  })
+  it('tid med vikt undantas också från platå', () => {
+    expect(isPlateau([pass([70, 10]), pass([70, 10]), pass([70, 10])], { kind: 'time' })).toBe(false)
   })
   it('kroppsviktsövning räknas med: bara kroppen tre pass i rad är platå', () => {
     expect(isPlateau([pass([0, 10]), pass([0, 10]), pass([0, 10])], { kind: 'bodyweight' })).toBe(true)
@@ -86,6 +116,9 @@ describe('stepFor', () => {
     expect(stepFor(undefined, 'Bicepscurl hantel')).toBe(1)
     expect(stepFor(undefined, 'Snedbänk hantlar')).toBe(1)
     expect(stepFor(undefined, 'Hantelpress')).toBe(1)
+  })
+  it('stång har företräde framför övningsnamn som innehåller hantel', () => {
+    expect(stepFor('skivstång', 'Hantelpress skivstång')).toBe(2.5)
   })
   it('allt annat går på 2,5 kg', () => {
     expect(stepFor(undefined, 'Triceps pushdown')).toBe(2.5)
@@ -143,5 +176,12 @@ describe('calibratedWeight', () => {
   it('hantelsteg från en ojämn vikt stannar på samma raster', () => {
     // 18,75 × (1 + 10/30) = 25, 25 / (1 + 8/30) = 19,74, ett helt steg på 1 kg
     expect(calibratedWeight(18.75, 10, 8, 1)).toBe(19.75)
+  })
+  it('returnerar vikten oförändrad när e1RM inte kan beräknas (vikt 0)', () => {
+    expect(calibratedWeight(0, 10, 8, 2.5)).toBe(0)
+  })
+  it('träffar exakta steggränser utan att tappa steg på flyttalsavrundning', () => {
+    // 20 kg × (1 + 10/30) = 26,67 e1RM, tillbaka till 2 reps: 25 kg. Steg från 20 till 25 med 2,5 är exakt 2 steg
+    expect(calibratedWeight(20, 10, 2, 2.5)).toBe(25)
   })
 })
