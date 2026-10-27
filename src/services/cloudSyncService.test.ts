@@ -96,6 +96,56 @@ describe('loadSnapshotFromCloud', () => {
     expect(replace).toHaveBeenCalledWith(snapshot(['A']))
     expect(settings.get('owner-uid')).toBe('u1')
   })
+
+  it('skickar Authorization-header med Bearer-token till servern', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ revision: 1, data: snapshot(['A']) })))
+    vi.stubGlobal('fetch', fetchMock)
+    await loadSnapshotFromCloud(async () => snapshot([]), vi.fn())
+    expect(fetchMock).toHaveBeenCalledWith('https://api.test/api/snapshot', {
+      headers: { Authorization: 'Bearer token' }
+    })
+  })
+
+  it('märker en ny enhet med kontot även när servern är tom på revision 0', async () => {
+    serverAnswers(0, null)
+    const replace = vi.fn()
+    expect(await loadSnapshotFromCloud(async () => snapshot([]), replace)).toBe(true)
+    expect(replace).toHaveBeenCalledWith(snapshot([]))
+    expect(settings.get('owner-uid')).toBe('u1')
+  })
+
+  it('uppdaterar revisionen när servern har ny revision även om datan är identisk', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 7)
+    serverAnswers(8, snapshot(['A']))
+    const replace = vi.fn()
+    expect(await loadSnapshotFromCloud(async () => snapshot(['A']), replace)).toBe(true)
+    expect(replace).toHaveBeenCalledWith(snapshot(['A']))
+    expect(settings.get('server-revision')).toBe(8)
+  })
+
+  it('nollställer befintligt synkfel när serverns snapshot redan matchar det lokala', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('Error', { status: 500 })))
+    await expect(loadSnapshotFromCloud(async () => snapshot([]), vi.fn())).rejects.toThrow()
+    expect(getCloudSyncError()).not.toBeNull()
+
+    settings.set('owner-uid', 'u1').set('server-revision', 7)
+    serverAnswers(7, snapshot(['A']))
+    const replace = vi.fn()
+    expect(await loadSnapshotFromCloud(async () => snapshot(['A']), replace)).toBe(false)
+    expect(getCloudSyncError()).toBeNull()
+  })
+
+  it('nollställer befintligt synkfel när serverns snapshot ersätter det lokala', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('Error', { status: 500 })))
+    await expect(loadSnapshotFromCloud(async () => snapshot([]), vi.fn())).rejects.toThrow()
+    expect(getCloudSyncError()).not.toBeNull()
+
+    settings.set('owner-uid', 'u1').set('server-revision', 7)
+    serverAnswers(8, snapshot(['A', 'B']))
+    const replace = vi.fn()
+    expect(await loadSnapshotFromCloud(async () => snapshot(['A']), replace)).toBe(true)
+    expect(getCloudSyncError()).toBeNull()
+  })
 })
 
 describe('canBrowseAsGuest', () => {
@@ -240,6 +290,104 @@ describe('syncSnapshot fel och statusar', () => {
     expect(settings.get('server-revision')).toBe(2)
     expect(getCloudSyncError()).toBeNull()
   })
+
+  it('tillåter första synk mot tom server (revision 0, data null) även om lokal revision är satt', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 1)
+    let postBody: { expectedRevision: number; data: SnapshotData } | null = null
+    vi.stubGlobal('fetch', vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        postBody = JSON.parse(init.body as string)
+        return new Response(JSON.stringify({ revision: 1 }), { status: 200 })
+      }
+      return new Response(JSON.stringify({ revision: 0, data: null }))
+    }))
+
+    await syncSnapshot(snapshot(['A']))
+    expect(postBody).toEqual({ expectedRevision: 0, data: snapshot(['A']) })
+    expect(settings.get('server-revision')).toBe(1)
+  })
+
+  it('kastar serverkonflikt när serverrevision skiljer sig från lokal revision', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 1)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ revision: 2, data: snapshot(['A']) }))))
+    await expect(syncSnapshot(snapshot(['B'])))
+      .rejects.toThrow('Serverkonflikt: lokal revision 1, serverrevision 2.')
+  })
+
+  it('kastar fel när serverdata finns men lokal revision är 0', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 0)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ revision: 0, data: snapshot(['A']) }))))
+    await expect(syncSnapshot(snapshot(['B'])))
+      .rejects.toThrow('Serverdata finns men den lokala revisionen saknas. Ladda om sidan innan du sparar.')
+  })
+
+  it('kastar serverkonflikt när serverrevision är större än 0 även om serverdata är null', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 0)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ revision: 1, data: null }))))
+    await expect(syncSnapshot(snapshot(['B'])))
+      .rejects.toThrow('Serverkonflikt: lokal revision 0, serverrevision 1.')
+  })
+
+  it('avbryter utan POST och nollställer fel när lokal data redan är identisk med serverdata', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('Error', { status: 500 })))
+    await expect(syncSnapshot(snapshot(['B']))).rejects.toThrow()
+    expect(getCloudSyncError()).not.toBeNull()
+
+    settings.set('owner-uid', 'u1').set('server-revision', 1)
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ revision: 1, data: snapshot(['A']) })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await syncSnapshot(snapshot(['A']))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(getCloudSyncError()).toBeNull()
+  })
+
+  it('skickar Authorization- och Content-Type-headers vid POST samt nollställer synkfel', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('Error', { status: 500 })))
+    await expect(syncSnapshot(snapshot(['B']))).rejects.toThrow()
+    expect(getCloudSyncError()).not.toBeNull()
+
+    settings.set('owner-uid', 'u1').set('server-revision', 1)
+    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      if (method === 'GET') {
+        return new Response(JSON.stringify({ revision: 1, data: snapshot(['A']) }))
+      }
+      if (method === 'POST') {
+        return new Response(JSON.stringify({ revision: 2 }), { status: 200 })
+      }
+      return new Response('Not found', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await syncSnapshot(snapshot(['B']))
+    expect(settings.get('server-revision')).toBe(2)
+    expect(getCloudSyncError()).toBeNull()
+    expect(fetchMock).toHaveBeenCalledWith('https://api.test/api/snapshot', expect.objectContaining({
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer token',
+        'Content-Type': 'application/json'
+      }
+    }))
+  })
+
+  it('använder fallbackmeddelande vid syncSnapshot när det fångade felet saknar feltext', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 1)
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('') }))
+    await expect(syncSnapshot(snapshot(['B'])))
+      .rejects.toThrow('D1 kunde inte spara snapshoten.')
+    expect(getCloudSyncError()).toContain('D1 kunde inte spara snapshoten.')
+  })
+
+  it('bevarar ursprungligt fel som cause vid syncSnapshot', async () => {
+    settings.set('owner-uid', 'u1').set('server-revision', 1)
+    const originalError = new Error('Disk write failure')
+    vi.stubGlobal('fetch', vi.fn(async () => { throw originalError }))
+    const caught = await syncSnapshot(snapshot(['B'])).catch(e => e)
+    expect(caught).toBeInstanceOf(Error)
+    expect(caught.cause).toBe(originalError)
+  })
 })
 
 describe('reminders inställningar', () => {
@@ -274,7 +422,7 @@ describe('reminders inställningar', () => {
   })
 })
 
-describe('isCloudSyncConfigured', () => {
+describe('isCloudSyncConfigured och URL-hantering', () => {
   it('returnerar false och avbryter loadSnapshotFromCloud när molnsynk inte är konfigurerad', async () => {
     expect(isCloudSyncConfigured()).toBe(true)
 
@@ -285,6 +433,34 @@ describe('isCloudSyncConfigured', () => {
     const replace = vi.fn()
     expect(await unconfigured.loadSnapshotFromCloud(async () => snapshot([]), replace)).toBe(false)
     expect(replace).not.toHaveBeenCalled()
+
+    vi.resetModules()
+    vi.stubEnv('VITE_BEEFCAKE_API_URL', 'https://api.test')
+  })
+
+  it('avbryter syncSnapshot utan nätverksanrop när molnsynk inte är konfigurerad', async () => {
+    vi.resetModules()
+    vi.stubEnv('VITE_BEEFCAKE_API_URL', '')
+    const unconfigured = await import('./cloudSyncService')
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await unconfigured.syncSnapshot(snapshot([]))
+    expect(fetchSpy).not.toHaveBeenCalled()
+
+    vi.resetModules()
+    vi.stubEnv('VITE_BEEFCAKE_API_URL', 'https://api.test')
+  })
+
+  it('rensar avslutande snedstreck från API-URL vid anrop', async () => {
+    vi.resetModules()
+    vi.stubEnv('VITE_BEEFCAKE_API_URL', 'https://api.test/')
+    const serviceWithSlash = await import('./cloudSyncService')
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ revision: 1, data: null })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await serviceWithSlash.loadSnapshotFromCloud(async () => snapshot([]), vi.fn())
+    expect(fetchMock).toHaveBeenCalledWith('https://api.test/api/snapshot', expect.any(Object))
 
     vi.resetModules()
     vi.stubEnv('VITE_BEEFCAKE_API_URL', 'https://api.test')
