@@ -977,8 +977,10 @@ export function LogSession() {
                           onPointerMove={continueExerciseDrag}
                           onPointerUp={endExerciseDrag}
                           onPointerCancel={endExerciseDrag}
+                          // iOS startar textmarkering vid långt tryck trots preventDefault på pointerdown; touchstart stoppar den
+                          onTouchStart={e => e.preventDefault()}
                         >
-                          <span aria-hidden="true">⋮⋮</span>
+                          <span aria-hidden="true">↕</span>
                         </button>
                         <input
                           type="text"
@@ -994,7 +996,10 @@ export function LogSession() {
                       <button type="button" class="exercise-fold-button" aria-label={`Fäll ihop ${ex.exerciseName || 'övningen'}`} onClick={toggleOpen}></button>
                     </div>
                     {exerciseMenuOpen === exIdx && <div class="exercise-options">
-                      <button type="button" onClick={() => { setNotesOpen(exIdx); setExerciseMenuOpen(null) }}>Anteckning</button>                      <button type="button" class="text-danger" onClick={() => { removeExercise(exIdx); setExerciseMenuOpen(null) }}>Ta bort övning</button>
+                      <button type="button" onClick={() => { setNotesOpen(exIdx); setExerciseMenuOpen(null) }}>Anteckning</button>
+                      {exIdx > 0 && <button type="button" onClick={() => { moveExercise(exIdx, exIdx - 1); setExerciseMenuOpen(null) }}>Flytta upp</button>}
+                      {exIdx < exercises.length - 1 && <button type="button" onClick={() => { moveExercise(exIdx, exIdx + 1); setExerciseMenuOpen(null) }}>Flytta ned</button>}
+                      <button type="button" class="text-danger" onClick={() => { removeExercise(exIdx); setExerciseMenuOpen(null) }}>Ta bort övning</button>
                     </div>}
 
                     {prev && (prevSets.length > 0 || prev.notes) && (
