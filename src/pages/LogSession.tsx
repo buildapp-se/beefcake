@@ -569,14 +569,23 @@ export function LogSession() {
 
   // "Som förra gången": fyller på med förra passets set från den plats du står på,
   // vikt och reps, obockade. Från noll set blir det hela förra passet på ett tryck.
-  function fillFromLast(exerciseIdx: number) {
-    const ex = exercises[exerciseIdx]
+  function withLastSets(ex: LogFormExercise): LogFormExercise {
     const missing = previousWorkSets(ex.exerciseId).slice(ex.setEntries.length)
-    if (missing.length === 0) return
+    if (missing.length === 0) return ex
     const added: ActiveSetEntry[] = missing.map(s => ({ sets: 1, reps: s.reps, weight: s.weight, completed: false, type: 'normal' }))
+    return { ...ex, setEntries: [...ex.setEntries, ...added] }
+  }
+
+  function fillFromLast(exerciseIdx: number) {
     const newExercises = [...exercises]
-    newExercises[exerciseIdx] = { ...ex, setEntries: [...ex.setEntries, ...added] }
+    newExercises[exerciseIdx] = withLastSets(exercises[exerciseIdx])
     setExercises(newExercises)
+    triggerHaptic(20)
+  }
+
+  // Samma sak för hela passet på ett tryck (Patrik 2026-10-28)
+  function fillAllFromLast() {
+    setExercises(exercises.map(withLastSets))
     triggerHaptic(20)
   }
 
@@ -918,6 +927,12 @@ export function LogSession() {
               />
             </Card>
           ) : (
+            <>
+            {exercises.some(ex => previousWorkSets(ex.exerciseId).length > ex.setEntries.length) && (
+              <Button variant="secondary" size="sm" class="mb-sm" onClick={fillAllFromLast}>
+                Hela passet som förra gången
+              </Button>
+            )}
             <div class="exercise-cards-list">
               {exercises.map((ex, exIdx) => {
                 const prev = previousPerformances[ex.exerciseId]
@@ -1285,6 +1300,7 @@ export function LogSession() {
                 + Lägg till övning
               </Button>
             </div>
+            </>
           )}
         </div>
 
