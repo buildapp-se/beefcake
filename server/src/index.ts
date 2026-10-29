@@ -214,7 +214,12 @@ function corsHeaders(origin: string | null, configured: string): Headers {
     'Access-Control-Allow-Headers': 'content-type, authorization',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
     'Cache-Control': 'no-store',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    // HSTS och nosniff kommer från zonens HSTS-inställning
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
   })
   if (origin && isAllowedOrigin(origin, configured)) headers.set('Access-Control-Allow-Origin', origin)
   return headers
