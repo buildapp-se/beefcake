@@ -199,3 +199,4 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 - WCAG 2.2 AA (automated): 2026-10-27, needs-review, axe 4.14.0 0 violations on buildapp.se/beefcake (mobile, one page); manual keyboard pass not done
 - OG image: 2026-10-25, pass, 1200x630 PNG, https://buildapp.se/beefcake/og-image-1200x630.png
 - Database: 2026-10-25, CF D1, Firebase for login only
+- Dependabot: 2026-10-29, warn, 1 open alert: 0 runtime, 1 low dev (deepmerge)
