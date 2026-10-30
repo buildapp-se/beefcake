@@ -9,6 +9,7 @@ import { UpdateBanner } from './components/UpdateBanner'
 import { BeefcakeBadge, BeefcakeAvatar, useBeefcakeStreak } from './components/BeefcakeBadge'
 import { BrandMark } from './components/BrandMark'
 import { isCloudSyncConfigured } from './services/cloudSyncService'
+import { getResumableWorkout } from './services/dataService'
 import { Card } from './components/Card'
 import { Home } from './pages/Home'
 import { LogSession } from './pages/LogSession'
@@ -144,7 +145,7 @@ function HeaderNav() {
 }
 
 function Shell() {
-  const [location] = useLocation()
+  const [location, navigate] = useLocation()
   const streak = useBeefcakeStreak()
   // Cartman visas bara när inloggning finns och användaren passerat LoginGate.
   const guest = useIsGuest()
@@ -152,6 +153,16 @@ function Shell() {
   // Hem har märket i full storlek, alla andra sidor får 40 px avatar i navigeringen
   const isHome = location === '/'
   const avatar = isHome || !showCartman ? null : streak
+  // Appen startar på Hem (start_url i manifestet). Ligger ett påbörjat pass kvar ska den
+  // öppnas i loggvyn direkt, som när iOS kastat ut appen i bakgrunden och startat om den.
+  useEffect(() => {
+    if (location !== '/') return
+    let cancelled = false
+    getResumableWorkout()
+      .then(active => { if (!cancelled && active) navigate('/log') })
+      .catch(() => undefined)
+    return () => { cancelled = true }
+  }, [])
   return (
     <div class="app">
       <SidebarNav avatar={avatar} />

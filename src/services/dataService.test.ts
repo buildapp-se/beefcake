@@ -7,7 +7,7 @@ vi.mock('./cloudSyncService', async (importOriginal) => ({
   syncSnapshot: async () => {},
 }))
 
-import { createSession, deleteSession, getAllSessions, getExerciseHistory, getSession, restoreSession } from './dataService'
+import { createSession, deleteSession, getAllSessions, getExerciseHistory, getSession, restoreSession, saveActiveWorkout, clearActiveWorkout, getResumableWorkout } from './dataService'
 
 describe('restoreSession', () => {
   it('skriver tillbaka ett raderat pass med samma id, inklusive exerciseHistory', async () => {
@@ -42,5 +42,42 @@ describe('restoreSession', () => {
 
     const restored = await getSession(session.id)
     expect(restored?.cardio).toEqual({ minutes: 30, km: 5 })
+  })
+})
+
+describe('getResumableWorkout', () => {
+  it('returnerar utkastet när minst ett set är loggat', async () => {
+    await saveActiveWorkout({
+      date: '2026-10-10',
+      templateId: 'tpl-ben',
+      templateName: 'Ben',
+      startTime: '2026-10-10T18:00:00.000Z',
+      exercises: [
+        { exerciseId: 'ex-benboj', exerciseName: 'Benböj', order: 0, setEntries: [{ sets: 1, reps: 5, weight: 100, completed: true }] }
+      ]
+    })
+
+    const active = await getResumableWorkout()
+    expect(active?.templateName).toBe('Ben')
+    expect(active?.exercises).toHaveLength(1)
+  })
+
+  it('returnerar undefined för ett utkast där inget set är loggat än', async () => {
+    await saveActiveWorkout({
+      date: '2026-10-10',
+      templateId: 'tpl-ben',
+      templateName: 'Ben',
+      startTime: '2026-10-10T18:00:00.000Z',
+      exercises: [
+        { exerciseId: 'ex-benboj', exerciseName: 'Benböj', order: 0, setEntries: [] }
+      ]
+    })
+
+    expect(await getResumableWorkout()).toBeUndefined()
+  })
+
+  it('returnerar undefined när inget utkast finns', async () => {
+    await clearActiveWorkout()
+    expect(await getResumableWorkout()).toBeUndefined()
   })
 })

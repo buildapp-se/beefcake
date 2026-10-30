@@ -45,6 +45,16 @@ export async function clearActiveWorkout(): Promise<void> {
   await db.delete('activeWorkout', 'current')
 }
 
+/**
+ * Utkastet att återuppta när appen startar: bara ett faktiskt påbörjat pass räknas, med minst
+ * ett set (samma regel som när loggvyn öppnas). Förvalda övningar utan set lämnar inget spår.
+ */
+export async function getResumableWorkout(): Promise<ActiveWorkout | undefined> {
+  const active = await getActiveWorkout()
+  if (!active || !active.exercises.some(e => e.setEntries.length > 0)) return undefined
+  return active
+}
+
 // Exercise name → muscle group mapping for seed data and new exercises
 const MUSCLE_GROUP_MAP: Record<string, string> = {
   'Armhävningar': 'Bröst', 'Axlar baksida rep': 'Axlar', 'Axlar sidolyft': 'Axlar',

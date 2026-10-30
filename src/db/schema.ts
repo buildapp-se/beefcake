@@ -196,7 +196,7 @@ export interface BeefcakeDB extends DBSchema {
 }
 
 const DB_NAME = 'beefcake-db'
-const DB_VERSION = 4
+const DB_VERSION = 5
 
 let dbInstance: IDBPDatabase<BeefcakeDB> | null = null
 
@@ -204,7 +204,7 @@ export async function getDB(): Promise<IDBPDatabase<BeefcakeDB>> {
   if (dbInstance) return dbInstance
 
   dbInstance = await openDB<BeefcakeDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    async upgrade(db, oldVersion, _newVersion, tx) {
       if (!db.objectStoreNames.contains('templates')) {
         const templateStore = db.createObjectStore('templates', { keyPath: 'id' })
         templateStore.createIndex('by-name', 'name')
@@ -234,6 +234,39 @@ export async function getDB(): Promise<IDBPDatabase<BeefcakeDB>> {
       }
       if (!db.objectStoreNames.contains('bodyWeight')) {
         db.createObjectStore('bodyWeight', { keyPath: 'date' })
+      }
+
+      // Datamigrering från formatet före SetEntry (före 2026-08-09). En enhet som
+      // sparade pass då och aldrig fick data från D1 har kvar sets, reps och weight
+      // direkt på övningen, utan setEntries, och kraschar i volymberäkningen i
+      // Historik. Samma värden i nytt format. Poster i nytt format rörs inte.
+      if (oldVersion < 5) {
+        const sessionStore = tx.objectStore('sessions')
+        for (const session of await sessionStore.getAll()) {
+          const exercises: (SessionExercise | LegacySessionExercise)[] = (session as unknown as LegacySession).exercises ?? []
+          if (!exercises.some(isLegacySessionExercise)) continue
+          await sessionStore.put({
+            ...session,
+            exercises: exercises.map(e => isLegacySessionExercise(e) ? migrateSessionExercise(e) : e)
+          })
+        }
+
+        const historyStore = tx.objectStore('exerciseHistory')
+        for (const h of await historyStore.getAll()) {
+          if (!('setEntries' in h)) {
+            await historyStore.put(migrateExerciseHistory(h as unknown as LegacyExerciseHistory))
+          }
+        }
+
+        const templateStore = tx.objectStore('templates')
+        for (const t of await templateStore.getAll()) {
+          const exercises: (TemplateExercise | LegacyTemplateExercise)[] = (t as unknown as { exercises?: (TemplateExercise | LegacyTemplateExercise)[] }).exercises ?? []
+          if (!exercises.some(isLegacyTemplateExercise)) continue
+          await templateStore.put({
+            ...t,
+            exercises: exercises.map(te => isLegacyTemplateExercise(te) ? migrateTemplateExercise(te) : te)
+          })
+        }
       }
     }
   })
@@ -305,4 +338,11 @@ export function migrateExerciseHistory(legacy: LegacyExerciseHistory): ExerciseH
     volume: legacy.volume,
     sessionId: legacy.sessionId
   }
+}
+function isLegacySessionExercise(e: SessionExercise | LegacySessionExercise): e is LegacySessionExercise {
+  return !('setEntries' in e)
+}
+
+function isLegacyTemplateExercise(te: TemplateExercise | LegacyTemplateExercise): te is LegacyTemplateExercise {
+  return !('defaultSetEntry' in te)
 }
