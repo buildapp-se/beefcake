@@ -320,6 +320,27 @@ export async function deleteSession(id: string): Promise<void> {
   await syncCloudData()
 }
 
+/** Återställer ett raderat pass med samma id, inklusive dess exerciseHistory. Används av Ångra i Historik. */
+export async function restoreSession(session: Session): Promise<void> {
+  const db = await getDB()
+  const history: ExerciseHistory[] = session.exercises.map((e, i) => ({
+    id: `${session.id}-${i}`,
+    date: session.date,
+    exerciseId: e.exerciseId,
+    exerciseName: e.exerciseName,
+    setEntries: e.setEntries,
+    volume: setsVolume(e.setEntries),
+    sessionId: session.id
+  }))
+  const tx = db.transaction(['sessions', 'exerciseHistory'], 'readwrite')
+  await tx.objectStore('sessions').put(session)
+  for (const h of history) {
+    await tx.objectStore('exerciseHistory').put(h)
+  }
+  await tx.done
+  await syncCloudData()
+}
+
 // Stats Service
 export async function getExerciseHistory(exerciseId: string): Promise<ExerciseHistory[]> {
   const db = await getDB()

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'preact/hooks'
 import { useLocation } from 'wouter'
-import { getAllSessions, getAllTemplates, deleteSession } from '../services/dataService'
+import { getAllSessions, getAllTemplates, deleteSession, restoreSession } from '../services/dataService'
 import { icon } from '../icons'
 import { formatDateShort, formatDateCompact, formatDateFull, getMonthKey, monthNames, todayISO, parseLocalDate, localDateISO, isoWeek } from '../lib/date'
 import { Card } from '../components/Card'
@@ -278,19 +278,12 @@ export function History() {
   async function handleUndoDelete() {
     if (!deletedSession) return
     try {
-      const { id, date, templateId, templateName, exercises, createdAt } = deletedSession
-      const restoredSession: Session = {
-        id,
-        date,
-        templateId,
-        templateName,
-        exercises: exercises.map(e => ({ ...e })),
-        createdAt
-      }
+      const restoredSession: Session = { ...deletedSession, exercises: deletedSession.exercises.map(e => ({ ...e })) }
+      await restoreSession(restoredSession)
       setAllSessions(prev => [...prev, restoredSession].sort((a, b) => b.date.localeCompare(a.date)))
       setShowUndoToast(false)
       setDeletedSession(null)
-      setToastMessage(`Pass "${templateName}" (${date}) återställt.`)
+      setToastMessage(`Pass "${restoredSession.templateName}" (${restoredSession.date}) återställt.`)
     } catch (err) {
       console.error('Kunde inte återställa pass:', err)
     }

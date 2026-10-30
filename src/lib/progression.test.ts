@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calibratedWeight, calibrationTarget, isPlateau, nextStep, plateauLength, reachedTarget, stepFor, topSet, workSets } from './progression'
+import { calibratedWeight, calibrationTarget, isPlateau, nextStep, plateauCheckedKey, plateauLength, reachedTarget, shouldRunPlateauCheck, stepFor, topSet, workSets } from './progression'
 
 const pass = (...sets: [number, number][]) => ({ setEntries: sets.map(([weight, reps]) => ({ weight, reps })) })
 
@@ -183,5 +183,34 @@ describe('calibratedWeight', () => {
   it('träffar exakta steggränser utan att tappa steg på flyttalsavrundning', () => {
     // 20 kg × (1 + 10/30) = 26,67 e1RM, tillbaka till 2 reps: 25 kg. Steg från 20 till 25 med 2,5 är exakt 2 steg
     expect(calibratedWeight(20, 10, 2, 2.5)).toBe(25)
+  })
+})
+
+describe('plateauCheckedKey och shouldRunPlateauCheck', () => {
+  const date = '2026-10-11'
+  // utkastets fem övningar (Chins med flera), sedan Bens övningar efter programbytet
+  const draftIds = 'ex-chins,ex-rodd,ex-press,ex-curl,ex-knaboj'
+  const benIds = 'ex-bank,ex-axelpress,ex-marklyft,ex-rodd2'
+
+  it('programbyte i väljaren kör inte kontrollen igen medan övningarna ännu är de gamla', () => {
+    // utkastet laddat: kontrollen har körts och märkt nyckeln
+    const checkedKey = plateauCheckedKey(date, draftIds)
+    // väljaren byts till Ben: program-id ändras direkt, men övningarna i listan är ännu
+    // utkastets, så kontrollen får inte köras på dem (den skulle märka Ben som kontrollerad)
+    expect(shouldRunPlateauCheck({ loading: false, date, exerciseIds: draftIds, checkedKey })).toBe(false)
+    expect(shouldRunPlateauCheck({ loading: false, date, exerciseIds: draftIds, checkedKey })).toBe(false)
+  })
+  it('när det nya programmets övningar har laddats körs kontrollen för dem', () => {
+    const checkedKey = plateauCheckedKey(date, draftIds)
+    expect(shouldRunPlateauCheck({ loading: false, date, exerciseIds: benIds, checkedKey })).toBe(true)
+  })
+  it('nytt datum ger en ny nyckel', () => {
+    const checkedKey = plateauCheckedKey(date, draftIds)
+    expect(shouldRunPlateauCheck({ loading: false, date: '2026-10-12', exerciseIds: draftIds, checkedKey })).toBe(true)
+  })
+  it('laddning eller tom övningslista kör inte kontrollen', () => {
+    const checkedKey = plateauCheckedKey(date, draftIds)
+    expect(shouldRunPlateauCheck({ loading: true, date, exerciseIds: draftIds, checkedKey })).toBe(false)
+    expect(shouldRunPlateauCheck({ loading: false, date, exerciseIds: '', checkedKey })).toBe(false)
   })
 })

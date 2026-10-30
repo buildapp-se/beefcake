@@ -83,6 +83,29 @@ export function isPlateau(
 }
 
 /**
+ * Nyckeln som sparas när platåkontrollen körts för ett pass: datum och övningarna som då var
+ * laddade. Programmet i väljaren är med flit inte med: vid ett programbyte byts det direkt,
+ * men övningarna laddas först efteråt, och en kontroll på de gamla övningarna skulle då
+ * markera det nya programmet som kontrollerat utan att någonsin fråga dess platåer.
+ */
+export function plateauCheckedKey(date: string, exerciseIds: string): string {
+  return `${date}|${exerciseIds}`
+}
+
+/**
+ * Ska platåkontrollen köras nu? En gång per datum och övningslista, se plateauCheckedKey.
+ */
+export function shouldRunPlateauCheck(state: {
+  loading: boolean
+  date: string
+  exerciseIds: string
+  checkedKey: string
+}): boolean {
+  if (state.loading || !state.exerciseIds) return false
+  return plateauCheckedKey(state.date, state.exerciseIds) !== state.checkedKey
+}
+
+/**
  * "Höj bara ett steg". Med vikt: ett steg till på samma reps. Utan vikt (kroppsviktsövning med
  * bara kroppen) finns inget att lägga på, då är steget en rep till.
  * ponytail: +1 rep är ett eget val utan källa, försiktigt med flit. Byt här om det ska vara mer.

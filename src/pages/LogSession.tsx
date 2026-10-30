@@ -23,7 +23,7 @@ import { formatSet, formatSetCompact, formatWeight, parseDecimal } from '../lib/
 import { barWeightFor, formatPlatesPerSide } from '../lib/plates'
 import { epley1RM } from '../lib/exerciseMetrics'
 import { warmupSets } from '../lib/warmup'
-import { calibrationTarget, isPlateau, nextStep, plateauLength, reachedTarget, stepFor, topSet, workSets } from '../lib/progression'
+import { calibrationTarget, isPlateau, nextStep, plateauCheckedKey, plateauLength, reachedTarget, shouldRunPlateauCheck, stepFor, topSet, workSets } from '../lib/progression'
 import { setsVolume } from '../lib/volume'
 import { getDB, todayISO, nowISO } from '../models'
 import { icon } from '../icons'
@@ -313,8 +313,10 @@ export function LogSession() {
   const plateauKey = `${date}|${selectedTemplateId}`
   const knownExerciseIds = exercises.map(e => e.exerciseId).filter(id => id && !id.startsWith('new-')).join(',')
   useEffect(() => {
-    if (loading || !knownExerciseIds || plateauCheckedRef.current === plateauKey) return
-    plateauCheckedRef.current = plateauKey
+    // Kontrollen märker datum och de övningar som faktiskt är laddade, inte programmet i
+    // väljaren: vid ett programbyte byts programmet direkt men övningarna laddas först efteråt
+    if (!shouldRunPlateauCheck({ loading, date, exerciseIds: knownExerciseIds, checkedKey: plateauCheckedRef.current })) return
+    plateauCheckedRef.current = plateauCheckedKey(date, knownExerciseIds)
     let cancelled = false
     void (async () => {
       const asked = await (await getDB()).get('settings', PLATEAU_ASKED_KEY)
