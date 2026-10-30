@@ -5,7 +5,7 @@ currentGoal: "Cardio och superset publicerade 2026-10-22, väntar på ett riktig
 nextAction: "Kör ett pass på telefonen med ett superset (plus mellan korten) och logga en promenad: kolla att bockningen följer med, att programmet minns kopplingen och att cardiot syns grönt och håller streaken. Öppet från 2026-10-22: ångra-buggen i Historik (P2). Sedan tidigare: prova på telefonen fynden från 2026-10-11: stegknapparna följer kg eller reps, flera övningar öppna, 'Som förra gången' efter ett pass med testset. Två nya öppna i BACKLOG: höjningsfrågan vid programbyte (P2), obockade set sparas (P3). Sedan tidigare: stäng och öppna appen (ska visa passen utan 'Hämtar dina pass…'), bocka av ett set (raden 'Vila' ska ligga ovanför menyn). Samma dag efter prov på telefon: vilans sluttid sparas och ett laddfel raderar inte utkastet (`b2d0e16`). Öppet i BACKLOG: var Julias pass tog vägen (P1), pass loggade utan nät (P1), Cloudflares cache av `sw.js` (P2), Patriks okända felmeddelande (P2). Sedan tidigare: prova höjningsförslaget inloggad på telefonen: öppna ett program med en övning som stått still, gå igenom popupen och se att valet finns kvar på en annan enhet. Öppet sedan tidigare: inloggat flöde och gästläge på iPhone efter designgranskningen, webb-push för vilotimer, latmask-brevets första utskick och Firebase sign-up-kontrollen."
 blockers:
   - "Firebase: Julia kan logga in på buildapp.se, så domänen fungerar; det är inte verifierat om sign-up är avstängt"
-reviewedAt: 2026-10-27
+reviewedAt: 2026-10-30
 ---
 
 ## 2026-10-27: mutation-tester
