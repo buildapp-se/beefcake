@@ -738,6 +738,9 @@ th, td {
   color: var(--text);
 }
 
+/* Kortets rubrik är h2 (under sidans h1) men behåller h3-storleken */
+.card > h2.card-title { font-size: var(--text-lg); }
+
 .card h3 {
   font-size: var(--text-lg);
   font-weight: 700;
