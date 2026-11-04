@@ -35,3 +35,7 @@ server/worker-configuration.d.ts
 
 # Firebase Hosting deploy-cache i authhost, regenereras vid deploy.
 authhost/.firebase/
+
+# Stryker: rapporter och tillfällig sandlåda, regenereras vid varje körning.
+reports/
+.stryker-tmp/
