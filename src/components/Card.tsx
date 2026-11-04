@@ -23,7 +23,7 @@ export function Card({ children, padding = 'md', class: className = '', title, .
 
   return (
     <div {...rest} class={classes}>
-      {title && <h3 class="card-title">{title}</h3>}
+      {title && <h2 class="card-title">{title}</h2>}
       {children}
     </div>
   )

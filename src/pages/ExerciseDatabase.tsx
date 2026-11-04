@@ -162,15 +162,15 @@ function DbExerciseList({ all }: { all: DbExercise[] }) {
       {hits.length === 0 ? (
         <Card><EmptyState title="Inga träffar" message="Prova ett kortare ord eller ta bort ett filter." /></Card>
       ) : (
-        <div class="exdb-grid" role="list" aria-label="Övningar">
+        <ul class="exdb-grid" aria-label="Övningar">
           {hits.slice(0, shown).map(e => (
-            <Link key={e.id} href={`/ovningar/${e.id}`} class="exdb-card" role="listitem">
+            <li key={e.id}><Link href={`/ovningar/${e.id}`} class="exdb-card">
               <ExerciseAnimation id={e.id} name="" fallbackLabel={e.primaryMuscles.map(muscleLabel).join(', ')} still />
               <span class="exdb-card-name">{e.name}</span>
               <span class="exdb-card-meta">{e.primaryMuscles.map(muscleLabel).join(', ')} · {equipmentLabel(e.equipment)}</span>
-            </Link>
+            </Link></li>
           ))}
-        </div>
+        </ul>
       )}
       {hits.length > shown && (
         <div class="flex justify-center mt">
