@@ -565,13 +565,14 @@ th, td {
 .sidebar-nav .nav-link { color: var(--surface-deep-muted); }
 .sidebar-nav .nav-link:hover { background: rgba(255, 255, 255, 0.06); color: var(--surface-deep-text); }
 .sidebar-nav .nav-link:hover .nav-icon { fill: var(--surface-deep-text); }
-.sidebar-nav .nav-link.active { background: var(--accent-bg); color: var(--accent-on-tint); }
+/* Den marinblå panelen är mörk i båda lägena: aktiv text i ljust, --accent-on-tint gav 2,3:1 här */
+.sidebar-nav .nav-link.active { background: var(--accent-bg); color: var(--surface-deep-text); }
 .sidebar-nav .nav-link.active .nav-icon { fill: var(--accent); }
 .sidebar-footer { padding: var(--space-4); border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .sidebar-footer .nav-link { color: var(--surface-deep-muted); }
 .sidebar-footer .nav-link:hover { background: rgba(255, 255, 255, 0.06); color: var(--surface-deep-text); }
 .sidebar-footer .nav-link:hover .nav-icon { fill: var(--surface-deep-text); }
-.sidebar-footer .nav-link.active { background: var(--accent-bg); color: var(--accent-on-tint); }
+.sidebar-footer .nav-link.active { background: var(--accent-bg); color: var(--surface-deep-text); }
 
 /* Rail: compact tablet nav, stays on raised surface */
 .rail {
@@ -815,7 +816,7 @@ canvas { display: block; max-width: 100%; }
 
 /* Badge */
 .badge { display: inline-block; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; }
-.badge-primary { background: var(--accent-bg); color: var(--accent); }
+.badge-primary { background: var(--accent-bg); color: var(--accent-on-tint); }  /* --accent ger 4,2:1 på tonen */
 .badge-success { background: var(--success); color: var(--surface-raised); }
 .badge-warning { background: var(--warning); color: var(--surface-raised); }
 .badge-danger { background: var(--danger); color: var(--surface-raised); }
@@ -1070,7 +1071,8 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
 .history-calendar-week-number { display: flex; align-items: flex-start; justify-content: center; padding-top: var(--space-2); border-top: 1px solid var(--border); color: var(--text-muted); font-size: var(--text-xs); font-weight: 700; font-variant-numeric: var(--font-numeric); }
 .history-calendar-day { min-height: 86px; padding: var(--space-2); border-top: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--surface-raised); }
 .history-calendar-week-number + .history-calendar-day { border-left: 1px solid var(--border); }
-.history-calendar-day.outside { background: var(--surface); color: var(--text-muted); opacity: 0.6; }
+/* Ingen opacity: den drog datumen till 2,5:1. Grå yta och dämpad text räcker som skillnad. */
+.history-calendar-day.outside { background: var(--surface); color: var(--text-muted); }
 .history-calendar-day.trained { background: var(--accent-bg); }
 /* Dagens ruta ska gå att hitta utan att räkna: inre ram istället för yttre,
    annars klipps den av rutnätets egna kantlinjer. */
