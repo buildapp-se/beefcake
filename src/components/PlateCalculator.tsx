@@ -46,9 +46,9 @@ export function PlateCalculatorModal({
     <div class="dialog-overlay" onClick={onClose}>
       <div class="dialog plate-calc-dialog" onClick={e => e.stopPropagation()}>
         <div class="flex justify-between items-center mb">
-          <h3 class="m-0 flex items-center gap-2">
+          <h2 class="m-0 flex items-center gap-2">
             <span>Plattkalkylator</span>
-          </h3>
+          </h2>
           <button class="banner-dismiss" onClick={onClose} aria-label="Stäng">
             <svg width="16" height="16" viewBox="0 0 19 19"><use href={icon('x-icon')} /></svg>
           </button>
@@ -131,7 +131,7 @@ export function PlateCalculatorModal({
         </div>
 
         <div class="plate-calc-summary mb">
-          <h4 class="m-0 mb-sm text-sm">Per sida ({totalPerSide.toLocaleString('sv-SE')} kg):</h4>
+          <h3 class="m-0 mb-sm text-sm">Per sida ({totalPerSide.toLocaleString('sv-SE')} kg):</h3>
           {platesPerSide.length === 0 ? (
             <p class="text-sm text-muted m-0">Inga viktskivor behövs.</p>
           ) : (

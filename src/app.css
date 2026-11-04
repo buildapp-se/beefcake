@@ -855,7 +855,9 @@ canvas { display: block; max-width: 100%; }
 
 /* Empty State: a clear instruction on how to fill the screen */
 .empty-state { text-align: center; padding: var(--space-6) 2rem; color: var(--text-muted); }
-.empty-state h3 { margin-bottom: var(--space-2); color: var(--text); font-weight: 700; }
+/* h2 för rubrikordningen, samma storlek som när den var h3 (i ett kort: kortets h3-stil) */
+.empty-state h2 { margin-bottom: var(--space-2); color: var(--text); font-weight: 700; font-size: 1.17em; }
+.card .empty-state h2 { font-size: var(--text-lg); letter-spacing: -0.01em; }
 .empty-state p { max-width: 42ch; margin: 0 auto; }
 
 /* Toast: dark pill, action button inside */
@@ -879,7 +881,8 @@ canvas { display: block; max-width: 100%; }
   background: var(--surface-raised); border-radius: var(--radius); box-shadow: var(--shadow-lg);
   padding: var(--space-6); max-width: 500px; width: 90%;
 }
-.dialog h3 { font-size: var(--text-lg); }
+/* Dialogrubriken är h2 (dialogen ligger direkt under sidans h1) med h3-storleken */
+.dialog h2 { font-size: var(--text-lg); }
 .dialog p { color: var(--text); line-height: 1.6; margin-bottom: var(--space-4); }
 
 /* Höjningsförslaget mot platå: dialogen "Vill du höja?" och förslagsraden vid övningen */
@@ -1817,6 +1820,7 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
 .starter-list { display: flex; flex-direction: column; gap: var(--space-4); }
 .starter-item { display: flex; gap: var(--space-4); align-items: flex-start; justify-content: space-between; padding-top: var(--space-4); border-top: 1px solid var(--border); }
 .starter-text { min-width: 0; }
+.starter-text h3 { font-size: 1em; letter-spacing: normal; } /* var h4, samma storlek */
 .starter-text p { line-height: 1.5; }
 .starter-item .btn { flex-shrink: 0; }
 @media (max-width: 767px) { .starter-item { flex-direction: column; } .starter-item .btn { width: 100%; } }

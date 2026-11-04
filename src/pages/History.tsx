@@ -137,7 +137,7 @@ function DeleteDialog({
     <div class="dialog-overlay" onClick={onClose}>
       <div class="dialog" onClick={e => e.stopPropagation()}>
         <div class="flex justify-between items-center mb">
-          <h3 class="m-0">{title}</h3>
+          <h2 class="m-0">{title}</h2>
           <button class="banner-dismiss" onClick={onClose} aria-label="Stäng">
             <svg width="16" height="16" viewBox="0 0 19 19"><use href={icon('x-icon')} /></svg>
           </button>
