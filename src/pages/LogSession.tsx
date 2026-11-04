@@ -1357,7 +1357,7 @@ export function LogSession() {
         {cancelDialogOpen && (
           <div class="dialog-overlay" onClick={() => setCancelDialogOpen(false)}>
             <div class="dialog" onClick={e => e.stopPropagation()}>
-              <h3 class="m-0 mb-sm">Avbryt träningspass?</h3>
+              <h2 class="m-0 mb-sm">Avbryt träningspass?</h2>
               <p>Om du avbryter rensas ditt påbörjade pass och ändringarna försvinner.</p>
               <div class="flex gap mt justify-end">
                 <Button variant="secondary" onClick={() => setCancelDialogOpen(false)}>Fortsätt träna</Button>
@@ -1371,7 +1371,7 @@ export function LogSession() {
         {finishDialogOpen && (
           <div class="dialog-overlay" onClick={() => setFinishDialogOpen(false)}>
             <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="finish-dialog-title" onClick={e => e.stopPropagation()}>
-              <h3 id="finish-dialog-title" class="m-0 mb-sm">{totalSetsCount - completedSetsCount} set är inte bockade</h3>
+              <h2 id="finish-dialog-title" class="m-0 mb-sm">{totalSetsCount - completedSetsCount} set är inte bockade</h2>
               <ul class="plateau-list">
                 {exercises.filter(e => e.setEntries.some(s => !s.completed)).map(e => (
                   <li key={e.exerciseId}>

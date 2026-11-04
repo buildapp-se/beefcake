@@ -10,7 +10,7 @@ interface EmptyStateProps {
 export function EmptyState({ title, message, action, class: className = '' }: EmptyStateProps) {
   return (
     <div class={`empty-state ${className}`.trim()}>
-      <h3>{title}</h3>
+      <h2>{title}</h2>
       {message && <p>{message}</p>}
       {action && <div class="mt">{action}</div>}
     </div>
