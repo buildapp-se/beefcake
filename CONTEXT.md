@@ -157,6 +157,56 @@ Rutter: `/` · `/log` (stödjer `?from=<sessionId>`, `?template=<namn>` och `?da
 
 Loggvyn startar timern genom att skicka `beefcake-start-timer` på `window`; `RestTimer` lyssnar. Det håller avbockning och timer i olika komponenter utan delad state. Alarmtiden lagras lokalt per enhet i IndexedDB-inställningarna: standard är 19 sekunder, användaren kan välja 1 till 3 600 sekunder eller låta ljudet fortsätta tills det tystas manuellt.
 
+## Architecture
+
+Schemat i korthet; filerna står under §Arkitektur ovan och synken under §Lagring och nödräddning.
+
+```mermaid
+graph LR
+  USER[Webbläsare eller PWA]
+
+  subgraph WEB["buildapp.se/beefcake"]
+    APP[Preact-app]
+    IDB[(IndexedDB lokal cache)]
+    SW[Service worker Workbox]
+  end
+
+  FB[Firebase Auth]
+  EXDB[free-exercise-db bilder via jsDelivr]
+
+  subgraph CF["Cloudflare"]
+    W[Worker beefcake-api]
+    D1[(D1 beefcake snapshots)]
+    CRON[Cron 17 UTC]
+  end
+
+  RESEND[Resend latmask-mejl]
+  GHA[GitHub Actions till Pages]
+
+  USER --> APP
+  APP --> IDB
+  APP --> SW
+  APP --> FB
+  APP --> EXDB
+  APP -->|ID-token, snapshot| W
+  W --> D1
+  CRON --> W
+  W --> RESEND
+  GHA --> APP
+```
+
+## Stack
+
+- Inloggning: Firebase Auth (Google eller e-post med lösenord), Workern verifierar ID-token med jose och kräver bekräftad adress; gästläge utan konto
+- Backend: Cloudflare Worker `beefcake-api` (`server/src/index.ts`) med daglig cron för latmask-mejlet
+- Databas: Cloudflare D1 `beefcake` (versionsnumrerade snapshots per adress), IndexedDB som lokal cache
+- Frontend: Preact, Vite, wouter, Chart.js, PWA via vite-plugin-pwa
+- Kod: TypeScript strict
+- E-post: Resend
+- Tester: Vitest
+- CI: GitHub Actions kör test, lint och Worker-kontroll och publicerar Pages vid push till `master`
+- Hosting: GitHub Pages, buildapp.se/beefcake; API på beefcake-api.buildapp.se
+
 ## Konventioner
 
 - TypeScript strict, ingen `any`, funktioner lyckas eller kastar.
