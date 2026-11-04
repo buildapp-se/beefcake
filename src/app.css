@@ -1788,7 +1788,8 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
   .exdb-filters .input-group:first-child, .exdb-filters .input-group:last-child { grid-column: auto; }
 }
 .exdb-filters .input-group { margin-bottom: 0; }
-.exdb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-3); }
+.exdb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-3); list-style: none; }
+.exdb-grid > li > .exdb-card { height: 100%; }
 .exdb-card {
   display: block; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius);
   padding: var(--space-2); color: var(--text); text-decoration: none;

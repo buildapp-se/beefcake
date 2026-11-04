@@ -13,12 +13,13 @@ interface ExerciseAnimationProps {
 /**
  * Två bildrutor (start och slut) staplade; CSS växlar den övre av och på, så rörelsen
  * syns utan JavaScript och stannar under prefers-reduced-motion. crossorigin gör att
- * service workern får ett riktigt svar att cacha, inte ett opakt.
+ * service workern får ett riktigt svar att cacha, inte ett opakt. Utan namn är bilden
+ * dekorativ (kortet bredvid bär namnet) och döljs för skärmläsare.
  */
 export function ExerciseAnimation({ id, name, class: className = '', still = false, fallbackLabel = 'Bild saknas' }: ExerciseAnimationProps) {
   const [missing, setMissing] = useState(false)
   return (
-    <span class={`exdb-anim ${className} ${missing ? 'exdb-anim-missing' : ''}`.trim()} role="img" aria-label={name}>
+    <span class={`exdb-anim ${className} ${missing ? 'exdb-anim-missing' : ''}`.trim()} {...(name ? { role: 'img', 'aria-label': name } : { 'aria-hidden': 'true' })}>
       {missing ? <span class="exdb-missing-label">{fallbackLabel}</span> : <>
         <img src={exerciseImageUrl(id, 0)} alt="" loading="lazy" decoding="async" crossorigin="anonymous" onError={() => setMissing(true)} />
         {!still && <img src={exerciseImageUrl(id, 1)} alt="" loading="lazy" decoding="async" crossorigin="anonymous" onError={() => setMissing(true)} />}
