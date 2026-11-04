@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- testerna bygger medvetet felaktig importdata */
 import { describe, expect, it } from 'vitest'
-import { parseImportData } from './importValidation'
+import { parseImportData, validateSnapshot } from './importValidation'
 
 function valid() {
   const set = { sets: 1, reps: 10, weight: 60 }
@@ -225,5 +225,39 @@ describe('parseImportData', () => {
 
     const d6 = valid(); d6.exerciseHistory[0].sessionId = '';
     expect(() => parseImportData(JSON.stringify(d6))).toThrow(/^Importen har fel format: exerciseHistory$/);
+  })
+
+  it('accepterar övningstyperna tid och distans', () => {
+    for (const kind of ['time', 'distance', 'bodyweight']) {
+      const data = valid(); data.exercises[0].kind = kind
+      expect(() => parseImportData(JSON.stringify(data))).not.toThrow()
+    }
+  })
+
+  it('avvisar ett övningsnamn som bara är blanksteg', () => {
+    const data = valid(); data.exercises[0].name = '   '
+    expect(() => parseImportData(JSON.stringify(data))).toThrow('exercises')
+  })
+
+  it('avvisar ett pass där bara ett av seten är trasigt', () => {
+    const data = valid()
+    data.sessions[0].exercises[0].setEntries.push({ sets: 1, reps: -1, weight: 60 })
+    expect(() => parseImportData(JSON.stringify(data))).toThrow('sessions')
+  })
+
+  it('avvisar set som saknar sets eller reps, eller har en rpe som inte är ett tal', () => {
+    const noSets = valid(); delete (noSets.sessions[0].exercises[0].setEntries[0] as any).sets
+    expect(() => parseImportData(JSON.stringify(noSets))).toThrow('sessions')
+    const noReps = valid(); delete (noReps.sessions[0].exercises[0].setEntries[0] as any).reps
+    expect(() => parseImportData(JSON.stringify(noReps))).toThrow('sessions')
+    const badRpe = valid(); (badRpe.sessions[0].exercises[0].setEntries[0] as any).rpe = 'hård'
+    expect(() => parseImportData(JSON.stringify(badRpe))).toThrow('sessions')
+    const okRpe = valid(); (okRpe.sessions[0].exercises[0].setEntries[0] as any).rpe = 8
+    expect(() => parseImportData(JSON.stringify(okRpe))).not.toThrow()
+  })
+
+  it('avvisar oändliga tal, som bara kan komma utan JSON (Worker-API:t får redan tolkade objekt)', () => {
+    const data = valid(); data.sessions[0].exercises[0].setEntries[0].weight = Infinity
+    expect(() => validateSnapshot(data)).toThrow('sessions')
   })
 })
