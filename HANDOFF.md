@@ -8,6 +8,10 @@ blockers:
 reviewedAt: 2026-11-04
 ---
 
+## 2026-11-04: backlog, rubrikordning
+
+Gren `claude/backlog-2026-11-04` ovanpå förbättringsgrenen. Dialogrubriker (LogSession, PlateauDialog, PlateCalculator, SessionDetail, Settings, History, Templates) och EmptyState är nu h2, underrubriker h3, så axe `heading-order` ger 0 fynd på mallar och logg (var 1). CSS i `src/app.css` håller rubrikstorlekarna oförändrade, uppmätt på 8 sidor före och efter. Lint ren, vitest 21 filer och 287 tester gröna, build ok. Övriga öppna punkter kräver Patrik eller extern part.
+
 ## 2026-10-27: mutation-tester
 
 Mutation-lanes under dygnet (Gemini 3.8 Flash och Gemini 4 Argon skrev tester, Stryker 10 mätte, Claude granskade): bara testfiler ändrade om inget annat sägs, inga tester borttagna, repots kontrollkedja grön. Poängen per fil står på Mutation-raden i CONTEXT.
