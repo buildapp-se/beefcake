@@ -62,7 +62,7 @@ function scrollToTop() {
 
 function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
   return (
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Meny">
       <div class="sidebar-header">
         <Link href="/" class="brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
           {avatar ? <BeefcakeAvatar streak={avatar} /> : <BrandMark />}
@@ -84,7 +84,7 @@ function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {
 
 function RailNav({ avatar }: { avatar: BeefcakeStreak | null }) {
   return (
-    <aside class="rail">
+    <aside class="rail" aria-label="Meny">
       <div class="rail-header">
         <Link href="/" class="brand-link" aria-label="Beefcake, till Hem" onClick={scrollToTop}>
           {avatar ? <BeefcakeAvatar streak={avatar} /> : <BrandMark />}

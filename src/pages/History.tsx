@@ -540,7 +540,7 @@ export function History() {
                       <th>Pass</th>
                       <th>Övningar</th>
                       <th>Volym</th>
-                      <th></th>
+                      <th><span class="visually-hidden">Åtgärder</span></th>
                     </tr>
                   </thead>
                   <tbody>

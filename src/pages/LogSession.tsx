@@ -880,7 +880,7 @@ export function LogSession() {
       </datalist>
 
       {/* Sidopanel med vilotimer på desktop */}
-      <aside class="log-session-timer">
+      <aside class="log-session-timer" aria-label="Vilotimer">
         <RestTimer />
       </aside>
 
