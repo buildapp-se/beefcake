@@ -60,6 +60,7 @@ Versalerna är ett krav: cockpiten (`cockpit.buildapp.se`) hämtar exakt `HANDOF
 - **`src/data/exerciseDb.json` är genererad**, aldrig handredigerad. Bygg om med `python scripts/generate-exercise-db.py` och uppdatera `EXERCISE_DB_COMMIT` i `src/lib/exerciseDb.ts` till samma commit, annars pekar bilderna på en annan version än texten.
 - **Direktnavigering till `/log` ska vara tom.** Ladda bara program via ett uttryckligt `?template=`, tidigare pass via `?from=` eller ett sparat utkast med minst ett set. "Nästa pass" är ett förslag på Hem, inte ett automatiskt startat pass.
 - **Lokalt läge utan moln är inte inloggat.** `useIsGuest()` är falsk där, eftersom gästkontexten bara sätts med moln. Villkor för Cartman måste också kräva `isCloudSyncConfigured()`, annars visas figuren lokalt för oinloggade.
+- **`Field` kopplar sin etikett bara till en input/select/textarea på översta nivån** (sedan 2026-11-04). Ligger kontrollen inuti en `div` måste den ha egen `aria-label`, annars saknar den namn. Text på hel `--accent`- eller `--warning`-yta ska ha `--on-accent-text`, inte `--on-accent` eller `#fff`: i mörkt läge är accenten för ljus för vitt.
 
 ## Flera agenter i samma repo
 
