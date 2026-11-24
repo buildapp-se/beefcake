@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -17,6 +15,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +34,21 @@ jobs:
         env:
           VITE_BEEFCAKE_API_URL: https://beefcake-api.buildapp.se
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
-      - uses: actions/deploy-pages@v4
+
+  # Eget jobb som i GitHubs mall: i samma jobb hittade deploy-pages ibland inte
+  # artefakten ("No artifacts named github-pages", 2026-11-24).
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
