@@ -7,16 +7,35 @@ import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { Field } from '../components/Field'
 
+// Utkast av ett nytt cardiopass, så det som skrivits överlever en omladdning. Datumet följer inte
+// med: ett gammalt utkast ska inte logga på fel dag.
+// ponytail: sessionStorage, dör med fliken; localStorage om utkast ska överleva att appen stängs
+// (måste då rensas vid utloggning, anteckningen är kontots).
+const DRAFT_KEY = 'beefcake-cardio-draft'
+type CardioDraft = { activity: string; minutes: string; km: string; notes: string }
+
+function readDraft(): CardioDraft | null {
+  try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? 'null') as CardioDraft | null } catch { return null }
+}
+
+function writeDraft(draft: CardioDraft | null): void {
+  try {
+    if (draft) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    else sessionStorage.removeItem(DRAFT_KEY)
+  } catch { /* Utan sessionStorage finns inget utkast, formuläret fungerar som förut */ }
+}
+
 /** Logga eller redigera ett cardiopass. `?date=` förväljer datum (kalendern), `?id=` redigerar ett befintligt. */
 export function LogCardio() {
   const [, navigate] = useLocation()
   const params = new URLSearchParams(window.location.search)
   const editId = params.get('id')
-  const [activity, setActivity] = useState('Promenad')
+  const [draft] = useState(() => editId ? null : readDraft())
+  const [activity, setActivity] = useState(draft?.activity ?? 'Promenad')
   const [date, setDate] = useState(params.get('date') || todayISO())
-  const [minutes, setMinutes] = useState('30')
-  const [km, setKm] = useState('')
-  const [notes, setNotes] = useState('')
+  const [minutes, setMinutes] = useState(draft?.minutes ?? '30')
+  const [km, setKm] = useState(draft?.km ?? '')
+  const [notes, setNotes] = useState(draft?.notes ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,6 +50,10 @@ export function LogCardio() {
       setNotes(s.cardio.notes || '')
     })
   }, [editId])
+
+  useEffect(() => {
+    if (!editId) writeDraft({ activity, minutes, km, notes })
+  }, [editId, activity, minutes, km, notes])
 
   // Decimalkomma i km-fältet: "3,2" ska bli 3.2, inte NaN
   const minutesValue = Number(minutes)
@@ -47,6 +70,7 @@ export function LogCardio() {
       const session = editId
         ? await updateSession(editId, { date, templateName: activity.trim(), cardio })
         : await createCardioSession(date, activity.trim(), cardio)
+      if (!editId) writeDraft(null)
       navigate(`/history/${session.id}`)
     } catch (err) {
       console.error('Kunde inte spara cardiopass:', err)
@@ -82,7 +106,7 @@ export function LogCardio() {
           </Field>
           {error && <p class="field-error">{error}</p>}
           <div class="flex gap-sm justify-end">
-            <Button variant="secondary" onClick={() => history.back()}>Avbryt</Button>
+            <Button variant="secondary" onClick={() => { if (!editId) writeDraft(null); history.back() }}>Avbryt</Button>
             <Button type="submit" disabled={!valid || saving}>{saving ? 'Sparar...' : 'Spara'}</Button>
           </div>
         </form>
