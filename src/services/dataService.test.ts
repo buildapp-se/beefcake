@@ -32,6 +32,7 @@ describe('restoreSession', () => {
     const history = await getExerciseHistory('ex-benboj')
     expect(history).toHaveLength(1)
     expect(history[0].sessionId).toBe(session.id)
+    expect(history[0].id).toBe(`${session.id}-0`)
     expect(history[0].volume).toBe(1500)
   })
 
@@ -65,13 +66,15 @@ describe('getResumableWorkout', () => {
       templateName: 'Ben',
       startTime: '2026-10-10T18:00:00.000Z',
       exercises: [
-        { exerciseId: 'ex-benboj', exerciseName: 'Benböj', order: 0, setEntries: [{ sets: 1, reps: 5, weight: 100, completed: true }] }
+        { exerciseId: 'ex-benboj', exerciseName: 'Benböj', order: 0, setEntries: [{ sets: 1, reps: 5, weight: 100, completed: true }] },
+        { exerciseId: 'ex-utfall', exerciseName: 'Utfall', order: 1, setEntries: [] }
       ]
     })
 
+    // Ett set räcker, övriga övningar får vara tomma
     const active = await getResumableWorkout()
     expect(active?.templateName).toBe('Ben')
-    expect(active?.exercises).toHaveLength(1)
+    expect(active?.exercises).toHaveLength(2)
   })
 
   it('returnerar undefined för ett utkast där inget set är loggat än', async () => {

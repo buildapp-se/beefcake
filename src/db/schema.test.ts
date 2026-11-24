@@ -69,6 +69,25 @@ async function createLegacyDatabase(): Promise<void> {
   await db.put('sessions', legacySession as unknown as Session)
   await db.put('sessions', newSession)
   await db.put('exerciseHistory', legacyHistory as unknown as ExerciseHistory)
+  // Blandat: ett pass med en gammal och en ny övning, ett pass utan övningslista,
+  // en historikrad i nytt format och ett program med en gammal och en ny övning
+  await db.put('sessions', {
+    ...legacySession,
+    id: 'session-mixed',
+    exercises: [newSession.exercises[0], { exerciseId: 'ex-2', exerciseName: 'Utfall', sets: 2, reps: 10, weight: 20, order: 1 }]
+  } as unknown as Session)
+  await db.put('sessions', { id: 'session-bare', date: '2026-08-06', templateId: 'tpl-1', templateName: 'Ben', createdAt: 'x' } as unknown as Session)
+  await db.put('exerciseHistory', { id: 'h-new', date: '2026-09-01', exerciseId: 'ex-1', exerciseName: 'Benböj', setEntries: [{ sets: 1, reps: 8, weight: 60 }], volume: 480, sessionId: 'session-2' })
+  await db.put('templates', {
+    id: 'tpl-mixed',
+    name: 'Blandat',
+    exercises: [
+      { exerciseId: 'ex-1', defaultSetEntry: { sets: 1, reps: 8, weight: 60 }, order: 0 },
+      { exerciseId: 'ex-2', defaultSets: 2, defaultReps: 10, defaultWeight: 20, order: 1 }
+    ],
+    updatedAt: 'x'
+  } as unknown as Template)
+  await db.put('templates', { id: 'tpl-bare', name: 'Tomt', updatedAt: 'x' } as unknown as Template)
   db.close()
 }
 
@@ -107,5 +126,75 @@ describe('getDB datamigrering', () => {
 
     const untouched = (await db.get('sessions', 'session-2')) as Session
     expect(untouched.exercises[0].setEntries).toEqual([{ sets: 1, reps: 8, weight: 60 }])
+
+    const mixed = (await db.get('sessions', 'session-mixed')) as Session
+    expect(mixed.exercises).toEqual([
+      { exerciseId: 'ex-1', exerciseName: 'Benböj', setEntries: [{ sets: 1, reps: 8, weight: 60 }], order: 0 },
+      { exerciseId: 'ex-2', exerciseName: 'Utfall', setEntries: [{ sets: 2, reps: 10, weight: 20 }], order: 1 }
+    ])
+    expect(await db.get('sessions', 'session-bare')).toEqual({ id: 'session-bare', date: '2026-08-06', templateId: 'tpl-1', templateName: 'Ben', createdAt: 'x' })
+    expect((await db.get('exerciseHistory', 'h-new'))?.setEntries).toEqual([{ sets: 1, reps: 8, weight: 60 }])
+
+    const mixedTemplate = (await db.get('templates', 'tpl-mixed')) as Template
+    expect(mixedTemplate.exercises).toEqual([
+      { exerciseId: 'ex-1', defaultSetEntry: { sets: 1, reps: 8, weight: 60 }, order: 0 },
+      { exerciseId: 'ex-2', defaultSetEntry: { sets: 2, reps: 10, weight: 20 }, order: 1 }
+    ])
+    expect(await db.get('templates', 'tpl-bare')).toEqual({ id: 'tpl-bare', name: 'Tomt', updatedAt: 'x' })
+  })
+
+  it('skapar alla stores med rätt nycklar och index i en ny databas', async () => {
+    vi.resetModules()
+    const { getDB } = await import('./schema')
+    db = await getDB()
+    expect(db.version).toBe(5)
+    expect([...db.objectStoreNames].sort()).toEqual(['activeWorkout', 'bodyWeight', 'exerciseHistory', 'exercises', 'sessions', 'settings', 'templates'])
+    const tx = db.transaction(['templates', 'exercises', 'sessions', 'exerciseHistory', 'settings', 'activeWorkout', 'bodyWeight'])
+    const shape = (name: 'templates' | 'exercises' | 'sessions' | 'exerciseHistory' | 'settings' | 'activeWorkout' | 'bodyWeight') => {
+      const store = tx.objectStore(name)
+      return { keyPath: store.keyPath, indexes: [...store.indexNames].sort().map(i => {
+        const index = store.index(i as never)
+        return `${i}:${String(index.keyPath)}${index.unique ? ':unique' : ''}`
+      }) }
+    }
+    expect(shape('templates')).toEqual({ keyPath: 'id', indexes: ['by-name:name', 'by-updated:updatedAt'] })
+    expect(shape('exercises')).toEqual({ keyPath: 'id', indexes: ['by-muscle:muscleGroup', 'by-name:name:unique'] })
+    expect(shape('sessions')).toEqual({ keyPath: 'id', indexes: ['by-date:date', 'by-template:templateId'] })
+    expect(shape('exerciseHistory')).toEqual({ keyPath: 'id', indexes: ['by-date:date', 'by-exercise:exerciseId', 'by-session:sessionId'] })
+    expect(shape('settings')).toEqual({ keyPath: 'key', indexes: [] })
+    expect(shape('activeWorkout')).toEqual({ keyPath: 'id', indexes: [] })
+    expect(shape('bodyWeight')).toEqual({ keyPath: 'date', indexes: [] })
+    await tx.done
+    // Samma instans andra gången
+    expect(await getDB()).toBe(db)
+  })
+})
+
+describe('hjälpfunktioner', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  it('generateId är tid plus sju slumptecken', async () => {
+    const { generateId } = await import('./schema')
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(1_700_000_000_000)
+    expect(generateId()).toMatch(/^1700000000000-[a-z0-9]{1,7}$/)
+  })
+
+  it('todayISO och nowISO ger dagens lokala datum och ISO-tid', async () => {
+    const { todayISO, nowISO } = await import('./schema')
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 2, 5, 12, 0, 0))
+    expect(todayISO()).toBe('2026-03-05')
+    expect(nowISO()).toBe(new Date(2026, 2, 5, 12, 0, 0).toISOString())
+    vi.setSystemTime(new Date(2026, 10, 24, 12, 0, 0))
+    expect(todayISO()).toBe('2026-11-24')
+  })
+
+  it('migrateSession och migrateExerciseHistory flyttar setfälten till setEntries', async () => {
+    const { migrateSession, migrateExerciseHistory } = await import('./schema')
+    expect(migrateSession({ id: 's', date: 'd', templateId: 't', templateName: 'T', createdAt: 'c', exercises: [{ exerciseId: 'e', exerciseName: 'E', sets: 3, reps: 5, weight: 100, order: 2 }] }))
+      .toEqual({ id: 's', date: 'd', templateId: 't', templateName: 'T', createdAt: 'c', exercises: [{ exerciseId: 'e', exerciseName: 'E', setEntries: [{ sets: 3, reps: 5, weight: 100 }], order: 2 }] })
+    expect(migrateExerciseHistory({ id: 'h', date: 'd', exerciseId: 'e', exerciseName: 'E', sets: 3, reps: 5, weight: 100, volume: 1500, sessionId: 's' }))
+      .toEqual({ id: 'h', date: 'd', exerciseId: 'e', exerciseName: 'E', setEntries: [{ sets: 3, reps: 5, weight: 100 }], volume: 1500, sessionId: 's' })
   })
 })
