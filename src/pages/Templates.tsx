@@ -140,10 +140,12 @@ export function Templates() {
   }
 
   async function handleSave() {
-    if (!formName.trim() || formExercises.length === 0) return
+    // En tom övningsrad är ingen övning: sparad gav den en namnlös övning som stoppade synken
+    const named = formExercises.filter(fe => fe.exerciseName.trim())
+    if (!formName.trim() || named.length === 0) return
 
     const validExercises = await Promise.all(
-      formExercises.map(async (fe, i) => {
+      named.map(async (fe, i) => {
         let exerciseId = fe.exerciseId
         if (!exerciseId || exerciseId.startsWith('new-')) {
           const ex = await getOrCreateExercise(fe.exerciseName)
@@ -212,7 +214,8 @@ export function Templates() {
     const target = e.target as HTMLInputElement
     // Ett tömt sifferfält sparas inte: annars skrevs 0 in direkt och 7 blev "07". restoreIfEmpty sätter tillbaka värdet.
     if (target.type === 'number' && target.value === '') return
-    const value = target.type === 'number' ? (parseFloat(target.value) || 0) : target.value
+    // Set och reps är hela tal från 1: -2 reps gjorde snapshoten ogiltig, och Workern avvisade varje synk därefter
+    const value = target.type === 'number' ? Math.max(1, Math.round(parseFloat(target.value) || 1)) : target.value
 
     if (nestedField && field === 'defaultSetEntry') {
       updateFormExercise(idx, field, { ...formExercises[idx].defaultSetEntry, [nestedField]: value })

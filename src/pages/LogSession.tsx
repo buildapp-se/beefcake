@@ -728,7 +728,7 @@ export function LogSession() {
   // Blandat bockat och obockat går inte att tolka: glömt att bocka, eller aldrig kört? Då frågar rutan.
   // Allt bockat sparas direkt, och inget bockat alls också: den som aldrig bockar ska inte få frågan varje pass.
   function handleFinishSession() {
-    if (totalSetsCount === 0 || saving) return
+    if (totalSetsCount === 0 || unnamedWithSets || saving) return
     if (completedSetsCount > 0 && completedSetsCount < totalSetsCount) setFinishDialogOpen(true)
     else void finishSession(false)
   }
@@ -796,10 +796,11 @@ export function LogSession() {
   }
 
   async function handleSaveAsTemplate() {
-    if (exercises.length === 0 || !templateName.trim()) return
+    const named = exercises.filter(e => e.exerciseName.trim())
+    if (named.length === 0 || !templateName.trim()) return
     try {
       const templateExercises = await Promise.all(
-        exercises.map(async e => {
+        named.map(async e => {
           let exerciseId = e.exerciseId
           if (!exerciseId || exerciseId.startsWith('new-')) {
             const ex = await getOrCreateExercise(e.exerciseName)
@@ -816,7 +817,7 @@ export function LogSession() {
         })
       )
       // Supersetkopplingarna följer med till det nya programmet
-      const withSupersets = templateExercises.map((te, i) => exercises[i].supersetWithNext && templateExercises[i + 1] ? { ...te, supersetWith: templateExercises[i + 1].exerciseId } : te)
+      const withSupersets = templateExercises.map((te, i) => named[i].supersetWithNext && templateExercises[i + 1] ? { ...te, supersetWith: templateExercises[i + 1].exerciseId } : te)
       const newTemplate = await createTemplate(templateName.trim(), withSupersets)
       setTemplates(prev => [...prev, newTemplate].sort((a, b) => a.name.localeCompare(b.name)))
       setSelectedTemplateId(newTemplate.id)
@@ -847,6 +848,8 @@ export function LogSession() {
   }, 0)
 
   const totalSetsCount = exercises.reduce((sum, e) => sum + e.setEntries.length, 0)
+  // En namnlös övning med set skulle sparas som en övning utan namn, och den gör snapshoten ogiltig för Workern
+  const unnamedWithSets = exercises.some(e => e.setEntries.length > 0 && !e.exerciseName.trim())
 
   if (loading) {
     return (
@@ -1318,12 +1321,15 @@ export function LogSession() {
             size="lg"
             class="btn-block"
             onClick={handleFinishSession}
-            disabled={saving || totalSetsCount === 0}
+            disabled={saving || totalSetsCount === 0 || unnamedWithSets}
           >
             {saving ? 'Sparar pass...' : 'Slutför och spara pass'}
           </Button>
           {totalSetsCount === 0 && !saving && (
             <p class="text-xs text-muted mt-1 m-0 log-session-hint">Lägg till minst ett set för att kunna spara passet.</p>
+          )}
+          {totalSetsCount > 0 && unnamedWithSets && !saving && (
+            <p class="text-xs text-muted mt-1 m-0 log-session-hint">Ge varje övning ett namn för att kunna spara passet.</p>
           )}
           {showSaveTemplate && (
             <Card class="mt">

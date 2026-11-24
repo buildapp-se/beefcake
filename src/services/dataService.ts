@@ -172,7 +172,10 @@ export async function getExercise(id: string): Promise<Exercise | undefined> {
   return db.get('exercises', id)
 }
 
-export async function getOrCreateExercise(name: string, muscleGroup?: string): Promise<Exercise> {
+export async function getOrCreateExercise(rawName: string, muscleGroup?: string): Promise<Exercise> {
+  // En namnlös övning gör hela snapshoten ogiltig: Workern svarar 400 på varje synk efter den
+  const name = rawName.trim()
+  if (!name) throw new Error('Övningen saknar namn')
   const db = await getDB()
   const existing = await db.getFromIndex('exercises', 'by-name', name)
   if (existing) {

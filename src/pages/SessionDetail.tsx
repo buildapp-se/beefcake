@@ -181,7 +181,7 @@ export function SessionDetail() {
       if (!sessionId || !session) return
 
       const validExercises = await Promise.all(
-        formExercises.map(async (e, i) => {
+        formExercises.filter(e => e.exerciseName.trim()).map(async (e, i) => {
           let exerciseId = e.exerciseId
           if (!exerciseId || exerciseId.startsWith('new-')) {
             const ex = await getOrCreateExercise(e.exerciseName)
@@ -242,7 +242,7 @@ export function SessionDetail() {
     }
     try {
       const templateExercises = await Promise.all(
-        formExercises.map(async (e, i) => {
+        formExercises.filter(e => e.exerciseName.trim()).map(async (e, i) => {
           let exerciseId = e.exerciseId
           if (!exerciseId || exerciseId.startsWith('new-')) {
             const ex = await getOrCreateExercise(e.exerciseName)
@@ -268,7 +268,7 @@ export function SessionDetail() {
     if (!session || !newTemplateName.trim()) return
     try {
       const templateExercises = await Promise.all(
-        formExercises.map(async e => {
+        formExercises.filter(e => e.exerciseName.trim()).map(async e => {
           let exerciseId = e.exerciseId
           if (!exerciseId || exerciseId.startsWith('new-')) {
             const ex = await getOrCreateExercise(e.exerciseName)
@@ -391,7 +391,10 @@ export function SessionDetail() {
     const target = e.target as HTMLInputElement
     // Ett tömt sifferfält sparas inte: annars skrevs 0 in direkt och 7 blev "07". restoreIfEmpty sätter tillbaka värdet.
     if (target.type === 'number' && target.value === '') return
-    const value = target.type === 'number' ? (parseFloat(target.value) || 0) : target.value
+    // Negativa tal gjorde snapshoten ogiltig, och Workern avvisade varje synk därefter. Set och reps är hela tal från 1.
+    const parsed = parseFloat(target.value) || 0
+    const value = target.type !== 'number' ? target.value
+      : nestedField === 'weight' ? Math.max(0, parsed) : Math.max(1, Math.round(parsed))
 
     if (field === 'setEntries' && setIdx !== undefined && nestedField) {
       const exercise = formExercises[idx]
