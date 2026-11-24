@@ -237,7 +237,7 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 - TLS: 2026-09-16, pass, SSL Labs A+ on beefcake.buildapp.se (GitHub Pages) and on buildapp.se (TLS 1.2 minimum since today)
 - Lighthouse: 2026-09-16, warn, a11y 98 (main landmark added to the login page 2026-09-16, not remeasured), best practices 100, SEO 60 then because of noindex, removed 2026-10-22, not remeasured, CLS 0,83 (mobile, no perf)
 - Markup: 2026-09-16, pass, W3C 0 errors, 7 warnings, 0 broken links
-- npm audit: 2026-10-27, pass, 0 in production, 0 in the dev chain
+- npm audit: 2026-11-24, pass, 0 in production, 0 in the dev chain (scoped overrides for glob under workbox-build and minimatch under Stryker)
 - Secrets: 2026-09-24, pass, gitleaks 0 findings in 164 commits, 3 reviewed in .gitleaksignore
 - Actions: 2026-09-24, pass, zizmor 0 high, 0 medium, 0 low
 - Mutation: 2026-11-04, pass, Stryker 10.1.1 on 15 src/lib files 99,00 % (was 97,35 % the same day), 12 survivors all reviewed as equivalent, 7 new tests, no bugs; cardio 100,00 % (0,00), importValidation 99,62 % (95,85), volume 92,86 % (1 equivalent), rest 98 to 100 %; src/services not rerun: cloudSyncService 99,03 %, timerService 97,79 % (2026-10-27), dataService 38,54 % (2026-10-31)

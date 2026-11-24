@@ -41,6 +41,12 @@
   },
   "overrides": {
     "sharp": "0.35.5",
-    "qs": "6.17.1"
+    "qs": "6.17.1",
+    "workbox-build": {
+      "glob": "^14.0.6"
+    },
+    "@stryker-mutator/core": {
+      "minimatch": "^11.0.9"
+    }
   }
 }
