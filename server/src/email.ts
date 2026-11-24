@@ -26,7 +26,7 @@ export function buildReminderEmail(reminder: ReminderEmail): { from: string; to:
   }
 }
 
-/** Skickar via Resend och svarar med statuskoden. Kastar inte: cronen ska gå vidare till nästa användare. */
+/** Skickar via Resend och svarar med statuskoden. Ett nätfel kastar; cronen fångar det per konto och går vidare. */
 export async function sendReminderEmail(reminder: ReminderEmail, apiKey: string): Promise<number> {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',

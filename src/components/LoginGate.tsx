@@ -2,7 +2,7 @@ import { createContext, Fragment } from 'preact'
 import { useContext, useEffect, useState } from 'preact/hooks'
 import type { ComponentChildren } from 'preact'
 import { Redirect } from 'wouter'
-import { canBrowseAsGuest, isCloudSyncConfigured, isLocalDataOwnedBy } from '../services/cloudSyncService'
+import { canBrowseAsGuest, isCloudSyncConfigured, isLocalDataOwnedBy, mayShowLocalData } from '../services/cloudSyncService'
 import { syncSeed } from '../services/dataService'
 import {
   authErrorMessage, isAuthConfigured, refreshUser, registerWithEmail, resendVerification,
@@ -65,6 +65,7 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
   // Körs om per användare, så ett kontobyte hämtar det nya kontots data.
   const uid = user && user.emailVerified ? user.uid : null
   const [loadedFor, setLoadedFor] = useState<string | null>(null)
+  const [blockedFor, setBlockedFor] = useState<string | null>(null)
   // Räknas upp när D1 skrev om det lokala under en app som redan visas: sidorna monteras
   // om och läser från IndexedDB igen. Ett pågående pass ligger i activeWorkout och överlever.
   const [dataVersion, setDataVersion] = useState(0)
@@ -77,10 +78,14 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
       .then(owned => { if (owned && !cancelled) { shownEarly = true; setLoadedFor(uid) } })
       .catch(() => undefined)
     syncSeed()
-      .then(({ replaced }) => { if (replaced && shownEarly && !cancelled) setDataVersion(v => v + 1) })
-      .catch(err => console.error('Molnsnapshoten kunde inte hämtas:', err))
-      .finally(() => {
+      .then(({ replaced }) => { if (replaced && shownEarly && !cancelled) setDataVersion(v => v + 1); return true })
+      .catch(err => { console.error('Molnsnapshoten kunde inte hämtas:', err); return false })
+      // Misslyckad hämtning släpper bara in när det lokala är kontots, gästens eller tomt:
+      // ett annat kontos pass på en delad enhet visas aldrig (OWASP 2026-11-24, A01)
+      .then(async ok => ok || await mayShowLocalData(uid).catch(() => false))
+      .then(allowed => {
         if (cancelled) return
+        if (!allowed) { setBlockedFor(uid); return }
         setLoadedFor(uid)
         // Märket sätts först när kontots pass bevisligen ligger på enheten
         void isLocalDataOwnedBy(uid).then(owned => { if (owned) writeResumeUid(uid) }).catch(() => undefined)
@@ -107,7 +112,16 @@ export function LoginGate({ children }: { children: ComponentChildren }) {
   if (user === null && guest) return <GuestContext.Provider value={true}>{children}</GuestContext.Provider>
   if (user === null) return <Shell><LoginForm /></Shell>
   if (!user.emailVerified) return <Shell><VerifyEmail user={user} /></Shell>
-  // Misslyckas hämtningen släpps appen in ändå: synkfelet visas beständigt av CloudSyncStatus
+  // Misslyckas hämtningen släpps appen in ändå (synkfelet visas av CloudSyncStatus), utom
+  // när enheten bär ett annat kontos pass
+  if (blockedFor === user.uid && loadedFor !== user.uid) {
+    return (
+      <Shell>
+        <p class="login-error">Dina pass kunde inte hämtas, och enheten har ett annat kontos data. Kontrollera nätet och försök igen.</p>
+        <Button class="btn-block" onClick={() => location.reload()}>Försök igen</Button>
+      </Shell>
+    )
+  }
   if (loadedFor !== user.uid && resumeUid !== user.uid) return <Shell><p class="login-subtitle">Hämtar dina pass…</p></Shell>
   return app
 }

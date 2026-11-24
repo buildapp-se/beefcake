@@ -706,6 +706,12 @@ export async function syncSeed(seedEmpty = !isCloudSyncConfigured()): Promise<{ 
   return { sessionsAdded: newSessions.length, exercisesAdded: newExercises.length, replaced }
 }
 
+/** Textcell: citattecken dubblas och en ledande formelstart får en apostrof, så Excel inte kör den (OWASP 2026-11-24, A03). */
+function csvText(value: string): string {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+  return `"${safe.replace(/"/g, '""')}"`
+}
+
 export async function exportSessionsCSV(): Promise<string> {
   const sessions = await getAllSessions()
   const headers = ['Datum', 'Pass', 'Övning', 'Set', 'Reps', 'Vikt (kg)', 'Volym']
@@ -715,8 +721,8 @@ export async function exportSessionsCSV(): Promise<string> {
       for (const set of e.setEntries) {
         rows.push([
           s.date,
-          `"${s.templateName}"`,
-          `"${e.exerciseName}"`,
+          csvText(s.templateName),
+          csvText(e.exerciseName),
           set.sets,
           set.reps,
           set.weight,

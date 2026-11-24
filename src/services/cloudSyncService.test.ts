@@ -29,6 +29,7 @@ import {
   isCloudSyncConfigured,
   isLocalDataOwnedBy,
   loadSnapshotFromCloud,
+  mayShowLocalData,
   setReminderEnabled,
   subscribeToCloudSyncError,
   syncSnapshot
@@ -227,6 +228,30 @@ describe('loadSnapshotFromCloud felhantering', () => {
     const caught = await loadSnapshotFromCloud(async () => { throw originalError }, vi.fn()).catch(e => e)
     expect(caught).toBeInstanceOf(Error)
     expect(caught.cause).toBe(originalError)
+  })
+})
+
+describe('mayShowLocalData (OWASP 2026-11-24, A01)', () => {
+  beforeEach(() => {
+    settings.clear()
+    storeCounts.clear()
+  })
+
+  it('kontots egen, gästens eller en tom enhet får visas när D1 inte svarar', async () => {
+    settings.set('owner-uid', 'u1')
+    expect(await mayShowLocalData('u1')).toBe(true)
+    settings.set('owner-uid', 'guest')
+    expect(await mayShowLocalData('u1')).toBe(true)
+    settings.delete('owner-uid')
+    expect(await mayShowLocalData('u1')).toBe(true)
+  })
+
+  it('ett annat kontos pass, med märke eller äldre utan märke, visas aldrig', async () => {
+    settings.set('owner-uid', 'u2')
+    expect(await mayShowLocalData('u1')).toBe(false)
+    settings.delete('owner-uid')
+    storeCounts.set('sessions', 3)
+    expect(await mayShowLocalData('u1')).toBe(false)
   })
 })
 

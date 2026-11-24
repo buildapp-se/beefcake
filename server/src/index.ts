@@ -63,13 +63,12 @@ export default {
 } satisfies ExportedHandler<Env>
 
 async function writeReminderSetting(request: Request, db: D1Database, owner: string, headers: Headers): Promise<Response> {
-  // Kroppen är {"enabled": true}: allt över en kilobyte avvisas före läsningen.
-  if (Number(request.headers.get('content-length') ?? 0) > 1_024) {
-    throw new ApiError(413, 'payload_too_large', 'Fel format.')
-  }
+  await enforceDailyWriteQuota(db, owner, new Date().toISOString().slice(0, 10))
+  // Kroppen är {"enabled": true}: allt över en kilobyte avvisas
+  const raw = await readLimitedBody(request, 1_024)
   let body: unknown
   try {
-    body = JSON.parse(await request.text())
+    body = JSON.parse(raw)
   } catch {
     throw new ApiError(400, 'invalid_body', 'Fel format.')
   }
@@ -95,17 +94,22 @@ export async function sendLazyReminders(env: ReminderEnv, now: Date): Promise<nu
   let sent = 0
   for (const r of results) {
     if (r.last_sent === today) continue
-    const row = await latestRow(env.DB, r.owner)
-    if (!row) continue
-    const sessions = (JSON.parse(row.payload) as { sessions: { date: string }[] }).sessions
-    const days = lazyDays(sessions.map(s => s.date), today)
-    if (days === null) continue
-    const status = await sendReminderEmail({ to: r.owner, days, appUrl: env.APP_URL }, env.RESEND_API_KEY)
-    if (status >= 200 && status < 300) {
-      await env.DB.prepare('UPDATE reminders SET last_sent = ? WHERE owner = ?').bind(today, r.owner).run()
-      sent++
-    } else {
-      console.error(JSON.stringify({ event: 'reminder_failed', status }))
+    // Ett kastat fel (nätet till Resend, D1) stoppar bara det här kontot (OWASP 2026-11-24, A04)
+    try {
+      const row = await latestRow(env.DB, r.owner)
+      if (!row) continue
+      const sessions = (JSON.parse(row.payload) as { sessions: { date: string }[] }).sessions
+      const days = lazyDays(sessions.map(s => s.date), today)
+      if (days === null) continue
+      const status = await sendReminderEmail({ to: r.owner, days, appUrl: env.APP_URL }, env.RESEND_API_KEY)
+      if (status >= 200 && status < 300) {
+        await env.DB.prepare('UPDATE reminders SET last_sent = ? WHERE owner = ?').bind(today, r.owner).run()
+        sent++
+      } else {
+        console.error(JSON.stringify({ event: 'reminder_failed', status }))
+      }
+    } catch (error) {
+      console.error(JSON.stringify({ event: 'reminder_failed', error: safeMessage(error) }))
     }
   }
   return sent
@@ -125,13 +129,10 @@ async function readSnapshot(db: D1Database, owner: string, headers: Headers): Pr
 }
 
 async function writeSnapshot(request: Request, db: D1Database, owner: string, headers: Headers): Promise<Response> {
-  const contentLength = Number(request.headers.get('content-length') ?? 0)
-  if (contentLength > MAX_PAYLOAD_BYTES) throw new ApiError(413, 'payload_too_large', 'Snapshoten är för stor.')
-
-  const rawBody = await request.text()
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_PAYLOAD_BYTES) {
-    throw new ApiError(413, 'payload_too_large', 'Snapshoten är för stor.')
-  }
+  // Kvoten före kroppen: en skrivning över taket kostar varken parsning eller D1-skrivning
+  const createdAt = new Date().toISOString()
+  await enforceDailyWriteQuota(db, owner, createdAt.slice(0, 10))
+  const rawBody = await readLimitedBody(request, MAX_PAYLOAD_BYTES)
 
   let body: unknown
   try {
@@ -165,8 +166,6 @@ async function writeSnapshot(request: Request, db: D1Database, owner: string, he
   }
 
   const expectedRevision = body.expectedRevision
-  const createdAt = new Date().toISOString()
-  await enforceDailyWriteQuota(db, owner, createdAt.slice(0, 10))
   const result = await db.prepare(
     `INSERT INTO snapshots (owner, revision, payload, created_at)
      SELECT ?, ?, ?, ?
@@ -187,18 +186,33 @@ async function writeSnapshot(request: Request, db: D1Database, owner: string, he
   return json({ revision: expectedRevision + 1, updatedAt: createdAt }, 201, headers)
 }
 
-/** En rad per konto med dagens antal skrivningar. Över taket blir 429, raden räknas ändå upp så att svaret är stabilt. */
+/**
+ * En rad per konto med dagens antal skrivningar, snapshots och inställningen tillsammans.
+ * Över taket uppdateras ingen rad (WHERE i upserten ger inget RETURNING) och svaret blir 429,
+ * så ett konto som hamrar efter taket inte äter den delade D1-skrivkvoten (OWASP 2026-11-24, A04).
+ */
 async function enforceDailyWriteQuota(db: D1Database, owner: string, day: string): Promise<void> {
   const row = await db.prepare(
     `INSERT INTO write_quota (owner, day, count) VALUES (?, ?, 1)
      ON CONFLICT(owner) DO UPDATE SET
        count = CASE WHEN write_quota.day = excluded.day THEN write_quota.count + 1 ELSE 1 END,
        day = excluded.day
+     WHERE write_quota.day <> excluded.day OR write_quota.count < ?
      RETURNING count`
-  ).bind(owner, day).first<{ count: number }>()
-  if ((row?.count ?? 0) > MAX_WRITES_PER_DAY) {
-    throw new ApiError(429, 'write_quota', 'För många sparningar i dag. Försök igen i morgon.')
-  }
+  ).bind(owner, day, MAX_WRITES_PER_DAY).first<{ count: number }>()
+  if (!row) throw new ApiError(429, 'write_quota', 'För många sparningar i dag. Försök igen i morgon.')
+}
+
+/**
+ * Läser kroppen med tak. Ett content-length som inte är ett tal avvisas (NaN > tak var falskt).
+ * ponytail: text() buffrar hela kroppen; Cloudflares egen gräns (100 MB) bär taket, läs strömmande om det inte räcker.
+ */
+async function readLimitedBody(request: Request, maxBytes: number): Promise<string> {
+  const declared = Number(request.headers.get('content-length') ?? 0)
+  if (!(declared <= maxBytes)) throw new ApiError(413, 'payload_too_large', 'Kroppen är för stor.')
+  const raw = await request.text()
+  if (new TextEncoder().encode(raw).byteLength > maxBytes) throw new ApiError(413, 'payload_too_large', 'Kroppen är för stor.')
+  return raw
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -235,7 +249,8 @@ function errorResponse(error: unknown, headers: Headers): Response {
     : new ApiError(500, 'internal_error', 'Ett oväntat serverfel inträffade.')
   if (!(error instanceof ApiError)) console.error(JSON.stringify({ event: 'request_failed', error: safeMessage(error) }))
   // Nekade och kolliderande anrop syns i loggen, utan token och utan kropp (OWASP 2026-09-16, A09).
-  if (apiError.status === 401 || apiError.status === 403 || apiError.status === 409) {
+  // 413 och 429 sedan OWASP 2026-11-24: missbruk av taken ska synas.
+  if ([401, 403, 409, 413, 429].includes(apiError.status)) {
     console.warn(JSON.stringify({ event: 'request_denied', status: apiError.status, code: apiError.code }))
   }
   return json({ error: { code: apiError.code, message: apiError.message } }, apiError.status, headers)

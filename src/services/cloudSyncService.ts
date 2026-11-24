@@ -105,6 +105,14 @@ export async function syncSnapshot(snapshot: SnapshotData): Promise<void> {
   return next
 }
 
+/**
+ * Får det lokala visas för kontot när D1 inte gick att läsa? Ja om det är kontots eget,
+ * gästens eller tomt; ett annat kontos pass (med märke eller äldre utan) aldrig.
+ */
+export async function mayShowLocalData(uid: string): Promise<boolean> {
+  return await isLocalDataOwnedBy(uid) || await canBrowseAsGuest()
+}
+
 /** Sant när enheten redan bär det här kontots D1-snapshot: appen kan visas innan servern svarat. */
 export async function isLocalDataOwnedBy(uid: string): Promise<boolean> {
   return (await getKnownOwner()) === uid

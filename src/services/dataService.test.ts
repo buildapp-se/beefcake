@@ -7,7 +7,7 @@ vi.mock('./cloudSyncService', async (importOriginal) => ({
   syncSnapshot: async () => {},
 }))
 
-import { backfillExerciseMeta, createSession, createTemplate, deleteSession, deleteTemplate, getAllSessions, getAllTemplates, getExerciseHistory, getSession, restoreSession, saveActiveWorkout, clearActiveWorkout, getResumableWorkout, updateTemplate } from './dataService'
+import { backfillExerciseMeta, createSession, createTemplate, deleteSession, exportSessionsCSV, deleteTemplate, getAllSessions, getAllTemplates, getExerciseHistory, getSession, restoreSession, saveActiveWorkout, clearActiveWorkout, getResumableWorkout, updateTemplate } from './dataService'
 import { getDB } from '../models'
 import type { Template } from '../models'
 
@@ -44,6 +44,16 @@ describe('restoreSession', () => {
 
     const restored = await getSession(session.id)
     expect(restored?.cardio).toEqual({ minutes: 30, km: 5 })
+  })
+})
+
+describe('exportSessionsCSV (OWASP 2026-11-24, A03)', () => {
+  it('neutraliserar formler och dubblar citattecken i textceller', async () => {
+    await createSession('2026-10-22', 'tpl-x', '=HYPERLINK("http://x")', [
+      { exerciseId: 'ex-x', exerciseName: '+1 "rodd"', setEntries: [{ sets: 1, reps: 1, weight: 10 }] }
+    ])
+    const line = (await exportSessionsCSV()).split('\n').find(l => l.startsWith('2026-10-22'))
+    expect(line).toBe(`2026-10-22,"'=HYPERLINK(""http://x"")","'+1 ""rodd""",1,1,10,10`)
   })
 })
 

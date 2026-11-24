@@ -7,7 +7,7 @@
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import worker from './index'
+import worker, { sendLazyReminders } from './index'
 
 // Firebase finns inte i testet: klienten skickar en låtsastoken, Workern kör i dev-läge och läser den inte
 const auth = vi.hoisted(() => ({ uid: 'test-uid' as string | null }))
@@ -37,7 +37,9 @@ class FakeD1 {
           if (sql.includes('SELECT enabled FROM reminders')) return this.reminders.get(owner) ?? null
           if (sql.includes('INSERT INTO write_quota')) {
             const day = String(args[1])
+            const max = Number(args[2])
             const q = this.quota.get(owner)
+            if (q && q.day === day && q.count >= max) return null // WHERE i upserten: ingen skrivning
             const count = q && q.day === day ? q.count + 1 : 1
             this.quota.set(owner, { day, count })
             return { count }
@@ -330,6 +332,32 @@ describe('tak per konto (OWASP 2026-09-16)', () => {
     const blocked = await post()
     expect(blocked.status).toBe(429)
     expect(db.latestRevision(owner)).toBe(latest.revision + 30)
+    // Över taket skrivs inget, inte ens räknaren (OWASP 2026-11-24)
+    expect(db.quota.get(owner)?.count).toBe(300)
+    // Inställningen räknas i samma kvot
+    const put = await worker.fetch(new Request(`${API}/api/reminders`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer test-token' },
+      body: '{"enabled":true}'
+    }), env)
+    expect(put.status).toBe(429)
+  })
+
+  it('ett kastat fel mot Resend stoppar inte breven till nästa konto', async () => {
+    const cronDb = new FakeD1()
+    for (const owner of ['a@beefcake.invalid', 'b@beefcake.invalid']) {
+      cronDb.rows.push({ owner, revision: 1, payload: JSON.stringify({ sessions: [{ date: '2026-09-01' }] }), created_at: '' })
+      cronDb.reminders.set(owner, { enabled: 1, last_sent: null })
+    }
+    let calls = 0
+    vi.stubGlobal('fetch', () => ++calls === 1 ? Promise.reject(new Error('nätfel')) : Promise.resolve(new Response('{}', { status: 200 })))
+    try {
+      const sent = await sendLazyReminders({ ...env, DB: cronDb } as unknown as Parameters<typeof sendLazyReminders>[0], new Date('2026-09-10T17:00:00Z'))
+      expect(sent).toBe(1)
+      expect(calls).toBe(2)
+    } finally {
+      vi.stubGlobal('fetch', apiFetch)
+    }
   })
 })
 
