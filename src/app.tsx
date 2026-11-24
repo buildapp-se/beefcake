@@ -11,6 +11,8 @@ import { BrandMark } from './components/BrandMark'
 import { isCloudSyncConfigured } from './services/cloudSyncService'
 import { getResumableWorkout } from './services/dataService'
 import { Card } from './components/Card'
+import { Button } from './components/Button'
+import { EmptyState } from './components/EmptyState'
 import { Home } from './pages/Home'
 import { LogSession } from './pages/LogSession'
 import { LogCardio } from './pages/LogCardio'
@@ -196,6 +198,13 @@ function Shell() {
             )} />
           <Route path="/settings" component={Settings} />
           <Route path="/konto" component={AccountPage} />
+          <Route>
+            <EmptyState
+              title="Sidan hittades inte"
+              message="Adressen finns inte i Beefcake."
+              action={<Button href="/">Till startsidan</Button>}
+            />
+          </Route>
         </Switch>
       </main>
       <BottomNav />
