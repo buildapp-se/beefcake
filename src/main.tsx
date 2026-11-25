@@ -7,8 +7,10 @@ import { syncSeed } from './services/dataService'
 import { isCloudSyncConfigured } from './services/cloudSyncService'
 
 // Service workern hämtar nya byggen men aktiverar dem inte själv: bannern frågar först.
+// Bara när en äldre worker styr sidan: Firefox kallar första installationen "extern" om en
+// ny sida laddas medan den pågår, och bannern visades då för en helt ny besökare.
 const updateSW = registerSW({
-  onNeedRefresh() { announceUpdate(() => updateSW(true)) }
+  onNeedRefresh() { if (navigator.serviceWorker.controller) announceUpdate(() => updateSW(true)) }
 })
 
 const root = document.getElementById('app')!
