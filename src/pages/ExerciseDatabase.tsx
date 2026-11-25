@@ -16,9 +16,15 @@ const PAGE = 24
 // Typvalet sparas per enhet i settings-storen, samma som vilotimerns inställningar: "allt utom stretch" ska stå kvar
 const CATEGORY_KEY = 'exercise-db-category'
 
-function useExerciseDb(): DbExercise[] | null {
-  const [all, setAll] = useState<DbExercise[] | null>(null)
-  useEffect(() => { loadExerciseDb().then(setAll) }, [])
+// 'failed': chunken gick inte att hämta (nätfel, eller borta från Pages efter en deploy utan service worker)
+function useExerciseDb(): DbExercise[] | null | 'failed' {
+  const [all, setAll] = useState<DbExercise[] | null | 'failed'>(null)
+  useEffect(() => {
+    loadExerciseDb().then(setAll).catch(err => {
+      console.error('Kunde inte ladda övningsdatabasen:', err)
+      setAll('failed')
+    })
+  }, [])
   return all
 }
 
@@ -185,5 +191,17 @@ export function ExerciseDatabase() {
   const [, params] = useRoute('/ovningar/:id')
   const all = useExerciseDb()
   if (!all) return <Skeleton />
+  if (all === 'failed') {
+    return (
+      <div>
+        <h1 class="page-title">Övningar</h1>
+        <EmptyState
+          title="Övningarna gick inte att ladda"
+          message="Kontrollera nätet och ladda om sidan."
+          action={<Button onClick={() => window.location.reload()}>Ladda om</Button>}
+        />
+      </div>
+    )
+  }
   return params?.id ? <DbExerciseDetail id={params.id} all={all} /> : <DbExerciseList all={all} />
 }

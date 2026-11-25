@@ -26,10 +26,30 @@ import { icon } from './icons'
 import type { BeefcakeStreak } from './lib/streak'
 import './app.css'
 
+// Utan service worker (första besöket) finns chunken bara på servern: efter en deploy är den
+// borta från Pages och ett nätfel ger samma sak. Utan fångst blev hela sidan tom.
 const Stats = lazy(async () => {
-  const m = await import('./pages/Stats')
-  return { default: m.Stats }
+  try {
+    const m = await import('./pages/Stats')
+    return { default: m.Stats }
+  } catch (err) {
+    console.error('Kunde inte ladda Statistik:', err)
+    return { default: StatsLoadError }
+  }
 })
+
+function StatsLoadError() {
+  return (
+    <div>
+      <h1 class="page-title">Statistik</h1>
+      <EmptyState
+        title="Statistiken gick inte att ladda"
+        message="Kontrollera nätet och ladda om sidan."
+        action={<Button onClick={() => window.location.reload()}>Ladda om</Button>}
+      />
+    </div>
+  )
+}
 
 const navItems = [
   { href: '/', label: 'Hem', icon: 'home-icon' },
