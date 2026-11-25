@@ -6,6 +6,7 @@ import { todayISO } from '../lib/date'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { Field } from '../components/Field'
+import { EmptyState } from '../components/EmptyState'
 
 // Utkast av ett nytt cardiopass, så det som skrivits överlever en omladdning. Datumet följer inte
 // med: ett gammalt utkast ska inte logga på fel dag.
@@ -38,11 +39,13 @@ export function LogCardio() {
   const [notes, setNotes] = useState(draft?.notes ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     if (!editId) return
+    // Raderat pass (bakåt efter Radera) eller ett styrkepass: Spara skulle misslyckas eller göra om det till cardio
     getSession(editId).then(s => {
-      if (!s?.cardio) return
+      if (!s?.cardio) { setNotFound(true); return }
       setActivity(s.templateName)
       setDate(s.date)
       setMinutes(String(s.cardio.minutes))
@@ -77,6 +80,15 @@ export function LogCardio() {
       setError('Kunde inte spara passet. Försök igen.')
       setSaving(false)
     }
+  }
+
+  if (notFound) {
+    return (
+      <div>
+        <h1 class="page-title">Redigera cardio</h1>
+        <EmptyState title="Cardiopasset hittades inte" action={<Button href="/history">Tillbaka till historik</Button>} />
+      </div>
+    )
   }
 
   return (
