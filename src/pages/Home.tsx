@@ -109,7 +109,7 @@ export function Home() {
               <span class="active-workout-label">Pågående pass</span>
               <h3 class="m-0">{activeWorkout.templateName}</h3>
               <p class="text-xs text-muted m-0 mt-1">
-                {activeWorkout.exercises.length} övningar påbörjade · Startat {formatDateCompact(activeWorkout.date)}
+                {activeWorkout.exercises.length} {activeWorkout.exercises.length === 1 ? 'övning påbörjad' : 'övningar påbörjade'} · Startat {formatDateCompact(activeWorkout.date)}
               </p>
             </div>
             <Button
@@ -159,9 +159,9 @@ export function Home() {
       </section>
 
       <Card padding="none">
-        <div class="flex justify-between items-center mb-sm" style="padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6)">
+        <div class="flex flex-wrap justify-between items-center gap-sm mb-sm" style="padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6)">
           <h2 class="m-0">Senaste pass</h2>
-          <div class="flex gap-sm">
+          <div class="flex flex-wrap gap-sm">
             <Button href="/cardio" variant="secondary" size="sm">Cardio</Button>
             <Button href="/log" variant="secondary" size="sm">Logga nytt</Button>
           </div>
@@ -178,7 +178,7 @@ export function Home() {
           <div class="home-session-list">
             {recentSessions.map(session => (
               <button type="button" class="session-summary-row" key={session.id} onClick={() => navigate(`/history/${session.id}`)}>
-                <span><strong>{session.templateName}</strong><small>{formatDateCompact(session.date)} · {session.cardio ? 'Cardio' : `${session.exercises.length} övningar`}</small></span>
+                <span><strong>{session.templateName}</strong><small>{formatDateCompact(session.date)} · {session.cardio ? 'Cardio' : `${session.exercises.length} ${session.exercises.length === 1 ? 'övning' : 'övningar'}`}</small></span>
                 <strong>{session.cardio ? cardioSummary(session.cardio) : `${exercisesVolume(session.exercises).toLocaleString('sv-SE')} kg`}</strong>
               </button>
             ))}

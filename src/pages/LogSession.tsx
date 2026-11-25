@@ -1025,7 +1025,7 @@ export function LogSession() {
                           type="text"
                           value={ex.exerciseName}
                           onChange={(e: Event) => updateExerciseName(exIdx, (e.target as HTMLInputElement).value)}
-                          placeholder="Övningsnamn..."
+                          placeholder="Övningsnamn…"
                           list="exercise-suggestions"
                           class="exercise-title-input"
                         />
@@ -1357,7 +1357,7 @@ export function LogSession() {
             onClick={handleFinishSession}
             disabled={saving || totalSetsCount === 0 || unnamedWithSets}
           >
-            {saving ? 'Sparar pass...' : 'Slutför och spara pass'}
+            {saving ? 'Sparar pass…' : 'Slutför och spara pass'}
           </Button>
           {totalSetsCount === 0 && !saving && (
             <p class="text-xs text-muted mt-1 m-0 log-session-hint">Lägg till minst ett set för att kunna spara passet.</p>
@@ -1379,7 +1379,7 @@ export function LogSession() {
                     type="text"
                     value={templateName}
                     onInput={(e: Event) => setTemplateName((e.target as HTMLInputElement).value)}
-                    placeholder="T.ex. Bröst & Axlar tung"
+                    placeholder="T.ex. Bröst & axlar tung"
                     autoFocus
                   />
                 </Field>
@@ -1411,7 +1411,7 @@ export function LogSession() {
         {finishDialogOpen && (
           <div class="dialog-overlay" onClick={() => setFinishDialogOpen(false)}>
             <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="finish-dialog-title" onClick={e => e.stopPropagation()}>
-              <h2 id="finish-dialog-title" class="m-0 mb-sm">{totalSetsCount - completedSetsCount} set är inte bockade</h2>
+              <h2 id="finish-dialog-title" class="m-0 mb-sm">{totalSetsCount - completedSetsCount} set är inte {totalSetsCount - completedSetsCount === 1 ? 'bockat' : 'bockade'}</h2>
               <ul class="plateau-list">
                 {exercises.filter(e => e.setEntries.some(s => !s.completed)).map(e => (
                   <li key={e.exerciseId}>

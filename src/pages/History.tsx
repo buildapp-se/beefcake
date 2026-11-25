@@ -408,7 +408,7 @@ export function History() {
         {/* Idag-rutan och väljaren på en rad, så de hamnar i samma höjd */}
         <div class="history-calendar-header">
           <div class="history-calendar-today">
-            <span class="history-calendar-today-kicker">Idag</span>
+            <span class="history-calendar-today-kicker">I dag</span>
             <strong>{formatDateFull(today)}</strong>
             {!showsToday && (
               <button type="button" class="history-calendar-today-jump" onClick={() => setCursor(parseLocalDate(today))}>
@@ -600,7 +600,7 @@ export function History() {
                       <span class={`badge ${session.cardio ? 'badge-cardio' : 'badge-primary'}`}>{session.templateName}</span>
                     </div>
                     <div class="history-card-body">
-                      <span>{session.cardio ? 'Cardio' : `${session.exercises.length} övningar`}</span>
+                      <span>{session.cardio ? 'Cardio' : `${session.exercises.length} ${session.exercises.length === 1 ? 'övning' : 'övningar'}`}</span>
                       <span class="history-card-volume tabular-nums">{session.cardio ? cardioSummary(session.cardio) : `${calculateTotalVolume(session).toLocaleString('sv-SE')} kg`}</span>
                     </div>
                   </div>

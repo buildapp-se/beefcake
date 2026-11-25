@@ -286,7 +286,7 @@ export function Settings() {
     try {
       const text = await importFile.text()
       await importAllData(text)
-      setToastMessage('Import klart! Laddar om sidan...')
+      setToastMessage('Importen är klar. Laddar om sidan…')
       setTimeout(() => {
         window.location.reload()
       }, 500)
@@ -313,7 +313,7 @@ export function Settings() {
     setClearDialogOpen(false)
     setClearConfirmText('')
     await clearAllData()
-    setToastMessage('All data raderad. Laddar om...')
+    setToastMessage('All data raderad. Laddar om…')
     setTimeout(() => {
       window.location.reload()
     }, 500)
@@ -455,11 +455,11 @@ export function Settings() {
       </Card>
 
       <Card title="Export / Import">
-        <div class="flex gap mb">
+        <div class="flex flex-wrap gap mb">
           <Button variant="secondary" onClick={handleExportJSON}>Exportera alla träningsdata</Button>
           <Button variant="secondary" onClick={handleExportCSV}>Exportera passlista</Button>
         </div>
-        <div class="flex gap mb">
+        <div class="flex flex-wrap gap mb">
           <Button variant="secondary" onClick={handleBackup}>Spara manuell backup</Button>
         </div>
         <p class="text-xs text-muted m-0 mt-sm">

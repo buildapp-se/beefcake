@@ -614,7 +614,7 @@ export function SessionDetail() {
               onClick={handleSave} 
               disabled={saving || formExercises.length === 0}
             >
-              {saving ? 'Sparar...' : 'Spara'}
+              {saving ? 'Sparar…' : 'Spara'}
             </Button>
           </div>
         </div>
@@ -692,7 +692,7 @@ export function SessionDetail() {
                       type="text"
                       value={ex.exerciseName}
                       onChange={e => handleInputChange(e, idx, 'exerciseName')}
-                      placeholder="Skriv övningsnamn..."
+                      placeholder="Skriv övningsnamn…"
                       list="session-exercise-suggestions"
                     />
                   </div>

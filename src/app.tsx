@@ -79,7 +79,7 @@ function NavLink({ href, label, icon: iconId, showLabel = true }: { href: string
 
 // Märket på Hem länkar till sidan du redan står på: då är toppen det man vill åt
 function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
 }
 
 function SidebarNav({ avatar }: { avatar: BeefcakeStreak | null }) {

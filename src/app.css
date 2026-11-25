@@ -196,7 +196,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -758,7 +758,7 @@ th, td {
   background: var(--surface-raised); color: var(--text);
 }
 .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
-  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
+  outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
 }
 .input-group input[type="number"] { max-width: 100px; }
 .input-group input.input-short { max-width: 100px; }  /* Kort textfält för ett tal, som kroppsvikten */
@@ -977,7 +977,7 @@ canvas { display: block; max-width: 100%; }
 }
 
 .login-input:focus {
-  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
+  outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .login-input-error {
@@ -1009,7 +1009,7 @@ canvas { display: block; max-width: 100%; }
   border-radius: var(--radius-sm); font-size: var(--text-sm); font-family: inherit;
   background: var(--surface-raised); color: var(--text);
 }
-.table-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.table-input:focus { outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 .remove-cell { width: 44px; text-align: center; }
 .btn-remove {
   width: 44px; height: 44px;
@@ -1061,7 +1061,7 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
 .history-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
 .history-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); }
 .history-card-date { font-weight: 500; color: var(--text); }
-.history-card-body { display: flex; justify-content: space-between; align-items: center; font-size: var(--text-sm); color: var(--text-muted); }
+.history-card-body { display: flex; flex-wrap: wrap; column-gap: var(--space-2); justify-content: space-between; align-items: center; font-size: var(--text-sm); color: var(--text-muted); }
 .history-card-volume { font-weight: 700; color: var(--text); font-variant-numeric: var(--font-numeric); }
 .history-month-group-mobile { margin-bottom: var(--space-4); }
 .template-row-clickable { cursor: pointer; }
@@ -1259,7 +1259,7 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
 .exercise-title-input:focus {
   background: var(--surface-hover);
   border-radius: var(--radius-sm);
-  outline: none;
+  outline: 2px solid transparent;
 }
 
 .exercise-prev-banner {
@@ -1465,9 +1465,9 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
 
 /* Passets metarad: program och datum med penna, i stället för ett kort med två fält */
 /* Datum och program som en slimmad rad: inga etiketter, datumet så brett som det behöver, programmet tar resten */
-.log-session-meta.input-group { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 0; }
+.log-session-meta.input-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 0; }
 .log-session-meta input[type="date"] { width: auto; flex: 0 0 auto; }
-.log-session-meta select { flex: 1 1 0; min-width: 0; }
+.log-session-meta select { flex: 1 1 0; min-width: min(6rem, 100%); }
 .log-session-hint { text-align: center; }
 
 /* Inputs with Steppers */
@@ -1492,7 +1492,7 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
   border-radius: var(--radius-sm);
 }
 .set-input:focus, .exercise-notes-input:focus {
-  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
+  outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .stepper-buttons {
@@ -1806,7 +1806,7 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
   transition: transform var(--motion-normal), box-shadow var(--motion-normal);
 }
 .exdb-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-.exdb-card-name { display: block; font-weight: 600; font-size: var(--text-sm); margin-top: var(--space-2); }
+.exdb-card-name { display: block; overflow-wrap: anywhere; font-weight: 600; font-size: var(--text-sm); margin-top: var(--space-2); }
 .exdb-card-meta { display: block; font-size: var(--text-xs); color: var(--text-muted); }
 .exdb-detail-grid { display: grid; grid-template-columns: 3fr 2fr; gap: var(--space-4); align-items: start; }
 .exdb-detail-media { overflow: hidden; }
@@ -1844,4 +1844,16 @@ body:has(.exercise-row-dragging) { -webkit-user-select: none; user-select: none;
   .exdb-grid { grid-template-columns: 1fr 1fr; }
   .exdb-detail-grid { grid-template-columns: 1fr; }
   .exdb-anim-thumb { width: 56px; }
+}
+
+/* Reduced motion: transitions, the loading shimmer and smooth scrolling stop (celebration and exercise animation have their own rules above). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Forced colors (Windows contrast themes): backgrounds and box-shadows are dropped, so buttons need a border,
+   focus needs the transparent outline above, and selected states need a system-colour outline. */
+@media (forced-colors: active) {
+  .btn { border: 1px solid ButtonText; }
+  .nav-link.active, .history-calendar-view .btn-primary, .rest-timer-preset.selected { outline: 2px solid Highlight; outline-offset: -2px; }
 }

@@ -318,7 +318,7 @@ export function Templates() {
                   type="text"
                   value={fe.exerciseName}
                   onChange={e => handleInputChange(e, idx, 'exerciseName')}
-                  placeholder="Skriv övningsnamn..."
+                  placeholder="Skriv övningsnamn…"
                   list="template-exercise-suggestions"
                 />
               </Field>

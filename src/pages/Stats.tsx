@@ -617,7 +617,7 @@ export function Stats() {
               <input type="search" value={prQuery} placeholder="Sök övning" aria-label="Sök bland personliga rekord" onInput={event => setPrQuery((event.target as HTMLInputElement).value)} />
               {!showAllPRs && matchingPRs.length > 10 && <Button variant="secondary" size="sm" onClick={() => setShowAllPRs(true)}>Visa alla ({matchingPRs.length})</Button>}
             </div>
-            {/* Telefon: ett kort per övning. Tabellen klippte kolumnen Max volym utanför kortet. */}
+            {/* Telefon: ett kort per övning. Tabellen klippte kolumnen Maxvolym utanför kortet. */}
             <div class="history-list-cards">
               {visiblePRs.map(pr => (
                 <div class="history-card session-detail-card" key={pr.exerciseId}>
@@ -625,10 +625,10 @@ export function Stats() {
                     <span class="history-card-date"><Link href={`/exercises/${pr.exerciseId}`} class="exercise-link">{pr.exerciseName}</Link></span>
                   </div>
                   <div class="history-card-body">
-                    <span class="tabular-nums">Max vikt <strong>{formatWeight(pr.maxWeight)} kg</strong> <span class="nowrap">({formatDateShort(pr.maxWeightDate)})</span></span>
+                    <span class="tabular-nums">Maxvikt <strong>{formatWeight(pr.maxWeight)} kg</strong> <span class="nowrap">({formatDateShort(pr.maxWeightDate)})</span></span>
                   </div>
                   <div class="history-card-body">
-                    <span class="tabular-nums">Max volym <strong>{pr.maxVolume.toLocaleString('sv-SE')} kg</strong> <span class="nowrap">({formatDateShort(pr.maxVolumeDate)})</span></span>
+                    <span class="tabular-nums">Maxvolym <strong>{pr.maxVolume.toLocaleString('sv-SE')} kg</strong> <span class="nowrap">({formatDateShort(pr.maxVolumeDate)})</span></span>
                   </div>
                 </div>
               ))}
@@ -638,8 +638,8 @@ export function Stats() {
                 <thead>
                   <tr>
                     <th>Övning</th>
-                    <th>Max vikt</th>
-                    <th>Max volym</th>
+                    <th>Maxvikt</th>
+                    <th>Maxvolym</th>
                   </tr>
                 </thead>
                 <tbody>

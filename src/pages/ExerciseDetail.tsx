@@ -335,7 +335,7 @@ export function ExerciseDetail() {
               <tr>
                 <th>Datum</th>
                 <th>Pass</th>
-                <th>Set & Reps</th>
+                <th>Set & reps</th>
                 <th>Volym</th>
               </tr>
             </thead>

@@ -119,7 +119,7 @@ export function LogCardio() {
           {error && <p class="field-error">{error}</p>}
           <div class="flex gap-sm justify-end">
             <Button variant="secondary" onClick={() => { if (!editId) writeDraft(null); history.back() }}>Avbryt</Button>
-            <Button type="submit" disabled={!valid || saving}>{saving ? 'Sparar...' : 'Spara'}</Button>
+            <Button type="submit" disabled={!valid || saving}>{saving ? 'Sparar…' : 'Spara'}</Button>
           </div>
         </form>
       </Card>
