@@ -7,7 +7,7 @@ vi.mock('./cloudSyncService', async (importOriginal) => ({
   syncSnapshot: async () => {},
 }))
 
-import { backfillExerciseMeta, createSession, createTemplate, deleteSession, exportSessionsCSV, deleteTemplate, getAllSessions, getAllTemplates, getExerciseHistory, getSession, restoreSession, saveActiveWorkout, clearActiveWorkout, getResumableWorkout, updateTemplate } from './dataService'
+import { backfillExerciseMeta, createSession, createTemplate, deleteSession, exportSessionsCSV, deleteTemplate, getAllSessions, getAllTemplates, getExerciseHistory, getSession, restoreSession, saveActiveWorkout, clearActiveWorkout, getResumableWorkout, isDraftTakenElsewhere, updateTemplate } from './dataService'
 import { getDB } from '../models'
 import type { Template } from '../models'
 
@@ -204,5 +204,29 @@ describe('mallar', () => {
     await deleteTemplate(template.id)
 
     expect(await getAllTemplates()).toHaveLength(0)
+  })
+})
+
+describe('isDraftTakenElsewhere', () => {
+  const draft = (startTime: string) => ({ date: '2026-11-25', templateId: 'tpl-ben', templateName: 'Ben', exercises: [], startTime })
+
+  it('svarar nej när fliken inte äger något utkast', async () => {
+    await clearActiveWorkout()
+    expect(await isDraftTakenElsewhere(null)).toBe(false)
+  })
+
+  it('svarar nej när det sparade utkastet är flikens eget', async () => {
+    await saveActiveWorkout(draft('2026-11-25T06:00:00.000Z'))
+    expect(await isDraftTakenElsewhere('2026-11-25T06:00:00.000Z')).toBe(false)
+  })
+
+  it('svarar ja när en annan flik slutfört eller avbrutit passet', async () => {
+    await clearActiveWorkout()
+    expect(await isDraftTakenElsewhere('2026-11-25T06:00:00.000Z')).toBe(true)
+  })
+
+  it('svarar ja när en annan flik startat ett nytt pass', async () => {
+    await saveActiveWorkout(draft('2026-11-25T07:00:00.000Z'))
+    expect(await isDraftTakenElsewhere('2026-11-25T06:00:00.000Z')).toBe(true)
   })
 })

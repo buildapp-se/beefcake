@@ -46,6 +46,16 @@ export async function clearActiveWorkout(): Promise<void> {
 }
 
 /**
+ * Har en annan flik slutfört, avbrutit eller ersatt utkastet som den här fliken läst in eller sparat?
+ * `ownStartTime` är det utkastets startTime, null när fliken inte äger något (då är svaret nej).
+ */
+export async function isDraftTakenElsewhere(ownStartTime: string | null): Promise<boolean> {
+  if (ownStartTime === null) return false
+  const stored = await getActiveWorkout()
+  return !stored || (stored.startTime ?? '') !== ownStartTime
+}
+
+/**
  * Utkastet att återuppta när appen startar: bara ett faktiskt påbörjat pass räknas, med minst
  * ett set (samma regel som när loggvyn öppnas). Förvalda övningar utan set lämnar inget spår.
  */

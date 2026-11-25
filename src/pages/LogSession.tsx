@@ -8,6 +8,7 @@ import {
   getSession,
   createTemplate,
   getActiveWorkout,
+  isDraftTakenElsewhere,
   saveActiveWorkout,
   clearActiveWorkout,
   getLastPerformanceForExercise,
@@ -48,6 +49,9 @@ function targetLabel(target: { weight: number; reps: number }): string {
 
 // Höjningsfrågan ställs en gång per pass: datum och program, sparat per enhet så en omladdning inte frågar igen
 const PLATEAU_ASKED_KEY = 'plateau-asked'
+
+// Visas i en inaktuell flik när passet redan slutförts, avbrutits eller ersatts i en annan flik
+const DRAFT_TAKEN_MESSAGE = 'Passet har sparats eller avbrutits i en annan flik. Tryck på Försök igen för att se det som gäller nu.'
 
 // Settyp som fullt ord i pickern (bokstaven ensam var obegriplig på mobil), tom sträng för normal i brickan
 const SET_TYPE_LABELS: Record<SetType, string> = { normal: 'Normal', warmup: 'Uppvärmning', drop: 'Drop', failure: 'Failure' }
@@ -124,6 +128,8 @@ export function LogSession() {
   const draggedExerciseIndexRef = useRef<number | null>(null)
   const activeTemplateRequestRef = useRef<string>('')
   const isInitialLoadRef = useRef(true)
+  // startTime på utkastet som den här vyn läst in eller senast sparat, null när vyn inte äger något
+  const ownDraftRef = useRef<string | null>(null)
 
   // Fetch previous performance for exercises
   const fetchPreviousPerformances = useCallback(async (exerciseIds: string[]) => {
@@ -158,6 +164,7 @@ export function LogSession() {
     try {
       setLoading(true)
       setError(null)
+      ownDraftRef.current = null
       const urlParams = new URLSearchParams(window.location.search)
       const fromSessionId = urlParams.get('from')
       const templateParam = urlParams.get('template')
@@ -213,6 +220,7 @@ export function LogSession() {
         setExercises([...draftExercises, added])
         setOpenExercises(new Set([draftExercises.length]))
         if (activeDraft && draftExercises.length > 0) {
+          ownDraftRef.current = activeDraft.startTime ?? ''
           setSelectedTemplateId(activeDraft.templateId)
           setDate(activeDraft.date)
           setStartTime(activeDraft.startTime)
@@ -221,6 +229,7 @@ export function LogSession() {
       }
       // Priority 3: ett faktiskt påbörjat utkast i IndexedDB
       else if (activeDraft && activeDraft.exercises.some(e => e.setEntries.length > 0)) {
+        ownDraftRef.current = activeDraft.startTime ?? ''
         setSelectedTemplateId(activeDraft.templateId)
         setDate(activeDraft.date || todayISO())
         setStartTime(activeDraft.startTime || nowISO())
@@ -290,23 +299,44 @@ export function LogSession() {
   useEffect(() => {
     // Ett fel visar felsidan med tom övningslista: det är inte ett tomt pass, utkastet får ligga kvar
     if (isInitialLoadRef.current || loading || error) return
-
-    // Ett utkast finns först när något kan gå förlorat: minst ett set. Förvalda övningar
-    // utan set är en startpunkt, inte ett pågående pass, och lämnar inget spår.
-    if (!exercises.some(e => e.setEntries.length > 0)) {
-      void clearActiveWorkout()
-      return
-    }
-
+    const hasSets = exercises.some(e => e.setEntries.length > 0)
     const template = templates.find(t => t.id === selectedTemplateId)
-    void saveActiveWorkout({
-      date,
-      templateId: selectedTemplateId,
-      templateName: template?.name || 'Fritt pass',
-      exercises: exercises.map((e, idx) => ({ ...e, order: idx })),
-      startTime
-    })
+    void (async () => {
+      if (await draftTakenElsewhere()) { showDraftTaken(); return }
+      // Ett utkast finns först när något kan gå förlorat: minst ett set. Förvalda övningar
+      // utan set är en startpunkt, inte ett pågående pass, och lämnar inget spår. Bara ett
+      // eget utkast (eller ett gammalt utan set) tas bort: en annan flik kan ha ett pågående pass.
+      if (!hasSets) {
+        const stored = ownDraftRef.current === null ? await getActiveWorkout() : undefined
+        if (ownDraftRef.current !== null || (stored && !stored.exercises.some(e => e.setEntries.length > 0))) {
+          ownDraftRef.current = null
+          await clearActiveWorkout()
+        }
+        return
+      }
+      await saveActiveWorkout({
+        date,
+        templateId: selectedTemplateId,
+        templateName: template?.name || 'Fritt pass',
+        exercises: exercises.map((e, idx) => ({ ...e, order: idx })),
+        startTime
+      })
+      ownDraftRef.current = startTime
+    })().catch(err => console.error('Kunde inte spara utkastet:', err))
   }, [exercises, date, selectedTemplateId, startTime, loading, templates, error])
+
+  // Två flikar på samma utkast: har en annan flik slutfört eller avbrutit passet är utkastet
+  // borta (eller ett annat). Då får den här fliken varken återskapa det eller spara passet igen.
+  // Fliken släpper sitt inaktuella pass, så Försök igen läser in det som gäller nu
+  function showDraftTaken() {
+    ownDraftRef.current = null
+    setExercises([])
+    setError(DRAFT_TAKEN_MESSAGE)
+  }
+
+  function draftTakenElsewhere(): Promise<boolean> {
+    return isDraftTakenElsewhere(ownDraftRef.current)
+  }
 
   // Platå: när ett pass öppnas och minst en övning stått still i PLATEAU_SESSIONS pass frågar
   // dialogen en gång. En övning med ett väntande förslag frågas inte om igen.
@@ -737,6 +767,7 @@ export function LogSession() {
     setFinishDialogOpen(false)
     setSaving(true)
     try {
+      if (await draftTakenElsewhere()) { showDraftTaken(); return }
       const template = templates.find(t => t.id === selectedTemplateId)
       const templateTitle = template?.name || 'Fritt pass'
       const kept = exercises.map(e => onlyCompleted ? { ...e, setEntries: e.setEntries.filter(s => s.completed) } : e)
@@ -772,6 +803,7 @@ export function LogSession() {
       await createSession(date, selectedTemplateId || 'custom', templateTitle, validExercises)
       // Gästen påminns efter varje pass: passen finns bara på enheten tills ett konto skapas
       if (guest) announceGuestSave()
+      ownDraftRef.current = null
       setSaved(true)
       setExercises([])
       await clearActiveWorkout()
@@ -789,7 +821,9 @@ export function LogSession() {
   }
 
   async function handleCancelSession() {
-    await clearActiveWorkout()
+    // En annan flik kan redan ha ett nytt pass i utkastet: det får en inaktuell flik inte radera
+    if (!(await draftTakenElsewhere())) await clearActiveWorkout()
+    ownDraftRef.current = null
     setCancelDialogOpen(false)
     setExercises([])
     navigate('/')
