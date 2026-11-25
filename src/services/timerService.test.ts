@@ -160,7 +160,7 @@ describe('notis när vilopausen är slut', () => {
     expect(showNotification).toHaveBeenCalledWith('Beefcake', {
       body: REST_OVER,
       tag: 'beefcake-rest-timer',
-      icon: `${import.meta.env.BASE_URL}pwa-192x192.svg`,
+      icon: `${import.meta.env.BASE_URL}icons/icon-192.png`,
       vibrate: [180, 100, 180]
     })
     expect(created).toEqual([])

@@ -9,7 +9,7 @@ export default defineConfig({
     VitePWA({
       // 'prompt': en ny version väntar tills användaren trycker Ladda om (UpdateBanner), aldrig mitt i ett pass
       registerType: 'prompt',
-      includeAssets: ['icons/favicon.svg', 'icons/favicon-32.png', 'icons/apple-touch-icon.png', 'og-image-1200x630.png'],
+      includeAssets: ['icons/favicon.svg', 'icons/favicon-32.png', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'Beefcake träningslogg',
         short_name: 'Beefcake',
@@ -54,6 +54,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,woff2}'],
+        // Behövs aldrig offline: og-bilden läses av delningstjänster, skärmbilderna bara vid installation,
+        // och pwa-*.png, apple-touch-icon.png och favicon.ico i roten är äldre Cartman-ikoner som inget länkar till
+        globIgnores: ['og-image-*.png', 'icons/screenshot-*.png', 'pwa-*.png', 'apple-touch-icon.png', 'favicon.ico'],
         // Firebase-SDK:n laddas från gstatic vid start; utan cache startar appen inte offline
         runtimeCaching: [{
           urlPattern: /^https:\/\/www\.gstatic\.com\/firebasejs\//,

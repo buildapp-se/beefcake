@@ -52,7 +52,7 @@ export async function showRestTimerNotification(): Promise<void> {
       const options: NotificationOptions & { vibrate?: number[] } = {
         body: 'Vilopausen är slut. Dags för nästa set.',
         tag: 'beefcake-rest-timer',
-        icon: `${import.meta.env.BASE_URL}pwa-192x192.svg`,
+        icon: `${import.meta.env.BASE_URL}icons/icon-192.png`,
         vibrate: [180, 100, 180]
       }
       await registration.showNotification('Beefcake', options)
