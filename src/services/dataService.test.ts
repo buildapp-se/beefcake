@@ -54,7 +54,7 @@ describe('exportSessionsCSV (OWASP 2026-11-24, A03)', () => {
       { exerciseId: 'ex-x', exerciseName: '+1 "rodd"', setEntries: [{ sets: 1, reps: 1, weight: 10 }] }
     ])
     const line = (await exportSessionsCSV()).split('\n').find(l => l.startsWith('2026-10-22'))
-    expect(line).toBe(`2026-10-22,"'=HYPERLINK(""http://x"")","'+1 ""rodd""",1,1,10,10`)
+    expect(line).toBe(`2026-10-22;"'=HYPERLINK(""http://x"")";"'+1 ""rodd""";1;1;10;10`)
   })
 })
 

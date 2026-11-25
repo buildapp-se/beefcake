@@ -6,7 +6,14 @@ export type ImportData = SnapshotData
 const EXERCISE_KINDS: ExerciseKind[] = ['weight', 'bodyweight', 'time', 'distance']
 
 export function parseImportData(json: string): ImportData {
-  return validateSnapshot(JSON.parse(json))
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(json)
+  } catch {
+    // Webbläsarens SyntaxError är engelsk och visas för användaren i importens felruta
+    throw new Error('Filen är inte en JSON-kopia från Beefcake')
+  }
+  return validateSnapshot(parsed)
 }
 
 /**

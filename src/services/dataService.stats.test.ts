@@ -361,11 +361,13 @@ describe('export, import och rensning', () => {
     const db = await getDB()
     await db.put('sessions', session('1', '2026-01-01', 'Ben', [{ exerciseId: 'a', exerciseName: 'Benböj', order: 0, setEntries: [{ sets: 2, reps: 5, weight: 100 }, { sets: 1, reps: 10, weight: 0 }] }]))
     await db.put('sessions', session('2', '2026-01-02', 'Rygg', [{ exerciseId: 'b', exerciseName: 'Chins', order: 0, setEntries: [{ sets: 1, reps: 8, weight: 10 }] }]))
+    await db.put('sessions', session('3', '2026-01-03', 'Axlar', [{ exerciseId: 'c', exerciseName: 'Hantelpress', order: 0, setEntries: [{ sets: 1, reps: 12, weight: 18.75 }] }]))
     expect(await exportSessionsCSV()).toBe([
-      'Datum,Pass,Övning,Set,Reps,Vikt (kg),Volym',
-      '2026-01-02,"Rygg","Chins",1,8,10,80',
-      '2026-01-01,"Ben","Benböj",2,5,100,1000',
-      '2026-01-01,"Ben","Benböj",1,10,0,0'
+      'Datum;Pass;Övning;Set;Reps;Vikt (kg);Volym',
+      '2026-01-03;"Axlar";"Hantelpress";1;12;18,75;225',
+      '2026-01-02;"Rygg";"Chins";1;8;10;80',
+      '2026-01-01;"Ben";"Benböj";2;5;100;1000',
+      '2026-01-01;"Ben";"Benböj";1;10;0;0'
     ].join('\n'))
   })
 })

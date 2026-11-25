@@ -718,7 +718,10 @@ function csvText(value: string): string {
 export async function exportSessionsCSV(): Promise<string> {
   const sessions = await getAllSessions()
   const headers = ['Datum', 'Pass', 'Övning', 'Set', 'Reps', 'Vikt (kg)', 'Volym']
-  const rows = [headers.join(',')]
+  // Svenskt Excel: semikolon som avgränsare och decimalkomma, annars hamnar raden i en kolumn
+  // och 18.75 blir text eller datum
+  const num = (n: number) => String(n).replace('.', ',')
+  const rows = [headers.join(';')]
   for (const s of sessions) {
     for (const e of s.exercises) {
       for (const set of e.setEntries) {
@@ -726,11 +729,11 @@ export async function exportSessionsCSV(): Promise<string> {
           s.date,
           csvText(s.templateName),
           csvText(e.exerciseName),
-          set.sets,
-          set.reps,
-          set.weight,
-          setVolume(set)
-        ].join(','))
+          num(set.sets),
+          num(set.reps),
+          num(set.weight),
+          num(setVolume(set))
+        ].join(';'))
       }
     }
   }

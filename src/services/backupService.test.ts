@@ -117,6 +117,20 @@ describe('saveBackupToFile', () => {
     expect(await findLastBackupAt()).toBeNull()
   })
 
+  it('stängd filväljare (AbortError) är ett avbrott, inget fel', async () => {
+    vi.stubGlobal('window', { showSaveFilePicker: async () => { throw new DOMException('The user aborted a request.', 'AbortError') } })
+    expect(await saveBackupToFile()).toEqual({ success: false, cancelled: true })
+    expect(await findLastBackupAt()).toBeNull()
+  })
+
+  it('filnamnet har det lokala datumet, inte UTC', async () => {
+    vi.setSystemTime(new Date(2026, 10, 25, 0, 30))
+    const picker = vi.fn(async () => fakeHandle('granted').handle)
+    vi.stubGlobal('window', { showSaveFilePicker: picker })
+    await saveBackupToFile()
+    expect(picker).toHaveBeenCalledWith(expect.objectContaining({ suggestedName: 'beefcake-backup-2026-11-25.json' }))
+  })
+
   it('utan filväljare laddas filen ner via en länk', async () => {
     vi.stubGlobal('window', {})
     const a = { href: '', download: '', click: vi.fn() }

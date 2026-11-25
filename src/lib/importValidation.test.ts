@@ -13,6 +13,10 @@ function valid() {
 }
 
 describe('parseImportData', () => {
+  it('fil som inte är JSON ger ett svenskt fel', () => {
+    expect(() => parseImportData('inte json')).toThrow('Filen är inte en JSON-kopia från Beefcake')
+  })
+
   it('accepterar en komplett tom backup', () => {
     expect(parseImportData(JSON.stringify({
       templates: [],

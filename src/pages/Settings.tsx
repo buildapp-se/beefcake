@@ -19,12 +19,14 @@ import { EmptyState } from '../components/EmptyState'
 import { Field } from '../components/Field'
 import type { Template, BodyWeight } from '../models'
 
-/** Kroppsvikt: "82,5" eller "82.5" till tal med en decimal, 0 eller ogiltigt ger null. */
+const MAX_BODY_WEIGHT_KG = 400 // ponytail: tak mot felskrivningar som 825 för 82,5, inte en medicinsk gräns
+
+/** Kroppsvikt: "82,5" eller "82.5" till tal med en decimal, 0, över taket eller ogiltigt ger null. */
 function parseKg(text: string): number | null {
   const n = parseDecimal(text)
   if (n === null) return null
   const kg = Math.round(n * 10) / 10
-  return kg > 0 ? kg : null
+  return kg > 0 && kg <= MAX_BODY_WEIGHT_KG ? kg : null
 }
 
 function parseAlarmSeconds(text: string): number | null {
@@ -53,13 +55,15 @@ function DeleteDialog({
   onClose,
   onConfirm,
   title,
-  message
+  message,
+  confirmLabel = 'Radera'
 }: {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
   title: string
   message: string
+  confirmLabel?: string
 }) {
   if (!isOpen) return null
 
@@ -75,7 +79,7 @@ function DeleteDialog({
         <p>{message}</p>
         <div class="flex gap mt justify-end">
           <Button variant="secondary" onClick={onClose}>Avbryt</Button>
-          <Button variant="danger" onClick={onConfirm}>Radera</Button>
+          <Button variant="danger" onClick={onConfirm}>{confirmLabel}</Button>
         </div>
       </div>
     </div>
@@ -228,7 +232,8 @@ export function Settings() {
   async function handleExportCSV() {
     try {
       const csv = await exportSessionsCSV()
-      downloadFile(csv, 'beefcake-sessions.csv', 'text/csv')
+      // BOM: utan den läser Excel filen som ANSI och Övning blir Ã–vning
+      downloadFile('\uFEFF' + csv, 'beefcake-sessions.csv', 'text/csv;charset=utf-8')
     } catch (err) {
       console.error('Fel vid export:', err)
       setError('Kunde inte exportera data. Försök igen.')
@@ -238,6 +243,7 @@ export function Settings() {
   async function handleBackup() {
     try {
       const result = await saveBackupToFile()
+      if (result.cancelled) return
       if (!result.success) throw new Error(result.error ?? 'Okänt fel')
       setLastBackupAt(await findLastBackupAt())
       setToastMessage('Manuell backup sparad')
@@ -260,6 +266,8 @@ export function Settings() {
   function handleFileImport(e: Event) {
     const target = e.target as HTMLInputElement
     const file = target.files?.[0]
+    // Tömt så att samma fil kan väljas igen efter ett misslyckat försök, annars kommer inget change
+    target.value = ''
     if (file) {
       setImportFile(file)
       setImportDialogOpen(true)
@@ -284,7 +292,7 @@ export function Settings() {
       }, 500)
     } catch (err) {
       console.error(err)
-      setToastMessage('Import misslyckades')
+      setToastMessage(err instanceof Error ? `Import misslyckades. ${err.message}` : 'Import misslyckades')
     } finally {
       setImporting(false)
       setImportFile(null)
@@ -388,6 +396,9 @@ export function Settings() {
           </Field>
           <Button type="submit" disabled={parseKg(bwKg) === null}>Spara</Button>
         </form>
+        {bwKg.trim() !== '' && parseKg(bwKg) === null && (
+          <p class="text-xs text-danger m-0 mt-sm" role="alert">Skriv vikten i kilo, mellan 0,1 och {MAX_BODY_WEIGHT_KG}, till exempel 82,5.</p>
+        )}
         {bodyWeights.length > 0 && (
           <div class="table-wrap mt">
             <table>
@@ -509,8 +520,9 @@ export function Settings() {
         isOpen={importDialogOpen}
         onClose={dismissImportDialog}
         onConfirm={confirmImport}
-        title="Import JSON"
+        title="Importera sparad kopia"
         message="Detta kommer att ersätta ALL data. Är du säker?"
+        confirmLabel="Ersätt"
       />
 
       {/* Clear all data dialog with text confirmation */}

@@ -1,4 +1,5 @@
 import { getDB } from '../models'
+import { todayISO } from '../lib/date'
 
 interface BackupFileHandle {
   createWritable: () => Promise<BackupWritable>
@@ -78,13 +79,15 @@ async function writeConfiguredBackup(json: string): Promise<boolean> {
   return true
 }
 
-export async function saveBackupToFile(): Promise<{ success: boolean; error?: string }> {
+/** `cancelled`: användaren stängde filväljaren, inget fel att visa. */
+export async function saveBackupToFile(): Promise<{ success: boolean; error?: string; cancelled?: true }> {
   try {
     const { exportAllData } = await import('./dataService')
     const json = await exportAllData()
     if (await writeConfiguredBackup(json)) return { success: true }
 
-    const filename = `beefcake-backup-${new Date().toISOString().split('T')[0]}.json`
+    // Lokalt datum: toISOString gav gårdagens datum i filnamnet mellan midnatt och 01/02
+    const filename = `beefcake-backup-${todayISO()}.json`
     if (window.showSaveFilePicker) {
       const handle = await window.showSaveFilePicker({
         suggestedName: filename,
@@ -109,6 +112,7 @@ export async function saveBackupToFile(): Promise<{ success: boolean; error?: st
     await saveBackupTarget({ handle: null, lastBackupAt: new Date().toISOString() })
     return { success: true }
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return { success: false, cancelled: true }
     const error = err instanceof Error ? err.message : 'Okänt fel'
     return { success: false, error }
   }
