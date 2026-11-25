@@ -219,6 +219,7 @@ graph LR
 - Färger kommer alltid från tokens i `app.css`, också utanför `:root`: settypsbrickor, timern och plattkalkylatorn har egna tokens med mörk variant, `--on-accent` för text på fyllda ytor. Hårdkodad hex i `.tsx` är förbjudet (undantag: skivornas IPF-färger i PlateCalculator, en fysisk egenskap), Chart.js läser via `getCSSVar()`. Ljust läge är AA-räknat 2026-09-01: text, muted, accent, success, warning och danger håller minst 4,5:1 mot surface och surface-raised. Nya tokens dokumenteras med kommentar i `app.css`.
 - Typografi: Geist, self-hostad. Rubriker 800 med `-0.02em`, brödtext `line-height: 1.7`, `tabular-nums` på allt numeriskt. Geist Mono bara i vilotimerns siffror.
 - `.card` är stilla; lyft vid hover hör bara till klickbara kort (`.history-card`).
+- Fokus på fält: `outline: 2px solid transparent` plus egen ram och skugga, aldrig `outline: none`: i forced colors tas skuggan bort och bara konturen syns. Reducerad rörelse stängs av globalt sist i `app.css`; `html` har `font-size: 100%` så webbläsarens textstorlek gäller (sedan 2026-11-25).
 - `alert()`, `confirm()` och `prompt()` är förbjudna. De blockerar appen och gör automatiserad testning omöjlig.
 - Minsta ändring som helt löser uppgiften. Inga refaktoreringar på vägen.
 - `npm test` (Vitest) täcker de rena beräkningarna i `src/lib/`. Den kör före `npm run build` i deploy-workflowen, så ett rött test stoppar deployen.
