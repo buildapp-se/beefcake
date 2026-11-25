@@ -248,6 +248,8 @@ Den gamla lösenordsgrinden (`PasswordGate`, `AUTH_HASH` i bundlen) och Cloudfla
 - Actions (automated): 2026-10-06, pass, zizmor 0 high, 0 medium, 0 low; evidence C:/dev/aifabriken/.runs/audits/2026-10-06-batch-a/beefcake.json
 - Markup (automated): 2026-10-27, pass, 1 targets; 0 failed, 0 blocked; evidence C:/dev/aifabriken/.runs/audits/2026-10-27-markup-w/beefcake.json
 - WCAG 2.2 AA (automated): 2026-10-27, needs-review, axe 4.14.0 0 violations on buildapp.se/beefcake (mobile, one page); manual keyboard pass not done
+- WCAG 2.2 AA (speed pass): 2026-11-25, pass, axe 4.14.0 0 violations on 9 views at 390 and 1440 px live (guest) and locally with 418 seeded sessions; before: label-content-name-mismatch 15 nodes on History and 8 on Programs (with data only); manual keyboard pass not done
+- Performance: 2026-11-25, warn, headless Chromium without service worker, 390 px 4x CPU Slow 4G: LCP about 2,0 s on most views, /ovningar 6,5 s; CLS 0 on all nine views (was 0,427 on Home and 0,117 on Stats); 237 kB per view; hashed assets cached 4 h only (zone setting, BACKLOG P2)
 - OG image: 2026-10-25, pass, 1200x630 PNG, https://buildapp.se/beefcake/og-image-1200x630.png
 - Database: 2026-10-25, CF D1, Firebase for login only
 - Dependabot: 2026-11-24, pass, 0 open alerts (minimatch #7 closed by the overrides in `bb0b71d`)
