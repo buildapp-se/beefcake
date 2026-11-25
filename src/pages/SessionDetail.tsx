@@ -12,7 +12,7 @@ import {
 } from '../services/dataService'
 import { icon } from '../icons'
 import { formatDateCompact, formatDateShort } from '../lib/date'
-import { formatSets, restoreIfEmpty } from '../lib/format'
+import { formatSets, formatWeight, parseDecimal, restoreIfEmpty } from '../lib/format'
 import { setsVolume, exercisesVolume } from '../lib/volume'
 import { cardioSummary } from '../lib/cardio'
 import { Card } from '../components/Card'
@@ -107,6 +107,9 @@ export function SessionDetail() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
+  // Vikt som fritext medan fältet har fokus, nyckel "övning:set". `type="number"` tog inte
+  // decimalkomma: "77,5" blev 577 i Chromium och WebKit och 775 i Firefox. Samma mönster som Program.
+  const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({})
 
   const getSessionId = useCallback((): string | null => {
     const pathParts = window.location.pathname.split('/')
@@ -394,7 +397,7 @@ export function SessionDetail() {
     // Negativa tal gjorde snapshoten ogiltig, och Workern avvisade varje synk därefter. Set och reps är hela tal från 1.
     const parsed = parseFloat(target.value) || 0
     const value = target.type !== 'number' ? target.value
-      : nestedField === 'weight' ? Math.max(0, parsed) : Math.max(1, Math.round(parsed))
+      : Math.max(1, Math.round(parsed))
 
     if (field === 'setEntries' && setIdx !== undefined && nestedField) {
       const exercise = formExercises[idx]
@@ -705,7 +708,24 @@ export function SessionDetail() {
                       </div>
                       <div>
                         <label>Vikt (kg)</label>
-                        <input type="number" min="0" step="0.5" max="500" value={set.weight} onChange={e => handleInputChange(e, idx, 'setEntries', setIdx, 'weight')} onBlur={restoreIfEmpty(set.weight)} />
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={weightDrafts[`${idx}:${setIdx}`] ?? formatWeight(set.weight)}
+                          onInput={e => {
+                            const text = (e.target as HTMLInputElement).value
+                            setWeightDrafts(prev => ({ ...prev, [`${idx}:${setIdx}`]: text }))
+                            const parsed = parseDecimal(text)
+                            if (parsed === null) return
+                            const newSetEntries = [...ex.setEntries]
+                            newSetEntries[setIdx] = { ...set, weight: Math.max(0, Math.min(500, parsed)) }
+                            updateExercise(idx, 'setEntries', newSetEntries)
+                          }}
+                          onBlur={() => setWeightDrafts(prev => {
+                            const { [`${idx}:${setIdx}`]: _, ...rest } = prev
+                            return rest
+                          })}
+                        />
                       </div>
                       {ex.setEntries.length > 1 && (
                         <div class="m-0">
