@@ -413,8 +413,9 @@ export function SessionDetail() {
 
   // Render loading state
   if (loading) {
+    // Egen nyckel: Preact återanvänder annars skelettets noder för innehållet och flyttar dem, vilket räknas som layoutskift
     return (
-      <div>
+      <div key="skeleton">
         <h1 class="page-title">Passdetaljer</h1>
         <Card class="skeleton skeleton-card"></Card>
       </div>

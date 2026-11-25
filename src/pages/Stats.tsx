@@ -376,8 +376,9 @@ export function Stats() {
   }
 
   if (loading) {
+    // Egen nyckel: Preact återanvänder annars skelettets noder för innehållet och flyttar dem, vilket räknas som layoutskift
     return (
-      <div>
+      <div key="skeleton">
         <h1 class="page-title">Statistik</h1>
         <div class="grid grid-2 mb">
           <Card class="skeleton skeleton-chart"></Card>
