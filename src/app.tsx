@@ -166,8 +166,16 @@ function HeaderNav() {
   )
 }
 
+// Egen <title> per vy: skärmläsare läser den vid sidbyte och flikar och historik skiljer vyerna åt (WCAG 2.4.2)
+const VIEW_TITLES: Record<string, string> = { log: 'Logga pass', cardio: 'Logga cardio', templates: 'Program', history: 'Historik', exercises: 'Övning', ovningar: 'Övningar', stats: 'Statistik', settings: 'Inställningar', konto: 'Konto' }
+
 function Shell() {
   const [location, navigate] = useLocation()
+  useEffect(() => {
+    document.title = location === '/'
+      ? 'Beefcake · Träningslogg för styrketräning'
+      : `${VIEW_TITLES[location.split('/')[1]] ?? 'Sidan hittades inte'} · Beefcake`
+  }, [location])
   const streak = useBeefcakeStreak()
   // Cartman visas bara när inloggning finns och användaren passerat LoginGate.
   const guest = useIsGuest()

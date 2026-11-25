@@ -349,8 +349,9 @@ export function History() {
 
   // Render loading state
   if (loading) {
+    // Egen nyckel: Preact återanvänder annars skelettets noder för innehållet och flyttar dem, vilket räknas som layoutskift
     return (
-      <div>
+      <div key="skeleton">
         <h1 class="page-title">Historik</h1>
         <Card class="skeleton skeleton-card"></Card>
       </div>
@@ -432,7 +433,7 @@ export function History() {
                   key={date}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Logga pass ${date}`}
+                  aria-label={`${calendarWeekdays[index]} ${day.getDate()} ${monthNames[day.getMonth()]}, logga pass`}
                   onClick={() => logSessionOnDate(date)}
                   onKeyDown={event => handleCalendarDayKey(event, date)}
                 >
@@ -483,7 +484,7 @@ export function History() {
                 key={date}
                 role="button"
                 tabIndex={0}
-                aria-label={`Logga pass ${date}`}
+                aria-label={`${day.getDate()} ${monthNames[day.getMonth()]}, logga pass`}
                 onClick={() => logSessionOnDate(date)}
                 onKeyDown={event => handleCalendarDayKey(event, date)}
               >

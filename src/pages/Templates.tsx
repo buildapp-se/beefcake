@@ -258,8 +258,9 @@ export function Templates() {
   }
 
   if (loading) {
+    // Egen nyckel: Preact återanvänder annars skelettets noder för innehållet och flyttar dem, vilket räknas som layoutskift
     return (
-      <div>
+      <div key="skeleton">
         <div class="flex justify-between items-center mb">
           <h1 class="page-title m-0">Program</h1>
           <Button disabled>+ Nytt program</Button>
@@ -389,7 +390,6 @@ export function Templates() {
                 class="history-card"
                 role="button"
                 tabIndex={0}
-                aria-label={`Redigera program ${t.name}`}
                 onClick={() => startEdit(t)}
                 onKeyDown={event => {
                   if (event.key === 'Enter' || event.key === ' ') {
@@ -399,7 +399,7 @@ export function Templates() {
                 }}
               >
                 <div class="history-card-header">
-                  <span class="history-card-date">{t.name}</span>
+                  <span class="history-card-date"><span class="visually-hidden">Redigera program </span>{t.name}</span>
                 </div>
                 <div class="history-card-body">
                   <span>{t.exercises.length} {t.exercises.length === 1 ? 'övning' : 'övningar'}</span>
